@@ -16,9 +16,12 @@ import {
   Sliders,
   LogOut,
   ExternalLink,
+  Menu,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 
-export default function Header() {
+export default function Header({ isCollapsed, toggleSidebar }) {
   const [isDark, setIsDark] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -34,15 +37,15 @@ export default function Header() {
   return (
     <header className="h-16 bg-white border-b border-slate-200/80 px-4 md:px-6 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-2xs">
       
-      {/* Left: Mobile Menu Toggle + Search Bar */}
+      {/* Left: Sidebar Toggle Button + Search Bar */}
       <div className="flex items-center gap-3 flex-1 max-w-xl">
         <button
-          aria-label="Toggle menu"
-          className="lg:hidden w-9 h-9 rounded-xl bg-[#eb1c24] text-white flex items-center justify-center shadow-sm shrink-0 cursor-pointer hover:bg-red-700 transition-colors"
+          onClick={toggleSidebar}
+          aria-label="Toggle sidebar collapse"
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-[#eb1c24] flex items-center justify-center border border-slate-200/80 shrink-0 cursor-pointer transition-colors"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
+          {isCollapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
         </button>
 
         {/* Global Search Input */}

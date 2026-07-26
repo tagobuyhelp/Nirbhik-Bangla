@@ -14,6 +14,8 @@ import CreateAdPage from './pages/CreateAdPage';
 import GoLivePage from './pages/GoLivePage';
 import CommentsPage from './pages/CommentsPage';
 import LiveStreamsPage from './pages/LiveStreamsPage';
+import ReportersPage from './pages/ReportersPage';
+import SettingsPage from './pages/SettingsPage';
 import GenericPage from './pages/GenericPage';
 
 export default function App() {
@@ -41,7 +43,7 @@ export default function App() {
           <Route path="schedule" element={<GenericPage title="Program Schedule" description="Set up daily broadcast schedule." />} />
 
           {/* Reporter & Team Routes */}
-          <Route path="reporters" element={<GenericPage title="Reporters" description="Manage news reporters and editorial staff." />} />
+          <Route path="reporters" element={<ReportersPage />} />
           <Route path="assignments" element={<GenericPage title="Assignments" description="Track reporting tasks and assignments." />} />
           <Route path="editorial-review" element={<GenericPage title="Editorial Review" description="Review pending news submissions." />} />
 
@@ -53,7 +55,7 @@ export default function App() {
           {/* Analytics & Settings Routes */}
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="seo-tools" element={<GenericPage title="SEO Tools" description="Manage sitemaps, meta descriptions, and keywords." />} />
-          <Route path="settings" element={<GenericPage title="Settings" description="Global portal settings and configuration." />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="system-logs" element={<GenericPage title="System Logs" description="View admin activity and system error logs." />} />
 
           {/* Fallback 404 Route */}

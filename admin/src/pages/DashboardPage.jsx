@@ -38,24 +38,24 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-outfit">
       {/* 1. Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight font-outfit">
             Dashboard
           </h1>
-          <p className="text-xs font-medium text-slate-500 mt-0.5">
+          <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
             Welcome back, Super Admin! Here's what's happening on your portal.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer">
+          <button className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer font-outfit">
             <Calendar size={14} className="text-slate-500" />
             <span>{dateRange}</span>
           </button>
-          <button className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-2 shadow-md shadow-red-500/20 transition-all cursor-pointer">
+          <button className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-2 shadow-md shadow-red-500/20 transition-all cursor-pointer font-outfit uppercase tracking-wider">
             <Download size={14} />
             <span>Export Report</span>
           </button>
@@ -69,26 +69,26 @@ export default function DashboardPage() {
           return (
             <div
               key={kpi.id}
-              className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between hover:shadow-md transition-all group"
+              className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between hover:shadow-md transition-all group"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className={`p-2 rounded-lg ${kpi.bgIcon}`}>
+                  <div className={`p-2 rounded-xl ${kpi.bgIcon}`}>
                     <Icon size={16} />
                   </div>
-                  <div className="flex items-center gap-0.5 text-[11px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                  <div className="flex items-center gap-0.5 text-[11px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-mono">
                     <TrendingUp size={11} />
                     <span>{kpi.trend}</span>
                   </div>
                 </div>
 
-                <p className="text-[11px] font-bold text-slate-500 leading-none">
+                <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider font-outfit">
                   {kpi.title}
                 </p>
-                <h3 className="text-lg md:text-xl font-black text-slate-900 mt-1 tracking-tight">
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-1 tracking-tight font-outfit">
                   {kpi.value}
                 </h3>
-                <p className="text-[9.5px] font-medium text-slate-400 mt-0.5">
+                <p className="text-[10px] font-bold text-slate-400 mt-0.5 font-outfit">
                   {kpi.sub}
                 </p>
               </div>
@@ -292,13 +292,13 @@ export default function DashboardPage() {
                   className="w-14 h-12 rounded-lg object-cover bg-slate-100 shrink-0 shadow-2xs"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#eb1c24] transition-colors">
+                  <h4 className="text-xs font-extrabold text-slate-900 truncate group-hover:text-[#eb1c24] transition-colors font-bangla">
                     {post.title}
                   </h4>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium mt-0.5">
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mt-0.5">
                     <span>{post.reporter}</span>
                     <span>•</span>
-                    <span className="font-bold text-slate-600">{post.category}</span>
+                    <span className="font-bold text-slate-600 font-bangla">{post.category}</span>
                     <span>•</span>
                     <span>{post.date}</span>
                   </div>
@@ -337,7 +337,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#eb1c24] transition-colors">
+                  <h4 className="text-xs font-extrabold text-slate-900 truncate group-hover:text-[#eb1c24] transition-colors font-bangla">
                     {stream.title}
                   </h4>
                   <p className="text-[10px] font-semibold text-slate-500 mt-0.5 flex items-center gap-1">

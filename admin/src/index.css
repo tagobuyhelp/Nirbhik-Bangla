@@ -2,13 +2,21 @@
 
 @layer base {
   body {
-    font-family: 'Inter', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', 'Hind Siliguri', 'Anek Bangla', -apple-system, BlinkMacSystemFont, sans-serif;
     @apply bg-[#f8fafc] text-slate-800 min-h-screen antialiased;
   }
 }
 
 .font-bangla {
-  font-family: 'Hind Siliguri', 'Inter', sans-serif !important;
+  font-family: 'Hind Siliguri', 'Anek Bangla', 'Outfit', sans-serif !important;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.font-jakarta {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
 /* Custom Scrollbar for Sidebar & Admin UI */

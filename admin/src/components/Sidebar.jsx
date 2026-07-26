@@ -21,9 +21,11 @@ import {
   ChevronDown,
   PlusCircle,
   Radio,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ isCollapsed, toggleSidebar }) {
   const location = useLocation();
 
   // Track expanded menu state for items with children
@@ -112,35 +114,53 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-72 bg-[#0e131f] text-slate-300 flex flex-col justify-between shrink-0 hidden lg:flex sticky top-0 h-screen overflow-y-auto custom-scrollbar select-none font-sans rounded-tr-2xl shadow-2xl">
-      <div className="p-4 space-y-6">
+    <aside
+      className={`bg-[#0e131f] text-slate-300 flex flex-col justify-between shrink-0 sticky top-0 h-screen overflow-y-auto custom-scrollbar select-none font-sans rounded-tr-2xl shadow-2xl transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-20' : 'w-72'
+      }`}
+    >
+      <div className={`space-y-6 ${isCollapsed ? 'p-2.5' : 'p-4'}`}>
         
         {/* Hardcoded Logo Branding Header */}
-        <div className="pt-2 px-1">
-          <NavLink to="/" className="flex items-center gap-3 group">
+        <div className="pt-2 px-1 flex items-center justify-between">
+          <NavLink to="/" className="flex items-center gap-3 group" title="Nirbhik Bangla Admin">
             {/* Custom Emblem Badge Icon */}
             <div className="w-11 h-11 rounded-2xl bg-[#eb1c24] flex items-center justify-center text-white shadow-md shadow-red-600/30 group-hover:scale-105 transition-transform shrink-0 border border-white/20">
               <span className="font-black text-xl tracking-tighter drop-shadow-sm">NB</span>
             </div>
 
-            {/* Hardcoded Text Branding */}
-            <div>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-black text-xl text-white tracking-tight">NIRBHIK</span>
-                <span className="font-black text-xl text-[#eb1c24] tracking-tight">BANGLA</span>
+            {/* Hardcoded Text Branding (Hidden when collapsed) */}
+            {!isCollapsed && (
+              <div className="animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="font-black text-xl text-white tracking-tight">NIRBHIK</span>
+                  <span className="font-black text-xl text-[#eb1c24] tracking-tight">BANGLA</span>
+                </div>
+                <p className="text-[9px] font-black text-slate-400 tracking-[0.18em] uppercase mt-1">
+                  — FRIENDS OF NEWS —
+                </p>
               </div>
-              <p className="text-[9px] font-black text-slate-400 tracking-[0.18em] uppercase mt-1">
-                — FRIENDS OF NEWS —
-              </p>
-            </div>
+            )}
           </NavLink>
+
+          {!isCollapsed && (
+            <button
+              onClick={toggleSidebar}
+              title="Collapse Sidebar"
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer hidden lg:block"
+            >
+              <PanelLeftClose size={18} />
+            </button>
+          )}
         </div>
 
         {/* MAIN Section */}
         <div className="space-y-1.5">
-          <p className="px-3 text-[11px] font-black text-slate-400 tracking-wider uppercase">
-            MAIN
-          </p>
+          {!isCollapsed && (
+            <p className="px-3 text-[11px] font-black text-slate-400 tracking-wider uppercase">
+              MAIN
+            </p>
+          )}
 
           <nav className="space-y-1">
             {mainNavItems.map((item) => {
@@ -151,17 +171,20 @@ export default function Sidebar() {
               const isOpen = item.id ? openMenus[item.id] || isChildActive || isParentActive : false;
 
               return (
-                <div key={item.label} className="space-y-1">
+                <div key={item.label} className="space-y-1 relative group">
                   <NavLink
                     to={item.path}
                     end={item.isHome}
+                    title={isCollapsed ? item.label : undefined}
                     onClick={(e) => {
-                      if (hasChildren) {
+                      if (hasChildren && !isCollapsed) {
                         toggleMenu(item.id);
                       }
                     }}
                     className={({ isActive }) =>
-                      `w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      `w-full flex items-center ${
+                        isCollapsed ? 'justify-center px-0 py-3' : 'justify-between px-3.5 py-2.5'
+                      } rounded-xl text-sm font-bold transition-all ${
                         isActive || isChildActive
                           ? 'bg-[#eb1c24] text-white shadow-md shadow-red-600/30'
                           : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
@@ -170,7 +193,7 @@ export default function Sidebar() {
                   >
                     {({ isActive }) => (
                       <>
-                        <div className="flex items-center gap-3.5">
+                        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'}`}>
                           <div
                             className={`p-1.5 rounded-lg flex items-center justify-center ${
                               isActive || isChildActive
@@ -180,31 +203,33 @@ export default function Sidebar() {
                           >
                             <Icon size={18} />
                           </div>
-                          <span>{item.label}</span>
+                          {!isCollapsed && <span>{item.label}</span>}
                         </div>
 
-                        {item.badge ? (
-                          <span className="bg-[#ea580c] text-white text-xs font-extrabold px-2 py-0.5 rounded-full shadow-xs">
-                            {item.badge}
-                          </span>
-                        ) : hasChildren ? (
-                          isOpen ? (
-                            <ChevronDown size={16} className={isActive || isChildActive ? 'text-white' : 'text-slate-400'} />
+                        {!isCollapsed && (
+                          item.badge ? (
+                            <span className="bg-[#ea580c] text-white text-xs font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                              {item.badge}
+                            </span>
+                          ) : hasChildren ? (
+                            isOpen ? (
+                              <ChevronDown size={16} className={isActive || isChildActive ? 'text-white' : 'text-slate-400'} />
+                            ) : (
+                              <ChevronRight size={16} className={isActive || isChildActive ? 'text-white' : 'text-slate-400'} />
+                            )
                           ) : (
-                            <ChevronRight size={16} className={isActive || isChildActive ? 'text-white' : 'text-slate-400'} />
+                            <ChevronRight
+                              size={15}
+                              className={isActive ? 'text-white' : 'text-slate-400'}
+                            />
                           )
-                        ) : (
-                          <ChevronRight
-                            size={15}
-                            className={isActive ? 'text-white' : 'text-slate-400'}
-                          />
                         )}
                       </>
                     )}
                   </NavLink>
 
-                  {/* Render Sub-menu Items Dropdown */}
-                  {hasChildren && isOpen && (
+                  {/* Render Sub-menu Items Dropdown (Only when expanded) */}
+                  {hasChildren && isOpen && !isCollapsed && (
                     <div className="pl-9 space-y-1 pt-1 border-l-2 border-slate-800/80 ml-5 my-1">
                       {item.children.map((child) => (
                         <NavLink
@@ -237,9 +262,11 @@ export default function Sidebar() {
 
         {/* SYSTEM Section */}
         <div className="pt-2 border-t border-slate-800/60 space-y-1.5">
-          <p className="px-3 text-[11px] font-black text-slate-400 tracking-wider uppercase">
-            SYSTEM
-          </p>
+          {!isCollapsed && (
+            <p className="px-3 text-[11px] font-black text-slate-400 tracking-wider uppercase">
+              SYSTEM
+            </p>
+          )}
 
           <nav className="space-y-1">
             {systemNavItems.map((item) => {
@@ -248,8 +275,11 @@ export default function Sidebar() {
                 <NavLink
                   key={item.label}
                   to={item.path}
+                  title={isCollapsed ? item.label : undefined}
                   className={({ isActive }) =>
-                    `w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    `w-full flex items-center ${
+                      isCollapsed ? 'justify-center px-0 py-3' : 'justify-between px-3.5 py-2.5'
+                    } rounded-xl text-sm font-bold transition-all ${
                       isActive
                         ? 'bg-white/10 text-[#f97316] border-l-4 border-[#f97316] pl-2.5'
                         : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -258,13 +288,13 @@ export default function Sidebar() {
                 >
                   {({ isActive }) => (
                     <>
-                      <div className="flex items-center gap-3.5">
+                      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'}`}>
                         <div className={`p-1.5 rounded-lg ${isActive ? 'text-[#f97316]' : 'text-slate-300'}`}>
                           <Icon size={18} />
                         </div>
-                        <span className={isActive ? 'text-[#f97316]' : ''}>{item.label}</span>
+                        {!isCollapsed && <span className={isActive ? 'text-[#f97316]' : ''}>{item.label}</span>}
                       </div>
-                      <ChevronRight size={15} className={isActive ? 'text-[#f97316]' : 'text-slate-400'} />
+                      {!isCollapsed && <ChevronRight size={15} className={isActive ? 'text-[#f97316]' : 'text-slate-400'} />}
                     </>
                   )}
                 </NavLink>
@@ -276,20 +306,27 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom User Profile Card */}
-      <div className="p-4 border-t border-slate-800/80 bg-[#0a0e17]">
-        <div className="bg-white/5 border border-white/5 p-3 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors">
+      <div className={`p-3 border-t border-slate-800/80 bg-[#0a0e17] ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <div
+          title={isCollapsed ? "Super Admin (Administrator)" : undefined}
+          className={`bg-white/5 border border-white/5 p-2.5 rounded-2xl flex items-center ${
+            isCollapsed ? 'justify-center w-11 h-11 p-0' : 'justify-between'
+          } cursor-pointer hover:bg-white/10 transition-colors`}
+        >
           <div className="flex items-center gap-3">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
               alt="Super Admin"
-              className="w-9 h-9 rounded-full object-cover border border-amber-500/50 shadow-xs"
+              className="w-8 h-8 rounded-full object-cover border border-amber-500/50 shadow-xs shrink-0"
             />
-            <div>
-              <h5 className="text-sm font-black text-white leading-tight">Super Admin</h5>
-              <p className="text-xs text-slate-400">Administrator</p>
-            </div>
+            {!isCollapsed && (
+              <div>
+                <h5 className="text-xs font-black text-white leading-tight">Super Admin</h5>
+                <p className="text-[10px] text-slate-400">Administrator</p>
+              </div>
+            )}
           </div>
-          <ChevronDown size={16} className="text-slate-400" />
+          {!isCollapsed && <ChevronDown size={14} className="text-slate-400" />}
         </div>
       </div>
     </aside>
