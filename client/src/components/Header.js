@@ -421,21 +421,7 @@ export default function Header() {
             )}
           </Link>
 
-          {/* Poll Tab */}
-          <Link
-            href={`/${locale}/poll`}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative ${
-              pathname?.includes('/poll') ? 'text-[#d70b18] font-black' : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <BarChart2 size={19} strokeWidth={pathname?.includes('/poll') ? 2.5 : 2} />
-            <span className="text-[10px] tracking-tight">পোল</span>
-            {pathname?.includes('/poll') && (
-              <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#d70b18]" />
-            )}
-          </Link>
-
-          {/* Menu Tab */}
+          {/* Category Tab */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative ${
@@ -443,11 +429,27 @@ export default function Header() {
             }`}
           >
             <LayoutGrid size={19} strokeWidth={mobileOpen ? 2.5 : 2} />
-            <span className="text-[10px] tracking-tight">মেনু</span>
+            <span className="text-[10px] tracking-tight">ক্যাটাগরি</span>
             {mobileOpen && (
               <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#d70b18]" />
             )}
           </button>
+
+          {/* Profile Tab */}
+          <Link
+            href={`/${locale}/profile`}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative ${
+              pathname?.includes('/profile') ? 'text-[#d70b18] font-black' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={pathname?.includes('/profile') ? 2.5 : 2} className="w-[19px] h-[19px]">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            <span className="text-[10px] tracking-tight">আমার প্রোফাইল</span>
+            {pathname?.includes('/profile') && (
+              <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#d70b18]" />
+            )}
+          </Link>
         </div>
       )}
     </header>

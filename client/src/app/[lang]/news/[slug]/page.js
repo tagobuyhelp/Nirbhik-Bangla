@@ -1,5 +1,31 @@
 import ArticleClientView from './ArticleClientView';
 
+const knownSlugs = [
+  'lok-sabha-vote-result',
+  'election-result-political-debate',
+  'bjp-tmc-clash-update',
+  'new-government-delhi-prep',
+  'us-election-date-announce',
+  'finance-minister-budget-next-week',
+  'kolkata-heavy-rain-warning',
+  'ipl-final-kkr-vs-srh',
+  'petrol-diesel-price-unchanged',
+  'chandrayaan-4-mission-isro',
+  'asansol-highway-traffic-update',
+  'gold-price-drop-bengal',
+  'railway-vande-bharat-expansion',
+  'madhyamik-result-scrutiny-date',
+  'smart-phone-ai-feature-launch',
+];
+
+const supportedLangs = ['bn', 'en', 'hi'];
+
+export function generateStaticParams() {
+  return supportedLangs.flatMap((lang) =>
+    knownSlugs.map((slug) => ({ lang, slug }))
+  );
+}
+
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const { lang = 'bn', slug = 'lok-sabha-vote-result' } = resolvedParams || {};

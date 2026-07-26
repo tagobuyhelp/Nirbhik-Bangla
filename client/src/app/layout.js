@@ -29,11 +29,12 @@ export const metadata = {
     shortcut: '/images/logos/Nirbhik-Bangla-Icon.png',
     apple: '/images/logos/Nirbhik-Bangla-Icon.png',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
   themeColor: '#090d16',
 };
 

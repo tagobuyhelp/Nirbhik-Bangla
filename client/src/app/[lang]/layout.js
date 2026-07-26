@@ -1,3 +1,7 @@
+export function generateStaticParams() {
+  return [{ lang: 'bn' }, { lang: 'en' }, { lang: 'hi' }];
+}
+
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const lang = resolvedParams?.lang || 'bn';
