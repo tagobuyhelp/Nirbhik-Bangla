@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -176,13 +177,13 @@ export default function TagsPage() {
             <span>Export</span>
           </button>
 
-          <button
-            onClick={() => setShowAddModal(true)}
+          <Link
+            to="/tags/add"
             className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer"
           >
             <Plus size={16} />
             <span>Add New Tag</span>
-          </button>
+          </Link>
         </div>
       </div>
 

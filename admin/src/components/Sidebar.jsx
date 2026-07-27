@@ -86,12 +86,9 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
       icon: User,
       children: [
         { label: 'All Reporters', path: '/reporters' },
-        { label: 'Assignments', path: '/assignments' },
-        { label: 'Editorial Review', path: '/editorial-review' },
+        { label: 'Add New Reporter', path: '/reporters/create' },
       ],
     },
-    { label: 'Assignments', path: '/assignments', icon: ListOrdered },
-    { label: 'Editorial Review', path: '/editorial-review', icon: ShieldCheck },
     { label: 'Comments', path: '/comments', icon: MessageCircle, badge: '24' },
     {
       id: 'ads',
@@ -125,8 +122,12 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
         <div className="pt-2 px-1 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-3 group" title="Nirbhik Bangla Admin">
             {/* Custom Emblem Badge Icon */}
-            <div className="w-11 h-11 rounded-2xl bg-[#eb1c24] flex items-center justify-center text-white shadow-md shadow-red-600/30 group-hover:scale-105 transition-transform shrink-0 border border-white/20">
-              <span className="font-black text-xl tracking-tighter drop-shadow-sm">NB</span>
+            <div className="w-11 h-11 rounded-2xl bg-white p-0.5 shadow-md shadow-red-600/30 group-hover:scale-105 transition-transform shrink-0 border border-white/20 overflow-hidden">
+              <img
+                src="/images/logos/Nirbhik-Bangla-Icon.png"
+                alt="Nirbhik Bangla Emblem"
+                className="w-full h-full object-contain rounded-xl"
+              />
             </div>
 
             {/* Hardcoded Text Branding (Hidden when collapsed) */}

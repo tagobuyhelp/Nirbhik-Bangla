@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Upload,
   FolderPlus,
@@ -268,13 +269,13 @@ export default function MediaLibraryPage() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={() => setShowUploadModal(true)}
+          <Link
+            to="/media/upload"
             className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer"
           >
             <Upload size={15} />
             <span>Upload New</span>
-          </button>
+          </Link>
 
           <button
             onClick={() => setShowFolderModal(true)}

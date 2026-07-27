@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import SearchResultModal from './SearchResultModal';
 import {
   Search,
   Moon,
@@ -26,6 +27,19 @@ export default function Header({ isCollapsed, toggleSidebar }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [activeLang, setActiveLang] = useState('bn');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Global Keyboard Listener for Ctrl + K
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const notifications = [
     { id: 1, title: 'নতুন মন্তব্য পাওয়া গেছে', time: '২ মিনিট আগে', type: 'comment', unread: true },
@@ -49,18 +63,26 @@ export default function Header({ isCollapsed, toggleSidebar }) {
         </button>
 
         {/* Global Search Input */}
-        <div className="relative w-full">
+        <div
+          onClick={() => setIsSearchOpen(true)}
+          className="relative w-full cursor-pointer"
+        >
           <Search size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search posts, categories, reporters, media..."
-            className="w-full h-9 pl-9 pr-16 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 focus:bg-white transition-all font-semibold"
+            readOnly
+            onClick={() => setIsSearchOpen(true)}
+            placeholder="Search posts, videos, reporters, categories..."
+            className="w-full h-9 pl-9 pr-16 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 outline-none hover:border-[#eb1c24] focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 focus:bg-white transition-all font-semibold cursor-pointer"
           />
-          <span className="absolute right-2 top-1.5 px-1.5 py-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 rounded-md shadow-2xs hidden sm:block">
+          <span className="absolute right-2 top-1.5 px-1.5 py-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 rounded-md shadow-2xs hidden sm:block pointer-events-none">
             Ctrl + K
           </span>
         </div>
       </div>
+
+      {/* Global Search Result Modal */}
+      <SearchResultModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
       {/* Right: Quick Action Buttons + Controls + Profile */}
       <div className="flex items-center gap-2.5 sm:gap-3">

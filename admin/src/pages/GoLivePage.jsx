@@ -1,66 +1,44 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Radio,
-  Sparkles,
-  Save,
+  Users,
+  BarChart3,
+  Clock,
+  FileText,
   Play,
-  RotateCw,
-  Plus,
-  Globe,
-  Copy,
-  Eye,
-  EyeOff,
+  Square,
   CheckCircle2,
-  AlertCircle,
-  Activity,
-  Check,
-  Video,
-  Layers,
-  Sliders,
-  Tv,
-  Info,
-  X,
+  Globe,
+  Plus,
+  Send,
   MessageSquare,
-  ShieldAlert,
+  Sparkles,
+  TrendingUp,
+  Download,
+  Calendar,
+  Activity,
+  ArrowRight,
+  Smile,
+  Shield,
+  ThumbsUp,
   Share2,
+  UserCheck,
+  Video,
 } from 'lucide-react';
 
 export default function GoLivePage() {
   const [toastMessage, setToastMessage] = useState('');
-  const [showStreamKey, setShowStreamKey] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isLive, setIsLive] = useState(true);
+  const [chatMessage, setChatMessage] = useState('');
 
-  // Form State (Default match reference UI)
-  const [title, setTitle] = useState('লোকসভা নির্বাচন ২০২৪ : সর্বশেষ আপডেট LIVE');
-  const [description, setDescription] = useState(
-    'লোকসভা নির্বাচন ২০২৪ এর সর্বশেষ আপডেট, ফলাফল, বিশ্লেষণ এবং বিভিন্ন দলের প্রতিক্রিয়া নিয়ে আমাদের বিশেষ লাইভ।'
-  );
-  const [category, setCategory] = useState('রাজনীতি');
-  const [reporter, setReporter] = useState('Arif Hossain');
-  const [breakingNews, setBreakingNews] = useState(true);
-  const [featured, setFeatured] = useState(true);
-  const [ageRestriction, setAgeRestriction] = useState(false);
-
-  // Platforms State
-  const [platforms, setPlatforms] = useState({
-    website: true,
-    youtube: true,
-    facebook: true,
-    twitter: true,
-  });
-
-  // Settings State
-  const [streamType, setStreamType] = useState('RTMP');
-  const [resolution, setResolution] = useState('1080p (Full HD)');
-  const [frameRate, setFrameRate] = useState('30 FPS');
-  const [bitrate, setBitrate] = useState('6000 kbps');
-  const [audio, setAudio] = useState('Stereo');
-  const [enableDvr, setEnableDvr] = useState(true);
-  const [autoStopHr, setAutoStopHr] = useState('02:00');
-
-  const rtmpUrl = 'rtmp://live.nirbhikbangla.com/live';
-  const streamKey = 'live_sk_948102948102948109284';
+  // Live Chat Data
+  const [chatList, setChatList] = useState([
+    { id: 1, name: 'Rafiq Hasan', text: 'খুব সুন্দর বিশ্লেষণ! ধন্যবাদ', time: '06:48 PM', likes: 12 },
+    { id: 2, name: 'Mst. Jannat', text: 'কোন দল এগিয়ে আছে এখন?', time: '06:48 PM', likes: 8 },
+    { id: 3, name: 'Sohag Arif', text: 'Great coverage! Keep it up 👏', time: '06:48 PM', likes: 15 },
+    { id: 4, name: 'Tania Islam', text: 'এই ফলাফল কি অনিশ্চিত?', time: '06:48 PM', likes: 6 },
+  ]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -69,25 +47,18 @@ export default function GoLivePage() {
     }, 3000);
   };
 
-  const handleStartStream = () => {
-    setIsStreaming(!isStreaming);
-    if (!isStreaming) {
-      showToast('🔴 লাইভ ব্রডকাস্ট সফলভাবে শুরু হয়েছে! (Streaming Live)');
-    } else {
-      showToast('⏹️ লাইভ স্ট্রিমিং সমাপ্ত করা হয়েছে।');
-    }
-  };
-
-  const handleAiGenerate = () => {
-    setTitle('বিশেষ লাইভ: ২০২৪ এর সর্বশেষ জাতীয় রাজনৈতিক ঘটনা ও নির্বাচন বিশ্লেষণ');
-    setDescription(
-      'আজকের প্রধান প্রধান খবরের লাইভ কভারেজ। রাজপথের সর্বশেষ হালচাল, নির্বাচন কমিশন ও রাজনৈতিক দলগুলোর সাম্প্রতিক বক্তব্য নিয়ে সরাসরি আলোচনা।'
-    );
-    showToast('🪄 AI দ্বারা নতুন শিরোনাম ও বিবরণ তৈরি করা হয়েছে!');
+  const handleSendChat = (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    setChatList([
+      ...chatList,
+      { id: Date.now(), name: 'Super Admin', text: chatMessage.trim(), time: '06:50 PM', likes: 1 },
+    ]);
+    setChatMessage('');
   };
 
   return (
-    <div className="space-y-6 text-slate-800 font-sans relative pb-10">
+    <div className="space-y-6 font-outfit text-slate-800 relative pb-12">
 
       {/* Toast Notification Alert */}
       {toastMessage && (
@@ -97,557 +68,227 @@ export default function GoLivePage() {
         </div>
       )}
 
-      {/* 1. Header Title & Action Buttons Bar */}
+      {/* 1. Page Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-3.5 w-3.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#eb1c24]"></span>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight font-outfit">
+              Live TV Dashboard
+            </h1>
+            <span className="bg-[#eb1c24] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider animate-pulse">
+              <Radio size={12} />
+              <span>LIVE</span>
             </span>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Go Live Now</h1>
           </div>
-          <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Start a live broadcast and stream to multiple platforms.
+          <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
+            Monitor, manage and broadcast your live news to the world.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
           <button
-            type="button"
-            onClick={() => showToast('লাইভ কনফিগারেশন ড্রাফট হিসেবে সেভ হয়েছে!')}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            onClick={() => showToast('লাইভ টেস্ট স্ট্রিম স্টার্ট করা হলো!')}
+            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
           >
-            <Save size={15} className="text-slate-500" />
-            <span>Save as Draft</span>
+            <Radio size={14} className="text-slate-500" />
+            <span>Test Stream</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleStartStream}
-            className={`text-white text-xs font-black px-5 py-2 rounded-xl flex items-center gap-2 shadow-md transition-all cursor-pointer ${
-              isStreaming
-                ? 'bg-slate-900 hover:bg-black shadow-slate-900/20'
-                : 'bg-[#eb1c24] hover:bg-red-700 shadow-red-500/25 animate-pulse'
-            }`}
+          <Link
+            to="/schedule/create"
+            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
           >
-            <Radio size={16} className={isStreaming ? 'text-emerald-400' : 'text-white'} />
-            <span>{isStreaming ? 'Stop Streaming' : '((•)) Start Streaming'}</span>
+            <Calendar size={14} className="text-slate-500" />
+            <span>Schedule Live</span>
+          </Link>
+
+          <button
+            onClick={() => showToast('ব্রডকাস্টিং কন্ট্রোল সেন্টার অন করা হলো!')}
+            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider"
+          >
+            <Radio size={15} />
+            <span>Go Live Now</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Main 2-Column Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* Left Form Column (~65% - lg:col-span-8) */}
-        <div className="lg:col-span-8 space-y-6">
-
-          {/* Section 1: Stream Information */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              1. Stream Information
+      {/* 2. Top 6 Summary Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        {/* Current Status */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Current Status</p>
+            <h3 className="text-sm font-black text-rose-600 mt-0.5 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+              LIVE
             </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-              {/* Left Form Input Fields */}
-              <div className="md:col-span-7 space-y-3.5 text-xs font-semibold">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <label className="text-slate-700 font-bold">Title <span className="text-red-500">*</span></label>
-                    <span className="text-[10px] text-slate-400 font-mono">{title.length}/100</span>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    maxLength={100}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] font-medium"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 font-bold">Description</label>
-                    <button
-                      type="button"
-                      onClick={handleAiGenerate}
-                      className="bg-purple-100 hover:bg-purple-200 text-purple-700 font-extrabold text-[10px] px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Sparkles size={11} /> AI Generate
-                    </button>
-                  </div>
-                  <textarea
-                    rows={3}
-                    maxLength={500}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] resize-none font-bangla text-xs font-medium"
-                  />
-                  <div className="text-right text-[10px] text-slate-400 font-mono mt-0.5">{description.length}/500</div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-bold">Category <span className="text-red-500">*</span></label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer font-bangla"
-                    >
-                      <option value="রাজনীতি">রাজনীতি</option>
-                      <option value="বাংলাদেশ">বাংলাদেশ</option>
-                      <option value="আন্তর্জাতিক">আন্তর্জাতিক</option>
-                      <option value="খেলাধুলো">খেলাধুলো</option>
-                      <option value="বিনোদন">বিনোদন</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-bold">Reporter / Host</label>
-                    <select
-                      value={reporter}
-                      onChange={(e) => setReporter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                    >
-                      <option value="Arif Hossain">Arif Hossain</option>
-                      <option value="Tarik Aziz">Tarik Aziz</option>
-                      <option value="Nusrat Jahan">Nusrat Jahan</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Checkboxes Row */}
-                <div className="flex items-center gap-4 pt-1 text-xs">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={breakingNews}
-                      onChange={(e) => setBreakingNews(e.target.checked)}
-                      className="rounded border-slate-300 text-[#eb1c24]"
-                    />
-                    <span className="font-bold text-slate-800">Breaking News</span>
-                  </label>
-
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={featured}
-                      onChange={(e) => setFeatured(e.target.checked)}
-                      className="rounded border-slate-300 text-[#eb1c24]"
-                    />
-                    <span className="font-bold text-slate-800">Featured</span>
-                  </label>
-
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={ageRestriction}
-                      onChange={(e) => setAgeRestriction(e.target.checked)}
-                      className="rounded border-slate-300 text-[#eb1c24]"
-                    />
-                    <span className="font-medium text-slate-600">Age Restriction (18+)</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Right Thumbnail Studio Card */}
-              <div className="md:col-span-5 space-y-2">
-                <label className="block text-xs font-bold text-slate-700">Thumbnail</label>
-
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-2xs group bg-slate-900">
-                  <img
-                    src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80"
-                    alt="Live Broadcast Studio"
-                    className="w-full h-44 object-cover opacity-85"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-
-                  {/* Breaking News Overlay Tag */}
-                  <div className="absolute top-2.5 right-2.5 bg-[#eb1c24] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-xs tracking-wider">
-                    BREAKING NEWS
-                  </div>
-
-                  {/* Lower Third Banner */}
-                  <div className="absolute bottom-3 left-3 right-3 bg-[#eb1c24] text-white font-bangla font-black text-sm px-3 py-1.5 rounded-lg shadow-md text-center">
-                    লোকসভা নির্বাচন ২০২৪ LIVE
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => showToast('থাম্বনেইল ইমেজ পরিবর্তন করা হয়েছে!')}
-                    className="flex-1 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <RotateCw size={13} />
-                    <span>Change</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => showToast('AI থাম্বনেইল ডিজাইন জেনারেট করা হলো!')}
-                    className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-2xs"
-                  >
-                    <Sparkles size={13} />
-                    <span>AI Thumbnail</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <span className="text-[9.5px] font-bold text-slate-400">You are live now</span>
           </div>
-
-          {/* Section 2: Select Platforms */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              2. Select Platforms
-            </h3>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs font-semibold">
-              {/* Platform 1: Website */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                    <Globe size={16} />
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={platforms.website}
-                    onChange={(e) => setPlatforms({ ...platforms, website: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#eb1c24] cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <h5 className="font-bold text-slate-900 text-xs">Website</h5>
-                  <span className="text-[10px] text-slate-400 block font-normal">nirbhikbangla.com</span>
-                </div>
-                <select className="w-full bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 px-2 py-1 outline-none cursor-pointer">
-                  <option>Public</option>
-                  <option>Unlisted</option>
-                </select>
-              </div>
-
-              {/* Platform 2: YouTube */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center font-black text-xs">
-                    <Video size={16} />
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={platforms.youtube}
-                    onChange={(e) => setPlatforms({ ...platforms, youtube: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#eb1c24] cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <h5 className="font-bold text-slate-900 text-xs">YouTube</h5>
-                  <span className="text-[10px] text-slate-400 block font-normal">Nirbbik Bangla</span>
-                </div>
-                <select className="w-full bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 px-2 py-1 outline-none cursor-pointer">
-                  <option>Public</option>
-                  <option>Unlisted</option>
-                </select>
-              </div>
-
-              {/* Platform 3: Facebook */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs">
-                    f
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={platforms.facebook}
-                    onChange={(e) => setPlatforms({ ...platforms, facebook: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#eb1c24] cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <h5 className="font-bold text-slate-900 text-xs">Facebook</h5>
-                  <span className="text-[10px] text-slate-400 block font-normal">Nirbbik Bangla</span>
-                </div>
-                <select className="w-full bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 px-2 py-1 outline-none cursor-pointer">
-                  <option>Public</option>
-                  <option>Unlisted</option>
-                </select>
-              </div>
-
-              {/* Platform 4: X (Twitter) */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xs">
-                    𝕏
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={platforms.twitter}
-                    onChange={(e) => setPlatforms({ ...platforms, twitter: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#eb1c24] cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <h5 className="font-bold text-slate-900 text-xs">X (Twitter)</h5>
-                  <span className="text-[10px] text-slate-400 block font-normal">@NirbbikBangla</span>
-                </div>
-                <select className="w-full bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 px-2 py-1 outline-none cursor-pointer">
-                  <option>Public</option>
-                  <option>Unlisted</option>
-                </select>
-              </div>
-
-              {/* Platform 5: Add Platform */}
-              <button
-                type="button"
-                onClick={() => showToast('নতুন স্ট্রিম প্ল্যাটফর্ম সংযোগ উইন্ডো খুলুন!')}
-                className="p-3 rounded-2xl border-2 border-dashed border-slate-200 hover:border-purple-300 flex flex-col items-center justify-center text-purple-600 hover:bg-purple-50/50 transition-all cursor-pointer"
-              >
-                <Plus size={18} />
-                <span className="text-xs font-bold mt-1">+ Add Platform</span>
-              </button>
-            </div>
+          <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <Radio size={18} />
           </div>
-
-          {/* Section 3: Stream Settings */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              3. Stream Settings
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-semibold">
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Stream Type</label>
-                <select
-                  value={streamType}
-                  onChange={(e) => setStreamType(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="RTMP">RTMP</option>
-                  <option value="HLS">HLS</option>
-                  <option value="SRT">SRT</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Resolution</label>
-                <select
-                  value={resolution}
-                  onChange={(e) => setResolution(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="1080p (Full HD)">1080p (Full HD)</option>
-                  <option value="720p (HD)">720p (HD)</option>
-                  <option value="4K (Ultra HD)">4K (Ultra HD)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Frame Rate</label>
-                <select
-                  value={frameRate}
-                  onChange={(e) => setFrameRate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="30 FPS">30 FPS</option>
-                  <option value="60 FPS">60 FPS</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Bitrate</label>
-                <select
-                  value={bitrate}
-                  onChange={(e) => setBitrate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="6000 kbps">6000 kbps</option>
-                  <option value="4500 kbps">4500 kbps</option>
-                  <option value="8000 kbps">8000 kbps</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Audio</label>
-                <select
-                  value={audio}
-                  onChange={(e) => setAudio(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="Stereo">Stereo</option>
-                  <option value="Mono">Mono</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 text-xs font-semibold">
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="dvr"
-                  checked={enableDvr}
-                  onChange={(e) => setEnableDvr(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#eb1c24] cursor-pointer"
-                />
-                <div>
-                  <label htmlFor="dvr" className="font-bold text-slate-900 cursor-pointer">
-                    Enable DVR (Recording)
-                  </label>
-                  <p className="text-[10px] text-slate-400 font-medium">Record live stream for replay and highlights.</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-700 flex items-center gap-1">
-                  Auto Stop <Info size={12} className="text-slate-400" />
-                </span>
-                <span className="text-slate-400">After</span>
-                <input
-                  type="text"
-                  value={autoStopHr}
-                  onChange={(e) => setAutoStopHr(e.target.value)}
-                  className="w-16 px-2 py-1 border border-slate-200 rounded-lg text-center font-mono font-bold"
-                />
-                <select className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-bold outline-none cursor-pointer">
-                  <option value="hr">hr</option>
-                  <option value="min">min</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Advanced (OBS / RTMP) */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              4. Advanced (OBS / RTMP)
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold">
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">RTMP URL</label>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    readOnly
-                    value={rtmpUrl}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono text-xs font-bold text-slate-800"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => showToast('RTMP URL কপি করা হয়েছে!')}
-                    className="p-2 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer shrink-0"
-                    title="Copy RTMP URL"
-                  >
-                    <Copy size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Stream Key</label>
-                <div className="flex items-center gap-1">
-                  <input
-                    type={showStreamKey ? 'text' : 'password'}
-                    readOnly
-                    value={streamKey}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono text-xs font-bold text-slate-800"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowStreamKey(!showStreamKey)}
-                    className="p-2 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer shrink-0"
-                    title="Toggle Visibility"
-                  >
-                    {showStreamKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => showToast('Stream Key কপি করা হয়েছে!')}
-                    className="p-2 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer shrink-0"
-                    title="Copy Stream Key"
-                  >
-                    <Copy size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-black flex items-center gap-1">
-                  <CheckCircle2 size={15} /> Connection Test Successful
-                </span>
-                <span className="text-slate-400 text-[10px] font-medium">Last tested: 2 mins ago</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => showToast('RTMP কানেকশন টেস্ট সম্পূর্ণ হয়েছে!')}
-                className="px-4 py-1.5 border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
-              >
-                <RotateCw size={13} />
-                <span>Test Again</span>
-              </button>
-            </div>
-          </div>
-
         </div>
 
-        {/* Right Sidebar: Stream Preview, Stream Health & Checklist (~35% - lg:col-span-4) */}
-        <div className="lg:col-span-4 space-y-5">
+        {/* Current Viewers */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Current Viewers</p>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">15,248</h3>
+            <span className="text-[9.5px] font-bold text-emerald-600 flex items-center gap-0.5">
+              <TrendingUp size={10} /> ↑ 12.5% vs last 30 min
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <Users size={18} />
+          </div>
+        </div>
 
-          {/* 1. Stream Preview Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <h3 className="font-extrabold text-sm text-slate-900">Stream Preview</h3>
+        {/* Peak Viewers */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Peak Viewers</p>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">42,891</h3>
+            <span className="text-[9.5px] font-bold text-slate-400">Today 08:15 PM</span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <BarChart3 size={18} />
+          </div>
+        </div>
 
-            {/* Video Live Player Canvas */}
-            <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-black">
+        {/* Watch Time */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Watch Time (Live)</p>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">125h 36m</h3>
+            <span className="text-[9.5px] font-bold text-emerald-600 flex items-center gap-0.5">
+              <TrendingUp size={10} /> ↑ 18.3% vs yesterday
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <Clock size={18} />
+          </div>
+        </div>
+
+        {/* Total Broadcasts */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Broadcasts</p>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">5</h3>
+            <span className="text-[9.5px] font-bold text-slate-400">Today</span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <FileText size={18} />
+          </div>
+        </div>
+
+        {/* Duration */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Duration</p>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-mono">02:35:28</h3>
+            <span className="text-[9.5px] font-bold text-slate-400">Live Since 06:45 PM</span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <Clock size={18} />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Upper Grid (3 Columns: Current Live Stream, Stream Health, Live Chat) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* Column 1: Current Live Stream (5 Cols) */}
+        <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="relative rounded-2xl overflow-hidden shadow-md group">
               <img
-                src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80"
-                alt="Stream Preview"
-                className="w-full h-52 object-cover opacity-90"
+                src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80"
+                alt="Live Broadcast"
+                className="w-full h-52 object-cover"
               />
 
-              {/* Breaking News Lower Third Overlay */}
-              <div className="absolute top-3 left-3 bg-[#eb1c24] text-white text-[9px] font-black px-2 py-0.5 rounded shadow-xs uppercase tracking-wider">
-                BREAKING NEWS
-              </div>
+              <span className="absolute top-3 left-3 bg-[#eb1c24] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md">
+                LIVE
+              </span>
 
-              <div className="absolute bottom-3 left-3 right-3 bg-[#eb1c24] text-white font-bangla font-black text-sm px-3 py-1.5 rounded-lg shadow-md text-center">
-                লোকসভা নির্বাচন ২০২৪ LIVE
+              {/* Lower Third Ticker Banner */}
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3 pt-6 text-white space-y-1">
+                <div className="bg-[#eb1c24] text-white text-[10px] font-black px-2 py-0.5 rounded inline-block uppercase font-bangla">
+                  লোকসভা নির্বাচন ২০২৪
+                </div>
+                <p className="text-xs font-bold font-bangla truncate">
+                  ভোট গণনা চলছে, সর্বশেষ আপডেট পেতে আমাদের সাথে থাকুন
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Preview is from last stream
-              </span>
-
-              <button
-                type="button"
-                onClick={() => showToast('লাইভ প্রিভিউ ওপেন করা হয়েছে!')}
-                className="px-3 py-1 border border-purple-200 text-purple-700 hover:bg-purple-50 font-bold rounded-xl text-xs flex items-center gap-1 transition-colors cursor-pointer"
-              >
-                <Play size={12} fill="currentColor" />
-                <span>Preview Live</span>
-              </button>
+            {/* Stream Metadata Grid */}
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 space-y-2 text-xs font-semibold text-slate-700">
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-400 font-bold">Title</span>
+                <span className="font-bangla font-black text-slate-900 truncate max-w-[200px]">লোকসভা নির্বাচন ফলাফল LIVE</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Category</span>
+                <span className="font-bangla font-extrabold text-purple-700 bg-purple-100 px-2 py-0.2 rounded text-[10px]">রাজনীতি</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Reporter</span>
+                <span className="font-bold text-slate-900">Arif Hossain</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Language</span>
+                <span className="font-bangla font-bold text-slate-800">বাংলা</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Started At</span>
+                <span className="font-mono text-slate-800 text-[11px]">May 21, 2024 06:45 PM</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Quality</span>
+                <span className="font-mono font-bold text-emerald-600">1080p60 (HD)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Bitrate</span>
+                <span className="font-mono font-bold text-slate-800">6000 kbps</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Connection</span>
+                <span className="font-bold text-emerald-600 flex items-center gap-1 text-[11px]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Excellent
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* 2. Stream Health Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsLive(false);
+              showToast('লাইভ সম্প্রচার সফলভাবে সমাপ্ত করা হলো!');
+            }}
+            className="w-full py-2.5 bg-[#eb1c24] hover:bg-red-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer uppercase tracking-wider"
+          >
+            <Square size={14} fill="white" />
+            <span>End Stream</span>
+          </button>
+        </div>
+
+        {/* Column 2: Stream Health & Real-time Metrics (4 Cols) */}
+        <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
               <h3 className="font-extrabold text-sm text-slate-900">Stream Health</h3>
-              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2.5 py-0.5 rounded-md uppercase">
-                Excellent
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md">
+                All systems normal
               </span>
             </div>
 
-            <div className="space-y-2 text-xs font-semibold text-slate-700">
+            <div className="space-y-3.5 text-xs font-semibold text-slate-700">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Radio size={15} className="text-purple-600" />
+                  <Activity size={15} className="text-slate-400" />
                   <span>RTMP Connection</span>
                 </div>
                 <span className="font-bold text-emerald-600">Connected</span>
@@ -655,96 +296,387 @@ export default function GoLivePage() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Video size={15} className="text-blue-600" />
+                  <Video size={15} className="text-slate-400" />
                   <span>Video Bitrate</span>
                 </div>
-                <span className="font-mono text-slate-900">6000 kbps</span>
+                <span className="font-mono font-bold text-slate-900">6000 kbps</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Activity size={15} className="text-rose-600" />
+                  <Clock size={15} className="text-slate-400" />
                   <span>Dropped Frames</span>
                 </div>
-                <span className="font-mono text-emerald-600 font-bold">0 (0%)</span>
+                <span className="font-mono font-bold text-emerald-600">0 (0%)</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sliders size={15} className="text-amber-500" />
+                  <BarChart3 size={15} className="text-slate-400" />
                   <span>CPU Usage</span>
                 </div>
-                <span className="font-mono text-slate-900">18%</span>
+                <span className="font-mono font-bold text-slate-900">23%</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Globe size={15} className="text-emerald-600" />
+                  <Activity size={15} className="text-slate-400" />
+                  <span>Memory Usage</span>
+                </div>
+                <span className="font-mono font-bold text-slate-900">46%</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock size={15} className="text-slate-400" />
+                  <span>Latency</span>
+                </div>
+                <span className="font-mono font-bold text-emerald-600">2.3 sec</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Globe size={15} className="text-slate-400" />
                   <span>Network</span>
                 </div>
                 <span className="font-bold text-emerald-600">Excellent</span>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* 3. Pre-Stream Checklist Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              Pre-Stream Checklist
+        {/* Column 3: Live Chat Panel (3 Cols) */}
+        <div className="lg:col-span-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+              <MessageSquare size={15} className="text-purple-600" />
+              <span>Live Chat</span>
             </h3>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+              🟢 1.2K Online
+            </span>
+          </div>
 
-            <div className="space-y-2.5 text-xs font-semibold">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-800">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span>Stream Information</span>
+          {/* Chat Messages Stream */}
+          <div className="space-y-2.5 overflow-y-auto max-h-56 pr-1 custom-scrollbar text-xs">
+            {chatList.map((msg) => (
+              <div key={msg.id} className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-slate-900 text-[11px] font-bangla">{msg.name}</span>
+                  <span className="text-[9px] text-slate-400 font-mono">{msg.time}</span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600">Completed</span>
+                <p className="text-[11px] text-slate-700 font-bangla font-semibold leading-tight">{msg.text}</p>
+                <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold pt-0.5">
+                  <ThumbsUp size={10} className="text-purple-600" />
+                  <span>{msg.likes}</span>
+                </div>
               </div>
+            ))}
+          </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-800">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span>Platforms Selected</span>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-600">Completed</span>
+          {/* Chat Input Form */}
+          <form onSubmit={handleSendChat} className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs outline-none focus:border-[#eb1c24] font-bangla"
+              />
+              <button
+                type="submit"
+                className="w-8 h-8 rounded-xl bg-[#eb1c24] text-white flex items-center justify-center shadow-2xs hover:bg-red-700 cursor-pointer"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+            <span className="text-[9.5px] text-slate-400 font-semibold block text-center">
+              ⏱ Slow Mode is ON
+            </span>
+          </form>
+        </div>
+
+      </div>
+
+      {/* 4. Middle Row: Multi Platform, Stream Analytics, Live Poll, AI Live Tools */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        {/* Widget 1: Multi Platform Streaming */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
+          <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
+            Multi Platform Streaming
+          </h3>
+
+          <div className="space-y-2.5 text-xs font-semibold">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+              <div className="flex items-center gap-2">
+                <Globe size={15} className="text-purple-600" />
+                <span className="font-bold text-slate-800">Website</span>
               </div>
+              <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-800">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span>Stream Settings</span>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-600">Completed</span>
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-red-600 text-white font-black text-[9px] flex items-center justify-center">▶</span>
+                <span className="font-bold text-slate-800">YouTube</span>
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-800">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span>RTMP Connection</span>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-600">Connected</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-800">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span>Stream Health</span>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-600">Good</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
+                <span className="text-[10px] font-mono text-slate-500 font-bold">👁 8,542</span>
               </div>
             </div>
 
-            {/* Everything Looks Good Callout Box */}
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 mt-2">
-              <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
-              <div>
-                <h5 className="font-extrabold text-emerald-900 text-xs">Everything looks good!</h5>
-                <p className="text-[10px] text-emerald-700 font-medium">You are ready to go live.</p>
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-blue-600 text-white font-black text-[9px] flex items-center justify-center">f</span>
+                <span className="font-bold text-slate-800">Facebook</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
+                <span className="text-[10px] font-mono text-slate-500 font-bold">👁 3,128</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded bg-slate-900 text-white font-black text-[9px] flex items-center justify-center">𝕏</span>
+                <span className="font-bold text-slate-800">X (Twitter)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
+                <span className="text-[10px] font-mono text-slate-500 font-bold">👁 1,245</span>
               </div>
             </div>
           </div>
 
+          <button
+            onClick={() => showToast('নতুন প্ল্যাটফর্ম যোগ করার উইন্ডো খোলা হলো!')}
+            className="w-full py-2 bg-purple-50 text-purple-700 font-extrabold text-xs rounded-xl hover:bg-purple-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+          >
+            <Plus size={14} />
+            <span>Add Platform</span>
+          </button>
+        </div>
+
+        {/* Widget 2: Stream Analytics (Live) */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900">Stream Analytics (Live)</h3>
+            <button className="text-xs font-bold text-purple-700 hover:underline">View All Analytics →</button>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+              <span>Live Viewers</span>
+              <span className="font-mono text-purple-700 font-black">15,248</span>
+            </div>
+            {/* SVG Trend Wave */}
+            <div className="w-full h-20 pt-1">
+              <svg viewBox="0 0 300 80" className="w-full h-full">
+                <path d="M0 60 Q 40 40, 80 50 T 160 20 T 240 10 T 300 40 L 300 80 L 0 80 Z" fill="rgba(147, 51, 234, 0.15)" />
+                <path d="M0 60 Q 40 40, 80 50 T 160 20 T 240 10 T 300 40" fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-5 gap-1 text-[9.5px] font-bold text-slate-600 text-center pt-1 border-t border-slate-100">
+            <div><span className="block font-mono font-black text-slate-900 text-xs">125h</span>Watch</div>
+            <div><span className="block font-mono font-black text-slate-900 text-xs">8,654</span>Likes</div>
+            <div><span className="block font-mono font-black text-slate-900 text-xs">2,356</span>Comments</div>
+            <div><span className="block font-mono font-black text-slate-900 text-xs">1,248</span>Shares</div>
+            <div><span className="block font-mono font-black text-slate-900 text-xs">345</span>Subs</div>
+          </div>
+        </div>
+
+        {/* Widget 3: Live Poll */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900">Live Poll</h3>
+            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-md">Active</span>
+          </div>
+
+          <div className="space-y-2 text-xs font-semibold">
+            <h4 className="font-bangla font-black text-slate-900 text-xs">আপনার মতে কোন দল জিতবে?</h4>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[11px] font-bangla font-bold">
+                <span>দল A</span>
+                <span className="font-mono font-extrabold text-purple-700">62% (1,245)</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-purple-600 rounded-full w-[62%]" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[11px] font-bangla font-bold">
+                <span>দল B</span>
+                <span className="font-mono font-extrabold text-slate-700">28% (562)</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-purple-300 rounded-full w-[28%]" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[11px] font-bangla font-bold">
+                <span>দল C</span>
+                <span className="font-mono font-extrabold text-slate-700">10% (201)</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-slate-300 rounded-full w-[10%]" />
+              </div>
+            </div>
+          </div>
+
+          <span className="text-[10px] text-slate-400 font-bold block pt-1 border-t border-slate-100">
+            Total Votes: 2,008
+          </span>
+        </div>
+
+        {/* Widget 4: AI Live Tools (BETA) */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+              <Sparkles size={15} className="text-purple-600" />
+              <span>AI Live Tools</span>
+            </h3>
+            <span className="bg-purple-100 text-purple-700 text-[9px] font-black px-1.5 py-0.2 rounded">BETA</span>
+          </div>
+
+          <div className="space-y-2 text-xs font-semibold text-slate-700">
+            <div className="flex justify-between items-center">
+              <span>AI Live Captions</span>
+              <span className="font-bold text-emerald-600">ON</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>AI Translation (EN)</span>
+              <span className="font-bold text-emerald-600">ON</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>AI Translation (HI)</span>
+              <span className="font-bold text-emerald-600">ON</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>AI Highlights</span>
+              <span className="font-bold text-amber-600 animate-pulse">Detecting...</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>AI Moderation</span>
+              <span className="font-bold text-emerald-600">Active</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => showToast('AI ব্রডকাস্ট ডিরেক্টর খোলা হলো!')}
+            className="w-full py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1 mt-1"
+          >
+            <span>Open AI Broadcast Director</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+
+      </div>
+
+      {/* 5. Bottom Row (4 Cards Grid) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        {/* Card 1: Upcoming Scheduled Streams */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900">Upcoming Scheduled Streams</h3>
+            <button className="text-[11px] font-bold text-purple-700 hover:underline">View All →</button>
+          </div>
+
+          <div className="space-y-2 text-xs font-semibold">
+            {[
+              { title: 'নির্বাচন - বিশ্লেষণ ও ভবিষ্যৎ', time: 'May 22, 2024 - 07:00 PM' },
+              { title: 'আন্তর্জাতিক সংবাদ বুলেটিন', time: 'May 22, 2024 - 09:00 PM' },
+              { title: 'খেলার খবর LIVE', time: 'May 23, 2024 - 05:00 PM' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-2 rounded-xl bg-slate-50 space-y-0.5 border border-slate-200/50">
+                <h5 className="font-bangla font-black text-slate-900 text-xs">{item.title}</h5>
+                <span className="text-[9.5px] font-mono text-slate-400 block">{item.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Card 2: Recent Recordings */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900">Recent Recordings</h3>
+            <button className="text-[11px] font-bold text-purple-700 hover:underline">View All →</button>
+          </div>
+
+          <div className="space-y-2 text-xs font-semibold">
+            {[
+              { title: 'লোকসভা নির্বাচন ফলাফল LIVE', dur: '02:35:28' },
+              { title: 'প্রেস কনফারেন্স LIVE', dur: '01:02:16' },
+              { title: 'বিশেষ সাক্ষাৎকার', dur: '45:32' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-2 rounded-xl bg-slate-50 flex items-center justify-between border border-slate-200/50">
+                <h5 className="font-bangla font-black text-slate-900 text-xs truncate max-w-[150px]">{item.title}</h5>
+                <span className="text-[10px] font-mono font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">{item.dur}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Card 3: AI Generated Highlights */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900">AI Generated Highlights</h3>
+            <button className="text-[11px] font-bold text-purple-700 hover:underline">View All →</button>
+          </div>
+
+          <div className="space-y-2 text-xs font-semibold">
+            {[
+              { title: 'Top Moments', dur: '1:00' },
+              { title: 'Key Speech', dur: '1:32' },
+              { title: 'Breaking Update', dur: '0:45' },
+              { title: 'Full Highlights', dur: '3:25' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-2 rounded-xl bg-slate-50 flex items-center justify-between border border-slate-200/50">
+                <h5 className="font-extrabold text-slate-900 text-xs">{item.title}</h5>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-slate-500 font-bold">{item.dur}</span>
+                  <button className="p-1 text-purple-700 hover:bg-purple-100 rounded cursor-pointer">
+                    <Download size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Card 4: Quick Stats */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-extrabold text-sm text-slate-900">Quick Stats</h3>
+            <span className="text-[10px] font-bold text-slate-500">This Month ˅</span>
+          </div>
+
+          <div className="space-y-2.5 text-xs font-semibold text-slate-700">
+            <div className="flex justify-between items-center">
+              <span>Total Broadcasts</span>
+              <span className="font-mono font-black text-slate-900">32 <span className="text-emerald-600 text-[10px]">↑ 14%</span></span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Total Watch Time</span>
+              <span className="font-mono font-black text-slate-900">1,248h <span className="text-emerald-600 text-[10px]">↑ 18%</span></span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Total Views</span>
+              <span className="font-mono font-black text-slate-900">245,891 <span className="text-emerald-600 text-[10px]">↑ 21%</span></span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>New Followers</span>
+              <span className="font-mono font-black text-slate-900">12,548 <span className="text-emerald-600 text-[10px]">↑ 16%</span></span>
+            </div>
+          </div>
         </div>
 
       </div>
