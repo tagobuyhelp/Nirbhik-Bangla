@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Save,
   Eye,
@@ -56,20 +57,36 @@ export default function AddPostPage() {
   const navigate = useNavigate();
 
   // 1. Form Core States
-  const [title, setTitle] = useState('ভারত-ইংল্যান্ড টেস্ট সিরিজ: দ্বিতীয় টেস্ট ভারতের ঐতিহাসিক জয়');
-  const [slug, setSlug] = useState('bharat-england-test-series-2nd-test-india-historic-win');
-  const [excerpt, setExcerpt] = useState('দ্বিতীয় টেস্ট অসাধারণ পারফরম্যান্সের মাধ্যমে ইংল্যান্ডকে ২৮০ রানে হারিয়ে সিরিজে ২-০ ব্যবধানে এগিয়ে গেল ভারত।');
-  const [seoTitle, setSeoTitle] = useState('ভারত-ইংল্যান্ড দ্বিতীয় টেস্ট: ২৮০ রানে জয় পেয়ে সিরিজে ২-০ তে ভারত এগিয়ে');
-  const [metaDescription, setMetaDescription] = useState('দ্বিতীয় টেস্টে রোহিত শর্মা ও যশস্বী জয়সওয়ালের দূরন্ত ব্যাটিংয়ে ইংল্যান্ডকে ২৮০ রানে হারিয়ে সিরিজ ২-০ তে এগিয়ে টিম ইন্ডিয়া।');
-  const [focusKeywords, setFocusKeywords] = useState(['india vs england', '2nd test', 'india win', 'test series', 'rohit sharma']);
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
+  const [focusKeywords, setFocusKeywords] = useState([]);
   
   // 2. Categories & Tags States
-  const [categoryList, setCategoryList] = useState(['ক্রিকেট', 'আন্তর্জাতিক', 'খেলা', 'রাজনীতি', 'বিনোদন', 'অন্যান্য']);
-  const [selectedCategories, setSelectedCategories] = useState(['ক্রিকেট', 'আন্তর্জাতিক']);
-  const [tags, setTags] = useState(['ভারত', 'ইংল্যান্ড', 'টেস্ট সিরিজ', 'রোহিত শর্মা', 'যশস্বী জয়সওয়াল', 'ক্রিকেট']);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [tags, setTags] = useState([]);
   const [newTagInput, setNewTagInput] = useState('');
   const [showAddCatModal, setShowAddCatModal] = useState(false);
-  const [newCatInput, setNewCatInput] = useState('');
+
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data } = await api.get('/categories');
+        const list = data.data || [];
+        setCategories(list);
+        if (list.length > 0) {
+          setSelectedCategory(list[0]._id);
+        }
+      } catch (err) {
+        console.error('Failed to load categories', err);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // 3. Publish & Social Options States
   const [publishOptions, setPublishOptions] = useState({
@@ -79,8 +96,8 @@ export default function AddPostPage() {
     featured: false,
     breaking: false,
   });
-  const [scheduleDate, setScheduleDate] = useState('2024-05-21');
-  const [scheduleTime, setScheduleTime] = useState('10:30');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
   const [socialShares, setSocialShares] = useState({
     subscribers: true,
     pushNotification: true,
@@ -90,18 +107,18 @@ export default function AddPostPage() {
 
   // 4. Social Media Captions State
   const [socialCaptions, setSocialCaptions] = useState({
-    facebook: 'দ্বিতীয় টেস্ট ভারতের ঐতিহাসিক জয়...',
-    twitter: 'INDIA WIN! Historic 280-run victory in 2nd test...',
-    whatsapp: 'ভারত-ইংল্যান্ড দ্বিতীয় টেস্টে ২৮০ রানে বিশাল জয়...',
-    telegram: 'ভারতের মারকুটে জয় সিরিজে ২-০ এগিয়ে টিম ইন্ডিয়া...',
+    facebook: '',
+    twitter: '',
+    whatsapp: '',
+    telegram: '',
   });
   const [editingCaptions, setEditingCaptions] = useState(false);
 
   // 5. Featured Image State
-  const [featuredImage, setFeaturedImage] = useState('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80');
-  const [altText, setAltText] = useState('ভারতীয় ক্রিকেট দল জয়ের পর উদযাপন করছে');
-  const [caption, setCaption] = useState('দ্বিতীয় টেস্ট জয়ের পর ভারতীয় দলের উদযাপন');
-  const [credit, setCredit] = useState('Nirbhik Bangla | Image: BCCI');
+  const [featuredImage, setFeaturedImage] = useState('');
+  const [altText, setAltText] = useState('');
+  const [caption, setCaption] = useState('');
+  const [credit, setCredit] = useState('');
 
   // 6. Toast & Modal Feedback States
   const [toastMessage, setToastMessage] = useState('');
@@ -110,9 +127,9 @@ export default function AddPostPage() {
 
   // 7. Editor Interactive State
   const editorRef = useRef(null);
-  const [wordCount, setWordCount] = useState(352);
-  const [charCount, setCharCount] = useState(2145);
-  const [readingTime, setReadingTime] = useState(4);
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
   const [activeHeading, setActiveHeading] = useState('p');
 
   // Show Toast Feedback Message
@@ -145,28 +162,34 @@ export default function AddPostPage() {
   };
 
   // Generate AI Title
-  const handleAiGenerateTitle = () => {
-    const titles = [
-      'দ্বিতীয় টেস্টে ভারতের মারকুটে জয়: ২৮০ রানে হারল ইংল্যান্ড',
-      'ইংল্যান্ডকে উড়িয়ে ২-০ তে সিরিজে এগিয়ে গেল রোহিত বাহিনী',
-      'যশস্বী ও রোহিতের দুর্দান্ত ব্যাটিংয়ে ভারতে এল ঐতিহাসিক টেস্ট জয়',
-    ];
-    const newTitle = titles[Math.floor(Math.random() * titles.length)];
-    setTitle(newTitle);
-    handleAiOptimizeSlug(newTitle);
-    showToast('AI Generate Title: নতুন আকর্ষণীয় টাইটেল তৈরি হয়েছে!');
+  const handleAiGenerateTitle = async () => {
+    const text = editorRef.current ? editorRef.current.innerText : '';
+    if (!text || text.trim().length < 50) return showToast('Please write some content first (at least 50 chars)!');
+    showToast('AI Generating Title...');
+    try {
+      const res = await api.post('/ai/headlines', { text, lang: 'bn' });
+      const titles = res.data.data;
+      if (titles && titles.length > 0) {
+        setTitle(titles[0]);
+        handleAiOptimizeSlug(titles[0]);
+        showToast('AI Generated Title applied!');
+      }
+    } catch (err) {
+      showToast('Failed to generate title');
+    }
   };
 
   // Auto Generate / Optimize Slug
   const handleAiOptimizeSlug = (customTitle = null) => {
     const targetTitle = customTitle || title;
+    if (!targetTitle) return;
     const cleanSlug = targetTitle
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
+      .replace(/[^\\w\\s-]/g, '')
+      .replace(/\\s+/g, '-')
       .substring(0, 70);
-    setSlug(cleanSlug || 'bharat-england-test-series-historic-win');
-    showToast('AI Optimize Slug: এসইও ফ্রেন্ডলি ইউআরএল স্ল্যাগ তৈরি হয়েছে!');
+    setSlug(cleanSlug || 'post-slug');
+    showToast('SEO Slug optimized!');
   };
 
   // Add / Remove Category
@@ -220,25 +243,55 @@ export default function AddPostPage() {
   };
 
   // AI Regenerate Image Details
-  const handleAiRegenerateImageDetails = () => {
-    setAltText('ভারতীয় টেস্ট দলের ঐতিহাসিক জয়ের স্মরণীয় মুহূর্ত');
-    setCaption('২৮০ রানে জয় পাওয়ার পর মাঠে ভারতীয় ক্রিকেট দলের সেলিব্রেশন');
-    setCredit('Nirbhik Bangla Sports Desk | Photo Credit: BCCI');
-    showToast('AI ইমেজের ক্যাপশন ও অল্ট টেক্সট তৈরি করেছে!');
+  const handleAiRegenerateImageDetails = async () => {
+    if (!title) return showToast('Title required to generate image metadata');
+    showToast('AI generating image metadata...');
+    try {
+      const res = await api.post('/ai/seo', { text: title });
+      const { keywords, description } = res.data.data;
+      setAltText(title);
+      setCaption(description || title);
+      setCredit('Nirbhik Bangla AI');
+      showToast('Image metadata generated!');
+    } catch (err) {
+      showToast('Failed to generate image metadata');
+    }
   };
 
   // Publish Post Function
-  const handlePublishPost = () => {
+  const handlePublishPost = async () => {
     if (!title.trim()) {
       alert('অনুগ্রহ করে পোস্টের টাইটেল প্রদান করুন!');
       return;
     }
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+    try {
+      const payload = {
+        slug: slug || title.toLowerCase().replace(/\s+/g, '-'),
+        status: 'published',
+        translations: {
+          bn: {
+            title: title,
+            content: excerpt, // use excerpt as content for now
+            excerpt: excerpt
+          }
+        },
+        featuredImage: {
+          url: featuredImage,
+          caption: caption,
+          alt: altText
+        },
+        category: selectedCategory || null
+      };
+
+      await api.post('/articles', payload);
       alert('🎉 পোস্টটি সফলভাবে প্রকাশ (Publish) করা হয়েছে!');
       navigate('/posts');
-    }, 800);
+    } catch (error) {
+      alert(error.response?.data?.message || 'পোস্ট প্রকাশ করতে ব্যর্থ হয়েছে');
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   // Calculate SEO Score dynamically
@@ -469,25 +522,7 @@ export default function AddPostPage() {
                 className="outline-none min-h-[300px] space-y-4"
                 suppressContentEditableWarning
               >
-                <p>
-                  দ্বিতীয় টেস্ট অসাধারণ পারফরম্যান্সের মাধ্যমে ইংল্যান্ডকে ২৮০ রানে হারিয়ে সিরিজে ২-০ ব্যবধানে এগিয়ে গেল ভারত। দলের হয়ে <strong className="text-[#eb1c24]">রোহিত শর্মা</strong> ও <strong className="text-[#eb1c24]">যশস্বী জয়সওয়াল</strong> ব্যাট হাতে দুর্দান্ত পারফরম্যান্স করেন।
-                </p>
-
-                <div className="my-3 rounded-xl overflow-hidden shadow-sm border border-slate-200 contenteditable-false select-none">
-                  <img
-                    src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80"
-                    alt="Match Celebration"
-                    className="w-full h-64 object-cover"
-                  />
-                </div>
-
-                <h3 className="text-base font-extrabold text-slate-900 pt-2 font-bangla">
-                  ম্যাচের সংক্ষিপ্ত বিবরণ
-                </h3>
-
-                <p className="text-slate-600">
-                  প্রথম ইনিংসে ভারত করে ৪৫০ রান। জবাবে ইংল্যান্ডের প্রথম ইনিংস থামে ২৮০ রানে। দ্বিতীয় ইনিংসে ভারত ২৩৮ রানে অলআউট হয় এবং ইংল্যান্ডের জয়ের জন্য প্রয়োজন ছিল ৪৮১ রান। কিন্তু শেষ পর্যন্ত ইংল্যান্ড করতে পারে মাত্র ২০০ রান।
-                </p>
+                <p><br /></p>
               </div>
             </div>
 
@@ -516,17 +551,23 @@ export default function AddPostPage() {
                 </span>
               </div>
               <div className="space-y-2 text-xs font-semibold text-slate-700 font-bangla max-h-40 overflow-y-auto pr-1">
-                {categoryList.map((cat) => (
-                  <label key={cat} className="flex items-center gap-2 cursor-pointer hover:text-slate-900">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(cat)}
-                      onChange={() => toggleCategory(cat)}
-                      className="rounded border-slate-300 text-[#eb1c24] focus:ring-red-200"
-                    />
-                    <span>{cat}</span>
-                  </label>
-                ))}
+                {categories.length > 0 ? categories.map((cat) => {
+                  const catName = cat.translations?.bn?.name || cat.translations?.en?.name || (typeof cat.name === 'object' ? cat.name?.bn || cat.name?.en : cat.name) || 'Category';
+                  return (
+                    <label key={cat._id} className="flex items-center gap-2 cursor-pointer hover:text-slate-900">
+                      <input
+                        type="radio"
+                        name="category"
+                        checked={selectedCategory === cat._id}
+                        onChange={() => setSelectedCategory(cat._id)}
+                        className="rounded-full border-slate-300 text-[#eb1c24] focus:ring-red-200"
+                      />
+                      <span>{catName}</span>
+                    </label>
+                  );
+                }) : (
+                  <div className="text-slate-400">No categories available</div>
+                )}
               </div>
 
               {/* Add New Category Dialog */}

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Plus,
   Search,
@@ -49,19 +50,33 @@ export default function TagsPage() {
   const [newTagStatus, setNewTagStatus] = useState('Active');
   const [toastMessage, setToastMessage] = useState('');
 
-  // Initial Tags Dataset (Exact match to reference UI image)
-  const [tags, setTags] = useState([
-    { id: 1, name: 'রাজনীতি', slug: 'rajniti', posts: 342, status: 'Active', created: 'May 21, 2024', icon: Landmark, color: 'bg-purple-600 text-white' },
-    { id: 2, name: 'আন্তর্জাতিক', slug: 'antorjatik', posts: 198, status: 'Active', created: 'May 20, 2024', icon: Globe2, color: 'bg-emerald-600 text-white' },
-    { id: 3, name: 'অর্থনীতি', slug: 'orthoniti', posts: 156, status: 'Active', created: 'May 19, 2024', icon: TrendingUp, color: 'bg-amber-500 text-white' },
-    { id: 4, name: 'খেলা', slug: 'khela', posts: 213, status: 'Active', created: 'May 18, 2024', icon: Trophy, color: 'bg-[#eb1c24] text-white' },
-    { id: 5, name: 'বিনোদন', slug: 'binodon', posts: 124, status: 'Active', created: 'May 17, 2024', icon: Film, color: 'bg-blue-600 text-white' },
-    { id: 6, name: 'প্রযুক্তি', slug: 'projukti', posts: 89, status: 'Active', created: 'May 16, 2024', icon: Cpu, color: 'bg-cyan-600 text-white' },
-    { id: 7, name: 'স্বাস্থ্য', slug: 'shastho', posts: 67, status: 'Active', created: 'May 15, 2024', icon: HeartPulse, color: 'bg-rose-600 text-white' },
-    { id: 8, name: 'শিক্ষা', slug: 'shikkha', posts: 78, status: 'Active', created: 'May 14, 2024', icon: GraduationCap, color: 'bg-amber-600 text-white' },
-    { id: 9, name: 'ব্যবসা', slug: 'bebosha', posts: 95, status: 'Active', created: 'May 13, 2024', icon: Briefcase, color: 'bg-teal-600 text-white' },
-    { id: 10, name: 'অন্যান্য', slug: 'onnonno', posts: 86, status: 'Draft', created: 'May 12, 2024', icon: MessageSquare, color: 'bg-slate-600 text-white' },
-  ]);
+  const [tags, setTags] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTags = async () => {
+    try {
+      const { data } = await api.get('/tags');
+      const formatted = (data.data || []).map((t) => ({
+        id: t._id,
+        name: t.translations?.bn?.name || t.translations?.en?.name || 'Tag',
+        slug: t.slug,
+        posts: t.usageCount || 0,
+        status: t.isActive ? 'Active' : 'Draft',
+        created: new Date(t.createdAt).toLocaleDateString(),
+        icon: TagIcon,
+        color: 'bg-[#eb1c24] text-white',
+      }));
+      setTags(formatted);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTags();
+  }, []);
 
   // AI Suggested Tags Dataset
   const [aiSuggestions, setAiSuggestions] = useState([
@@ -95,26 +110,39 @@ export default function TagsPage() {
     }
   };
 
-  const handleAddTag = (e) => {
+  const handleAddTag = async (e) => {
     e.preventDefault();
     if (!newTagName.trim()) return;
 
-    const newTag = {
-      id: Date.now(),
-      name: newTagName.trim(),
-      slug: newTagSlug.trim() || newTagName.trim().toLowerCase().replace(/\s+/g, '-'),
-      posts: 0,
-      status: newTagStatus,
-      created: 'May 21, 2024',
-      icon: TagIcon,
-      color: 'bg-purple-600 text-white',
-    };
+    try {
+      const generatedSlug = newTagSlug.trim() || newTagName.trim().toLowerCase().replace(/\s+/g, '-');
+      await api.post('/tags', {
+        slug: generatedSlug,
+        translations: {
+          bn: { name: newTagName.trim() }
+        },
+        isActive: newTagStatus === 'Active'
+      });
 
-    setTags([newTag, ...tags]);
-    setNewTagName('');
-    setNewTagSlug('');
-    setShowAddModal(false);
-    showToast(`নতুন ট্যাগ "${newTag.name}" তৈরি হয়েছে!`);
+      showToast('ট্যাগ সফলভাবে তৈরি করা হয়েছে!');
+      setNewTagName('');
+      setNewTagSlug('');
+      setShowAddModal(false);
+      fetchTags();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'ট্যাগ যোগ করতে ব্যর্থ হয়েছে');
+    }
+  };
+
+  const handleDeleteTag = async (id) => {
+    if (!window.confirm('আপনি কি এই ট্যাগটি মুছে ফেলতে চান?')) return;
+    try {
+      await api.delete(`/tags/${id}`);
+      showToast('ট্যাগ মুছে ফেলা হয়েছে!');
+      fetchTags();
+    } catch (error) {
+      showToast('ট্যাগ মুছতে ব্যর্থ হয়েছে');
+    }
   };
 
   const handleAddAiSuggestedTag = (suggestedTag) => {

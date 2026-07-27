@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import {
   UploadCloud,
   ChevronRight,
@@ -29,10 +30,11 @@ export default function UploadMediaPage() {
   const [toastMessage, setToastMessage] = useState('');
 
   // File Upload State
-  const [fileUploaded, setFileUploaded] = useState(true);
-  const [fileName, setFileName] = useState('kolkata-howrah-bridge-sunset.jpg');
-  const [fileSize, setFileSize] = useState('1.45 MB');
-  const [resolution, setResolution] = useState('1920 x 1080');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileUploaded, setFileUploaded] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [fileSize, setFileSize] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Basic Info State
   const [title, setTitle] = useState('হাউড়া ব্রিজে সূর্যাস্তের দৃশ্য');
@@ -66,12 +68,42 @@ export default function UploadMediaPage() {
     }, 3000);
   };
 
-  const handleSave = (e) => {
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setFileName(file.name);
+      setFileSize((file.size / (1024 * 1024)).toFixed(2) + ' MB');
+      setFileUploaded(true);
+    }
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    showToast('মিডিয়া ফাইলটি সফলভাবে আপলোড ও অপটিমাইজ করা হয়েছে!');
-    setTimeout(() => {
-      navigate('/media');
-    }, 1500);
+    if (!selectedFile) {
+      showToast('দয়া করে একটি ফাইল সিলেক্ট করুন');
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('title', title);
+    formData.append('caption', caption);
+
+    try {
+      await api.post('/media/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      showToast('মিডিয়া ফাইলটি সফলভাবে আপলোড করা হয়েছে!');
+      setTimeout(() => {
+        navigate('/media');
+      }, 1200);
+    } catch (error) {
+      showToast(error.response?.data?.message || 'আপলোড ব্যর্থ হয়েছে');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const removeTag = (tagToRemove) => {
@@ -161,8 +193,9 @@ export default function UploadMediaPage() {
             </h3>
 
             {/* Dashed Drop Zone */}
-            <div className="border-2 border-dashed border-purple-200 bg-purple-50/30 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:bg-purple-50 transition-colors">
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-2xs">
+            <label className="border-2 border-dashed border-purple-200 bg-purple-50/30 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:bg-purple-50 transition-colors block">
+              <input type="file" onChange={handleFileChange} className="hidden" />
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-2xs mx-auto">
                 <UploadCloud size={24} />
               </div>
 
@@ -174,7 +207,7 @@ export default function UploadMediaPage() {
                   Supports: JPG, PNG, WEBP, GIF, MP4, WebM, PDF, MP3 • Max file size: 50MB
                 </span>
               </div>
-            </div>
+            </label>
 
             {/* File Uploaded Preview Item */}
             {fileUploaded && (

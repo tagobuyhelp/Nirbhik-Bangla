@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Download,
   Plus,
@@ -34,93 +35,47 @@ export default function PostsPage() {
     }, 3000);
   };
 
-  // Initial Posts Dataset
-  const [postsList, setPostsList] = useState([
-    {
-      id: 1,
-      title: 'ঢাকায় বিএনপির সমাবেশে নেতাকর্মীদের উপচে পড়া ঢল',
-      category: 'রাজনীতি',
-      catBg: 'bg-rose-50 text-rose-700 border-rose-200',
-      reporter: 'আরিফ হোসেন',
-      reporterEmail: 'arif@nirbhikbangla.com',
-      reporterAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-      image: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=120&q=80',
-      status: 'PUBLISHED',
-      views: '45.2K',
-      date: 'May 21, 2024',
-      time: '10:30 AM',
-    },
-    {
-      id: 2,
-      title: 'রিজার্ভ সংকট কাটাতে নতুন সমন্বিত পদক্ষেপ সরকারের',
-      category: 'অর্থনীতি',
-      catBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      reporter: 'শামীমা আক্তার',
-      reporterEmail: 'shamima@nirbhikbangla.com',
-      reporterAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80',
-      image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80',
-      status: 'PUBLISHED',
-      views: '32.1K',
-      date: 'May 21, 2024',
-      time: '09:45 AM',
-    },
-    {
-      id: 3,
-      title: 'বিশ্ব বাজারে রেকর্ড পরিমাণ কমলো সোনার দাম',
-      category: 'আন্তর্জাতিক',
-      catBg: 'bg-amber-50 text-amber-700 border-amber-200',
-      reporter: 'মেহেদী রহমান',
-      reporterEmail: 'mehedi@nirbhikbangla.com',
-      reporterAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80',
-      image: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=120&q=80',
-      status: 'PUBLISHED',
-      views: '28.5K',
-      date: 'May 20, 2024',
-      time: '11:15 PM',
-    },
-    {
-      id: 4,
-      title: 'বাংলাদেশের ঐতিহাসিক জয়, টি-টোয়েন্টি সিরিজ টাইগারদের',
-      category: 'খেলা',
-      catBg: 'bg-blue-50 text-blue-700 border-blue-200',
-      reporter: 'তারেক আজিজ',
-      reporterEmail: 'tarik@nirbhikbangla.com',
-      reporterAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80',
-      image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=120&q=80',
-      status: 'PUBLISHED',
-      views: '64.8K',
-      date: 'May 20, 2024',
-      time: '08:50 PM',
-    },
-    {
-      id: 5,
-      title: 'নতুন শিক্ষাক্রমে যে যুগান্তকারী পরিবর্তন আসছে',
-      category: 'শিক্ষা',
-      catBg: 'bg-purple-50 text-purple-700 border-purple-200',
-      reporter: 'নাসরিন সুলতানা',
-      reporterEmail: 'nasrin@nirbhikbangla.com',
-      reporterAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80',
-      image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=120&q=80',
-      status: 'DRAFT',
-      views: '-',
-      date: 'May 20, 2024',
-      time: '06:30 PM',
-    },
-    {
-      id: 6,
-      title: 'বিদ্যুতের নতুন দাম ঘোষণা হতে পারে আগামী সপ্তাহে',
-      category: 'জাতীয়',
-      catBg: 'bg-teal-50 text-teal-700 border-teal-200',
-      reporter: 'আরিফ হোসেন',
-      reporterEmail: 'arif@nirbhikbangla.com',
-      reporterAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-      image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=120&q=80',
-      status: 'SCHEDULED',
-      views: '-',
-      date: 'May 22, 2024',
-      time: '08:00 AM',
-    },
-  ]);
+  const [postsList, setPostsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchArticles = async () => {
+    try {
+      const { data } = await api.get('/articles');
+      const formatted = (data.data || []).map((art) => ({
+        id: art._id,
+        title: art.translations?.bn?.title || art.translations?.en?.title || 'Untitled Article',
+        category: art.category?.translations?.bn?.name || 'Uncategorized',
+        catBg: 'bg-rose-50 text-rose-700 border-rose-200',
+        reporter: art.author?.name || 'Admin',
+        reporterEmail: art.author?.email || '',
+        reporterAvatar: art.author?.avatar || 'https://ui-avatars.com/api/?name=' + (art.author?.name || 'Admin'),
+        image: art.featuredImage?.url || 'https://via.placeholder.com/120',
+        status: (art.status || 'DRAFT').toUpperCase(),
+        views: art.viewsCount || 0,
+        date: new Date(art.createdAt).toLocaleDateString(),
+        time: new Date(art.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }));
+      setPostsList(formatted);
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+  const handleDeletePost = async (id) => {
+    if (!window.confirm('আপনি কি এই পোস্টটি মুছে ফেলতে চান?')) return;
+    try {
+      await api.delete(`/articles/${id}`);
+      showToast('পোস্ট সফলভাবে মুছে ফেলা হয়েছে!');
+      fetchArticles();
+    } catch (error) {
+      showToast('পোস্ট মুছতে ব্যর্থ হয়েছে');
+    }
+  };
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) {

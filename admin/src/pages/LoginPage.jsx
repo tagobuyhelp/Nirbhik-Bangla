@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   Mail,
   Lock,
@@ -19,6 +20,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, user } = useAuth();
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -27,13 +31,27 @@ export default function LoginPage() {
     }, 3000);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    showToast('Login successful! Redirecting to dashboard...');
-    setTimeout(() => {
-      navigate('/');
-    }, 1200);
+    setIsLoading(true);
+    setError('');
+    try {
+      await login(email, password);
+      showToast('Login successful! Redirecting to dashboard...');
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // If already logged in, redirect
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-3 sm:p-6 md:p-10 font-outfit text-slate-800 relative">
@@ -219,13 +237,20 @@ export default function LoginPage() {
                 </button>
               </div>
 
+              {error && (
+                <div className="bg-red-50 text-red-600 text-xs font-bold p-3 rounded-xl border border-red-200">
+                  {error}
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3 bg-[#eb1c24] hover:bg-red-700 text-white font-black text-xs rounded-xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer uppercase tracking-wider mt-2"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#eb1c24] hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-black text-xs rounded-xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer uppercase tracking-wider mt-2"
               >
                 <LogIn size={16} />
-                <span>Login</span>
+                <span>{isLoading ? 'Logging in...' : 'Login'}</span>
               </button>
 
             </form>
@@ -422,14 +447,21 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Red Submit Button */}
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-[#eb1c24] hover:bg-red-700 text-white font-black text-sm rounded-2xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer uppercase tracking-wider"
-            >
-              <LogIn size={18} />
-              <span>Login</span>
-            </button>
+            {error && (
+                <div className="bg-red-50 text-red-600 text-[11px] font-bold p-3 rounded-xl border border-red-200 mt-2">
+                  {error}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#eb1c24] hover:bg-red-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-black text-[11px] rounded-xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer uppercase tracking-wider mt-2"
+              >
+                <LogIn size={15} />
+                <span>{isLoading ? 'Logging in...' : 'Login'}</span>
+              </button>
 
           </form>
 

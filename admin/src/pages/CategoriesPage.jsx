@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Plus,
   Search,
@@ -43,19 +44,41 @@ export default function CategoriesPage() {
   const [newCatStatus, setNewCatStatus] = useState('Published');
   const [toastMessage, setToastMessage] = useState('');
 
-  // Initial Categories Dataset (Exact match to reference UI image)
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'রাজনীতি', slug: 'politics', posts: 342, status: 'Published', order: 1, icon: Landmark, color: 'bg-purple-600 text-white' },
-    { id: 2, name: 'আন্তর্জাতিক', slug: 'international', posts: 198, status: 'Published', order: 2, icon: Globe2, color: 'bg-emerald-600 text-white' },
-    { id: 3, name: 'অর্থনীতি', slug: 'economy', posts: 156, status: 'Published', order: 3, icon: TrendingUp, color: 'bg-amber-500 text-white' },
-    { id: 4, name: 'খেলা', slug: 'sports', posts: 213, status: 'Published', order: 4, icon: Trophy, color: 'bg-[#eb1c24] text-white' },
-    { id: 5, name: 'বিনোদন', slug: 'entertainment', posts: 124, status: 'Published', order: 5, icon: Film, color: 'bg-blue-600 text-white' },
-    { id: 6, name: 'প্রযুক্তি', slug: 'technology', posts: 89, status: 'Published', order: 6, icon: Cpu, color: 'bg-cyan-600 text-white' },
-    { id: 7, name: 'স্বাস্থ্য', slug: 'health', posts: 67, status: 'Published', order: 7, icon: HeartPulse, color: 'bg-rose-600 text-white' },
-    { id: 8, name: 'শিক্ষা', slug: 'education', posts: 78, status: 'Published', order: 8, icon: GraduationCap, color: 'bg-amber-600 text-white' },
-    { id: 9, name: 'কলকাতা', slug: 'kolkata', posts: 95, status: 'Published', order: 9, icon: Building2, color: 'bg-teal-600 text-white' },
-    { id: 10, name: 'অন্যান্য', slug: 'others', posts: 86, status: 'Draft', order: 10, icon: MessageSquare, color: 'bg-slate-600 text-white' },
-  ]);
+  const [categories, setCategories] = useState([]);
+  const [uncategorizedCount, setUncategorizedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCategories = async () => {
+    try {
+      const [catRes, artRes] = await Promise.all([
+        api.get('/categories'),
+        api.get('/articles')
+      ]);
+
+      const formatted = (catRes.data.data || []).map((cat, idx) => ({
+        id: cat._id,
+        name: cat.translations?.bn?.name || cat.translations?.en?.name || (typeof cat.name === 'object' ? cat.name?.bn || cat.name?.en : cat.name) || 'Category',
+        slug: cat.slug,
+        posts: cat.articleCount || 0,
+        status: cat.isActive ? 'Published' : 'Draft',
+        order: cat.order || idx + 1,
+        icon: FolderTree,
+        color: cat.color || 'bg-indigo-600 text-white',
+      }));
+      setCategories(formatted);
+
+      const uncatArticles = (artRes.data.data || []).filter(a => !a.category);
+      setUncategorizedCount(uncatArticles.length);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -80,26 +103,39 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleAddCategory = (e) => {
+  const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
 
-    const newCat = {
-      id: Date.now(),
-      name: newCatName.trim(),
-      slug: newCatSlug.trim() || newCatName.trim().toLowerCase().replace(/\s+/g, '-'),
-      posts: 0,
-      status: newCatStatus,
-      order: categories.length + 1,
-      icon: FolderTree,
-      color: 'bg-indigo-600 text-white',
-    };
+    try {
+      const generatedSlug = newCatSlug.trim() || newCatName.trim().toLowerCase().replace(/\s+/g, '-');
+      await api.post('/categories', {
+        slug: generatedSlug,
+        translations: {
+          bn: { name: newCatName.trim() }
+        },
+        isActive: newCatStatus === 'Published'
+      });
 
-    setCategories([newCat, ...categories]);
-    setNewCatName('');
-    setNewCatSlug('');
-    setShowAddModal(false);
-    showToast(`নতুন ক্যাটাগরি "${newCat.name}" তৈরি হয়েছে!`);
+      showToast('ক্যাটাগরি সফলভাবে যোগ করা হয়েছে!');
+      setNewCatName('');
+      setNewCatSlug('');
+      setShowAddModal(false);
+      fetchCategories();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'ক্যাটাগরি যোগ করতে ব্যর্থ হয়েছে');
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('আপনি কি এই ক্যাটাগরিটি মুছে ফেলতে চান?')) return;
+    try {
+      await api.delete(`/categories/${id}`);
+      showToast('ক্যাটাগরি মুছে ফেলা হয়েছে!');
+      fetchCategories();
+    } catch (error) {
+      showToast('ক্যাটাগরি মুছতে ব্যর্থ হয়েছে');
+    }
   };
 
   const filteredCategories = categories.filter(
@@ -161,7 +197,7 @@ export default function CategoriesPage() {
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-slate-400">Total Categories</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">32</h3>
+            <h3 className="text-2xl font-black text-slate-900 mt-1">{categories.length}</h3>
             <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">All time</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-sm">
@@ -173,7 +209,7 @@ export default function CategoriesPage() {
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-slate-400">Published</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">28</h3>
+            <h3 className="text-2xl font-black text-slate-900 mt-1">{categories.filter(c => c.status === 'Published').length}</h3>
             <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">Active categories</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
@@ -185,7 +221,7 @@ export default function CategoriesPage() {
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-slate-400">Total Posts</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">1,248</h3>
+            <h3 className="text-2xl font-black text-slate-900 mt-1">{categories.reduce((acc, c) => acc + (c.posts || 0), 0)}</h3>
             <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">Across all categories</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
@@ -197,7 +233,7 @@ export default function CategoriesPage() {
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-slate-400">Uncategorized Posts</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">7</h3>
+            <h3 className="text-2xl font-black text-slate-900 mt-1">{uncategorizedCount}</h3>
             <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">Need attention</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
@@ -394,43 +430,23 @@ export default function CategoriesPage() {
         {/* Right Side: Donut Chart, Quick Actions & Top Categories (~25% - lg:col-span-3) */}
         <div className="lg:col-span-3 space-y-4">
 
-          {/* 1. Category Overview Donut Chart Card */}
+          {/* 1. Category Breakdown Overview */}
           <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <h3 className="font-extrabold text-xs text-slate-900">Category Overview</h3>
-
-            {/* Donut SVG Chart */}
-            <div className="relative w-36 h-36 mx-auto my-2 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#9333ea" strokeWidth="16" strokeDasharray="65 238" strokeDashoffset="0" />
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#059669" strokeWidth="16" strokeDasharray="38 238" strokeDashoffset="-65" />
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#d97706" strokeWidth="16" strokeDasharray="30 238" strokeDashoffset="-103" />
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#eb1c24" strokeWidth="16" strokeDasharray="41 238" strokeDashoffset="-133" />
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#2563eb" strokeWidth="16" strokeDasharray="24 238" strokeDashoffset="-174" />
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#64748b" strokeWidth="16" strokeDasharray="40 238" strokeDashoffset="-198" />
-              </svg>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-black text-slate-900 leading-none">1,248</span>
-                <span className="text-[9px] font-bold text-slate-400 mt-0.5">Total Posts</span>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-xs text-slate-900">Category Overview</h3>
+              <span className="text-[10px] font-bold text-slate-400">
+                {categories.reduce((acc, c) => acc + (c.posts || 0), 0)} Total Posts
+              </span>
             </div>
 
-            {/* Legend List */}
-            <div className="space-y-1.5 text-[11px] pt-1 border-t border-slate-100 font-bangla">
-              {[
-                { color: 'bg-purple-600', label: 'রাজনীতি', count: '342', pct: '27.4%' },
-                { color: 'bg-emerald-600', label: 'আন্তর্জাতিক', count: '198', pct: '15.9%' },
-                { color: 'bg-amber-500', label: 'অর্থনীতি', count: '156', pct: '12.5%' },
-                { color: 'bg-[#eb1c24]', label: 'খেলা', count: '213', pct: '17.1%' },
-                { color: 'bg-blue-600', label: 'বিনোদন', count: '124', pct: '9.9%' },
-                { color: 'bg-slate-500', label: 'অন্যান্য', count: '215', pct: '17.2%' },
-              ].map((item, idx) => (
+            <div className="space-y-2 text-xs font-bangla">
+              {categories.slice(0, 5).map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                    <span className="font-bold text-slate-700">{item.label}</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#eb1c24]" />
+                    <span className="font-bold text-slate-700">{item.name}</span>
                   </div>
-                  <span className="font-extrabold text-slate-500">{item.count} ({item.pct})</span>
+                  <span className="font-extrabold text-slate-500">{item.posts} posts</span>
                 </div>
               ))}
             </div>
@@ -494,27 +510,18 @@ export default function CategoriesPage() {
             </div>
 
             <div className="space-y-2 text-xs font-bangla">
-              {[
-                { rank: 1, name: 'রাজনীতি', posts: '342 posts', icon: Landmark, color: 'bg-purple-600' },
-                { rank: 2, name: 'আন্তর্জাতিক', posts: '198 posts', icon: Globe2, color: 'bg-emerald-600' },
-                { rank: 3, name: 'খেলা', posts: '213 posts', icon: Trophy, color: 'bg-[#eb1c24]' },
-                { rank: 4, name: 'অর্থনীতি', posts: '156 posts', icon: TrendingUp, color: 'bg-amber-500' },
-                { rank: 5, name: 'বিনোদন', posts: '124 posts', icon: Film, color: 'bg-blue-600' },
-              ].map((item) => {
-                const RankIcon = item.icon;
-                return (
-                  <div key={item.rank} className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-xs font-bold text-slate-400 w-3">{item.rank}</span>
-                      <div className={`w-6 h-6 rounded-lg ${item.color} text-white flex items-center justify-center shrink-0`}>
-                        <RankIcon size={12} />
-                      </div>
-                      <span className="font-bold text-slate-800">{item.name}</span>
+              {categories.slice(0, 5).map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-mono text-xs font-bold text-slate-400 w-3">{idx + 1}</span>
+                    <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                      <FolderTree size={12} />
                     </div>
-                    <span className="font-semibold text-slate-500 text-[11px]">{item.posts}</span>
+                    <span className="font-bold text-slate-800">{item.name}</span>
                   </div>
-                );
-              })}
+                  <span className="font-semibold text-slate-500 text-[11px]">{item.posts} posts</span>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -26,6 +26,7 @@ import CreateReporterPage from './pages/CreateReporterPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import GenericPage from './pages/GenericPage';
+import PrivateRoute from './components/PrivateRoute';
 
 export default function App() {
   return (
@@ -34,8 +35,10 @@ export default function App() {
         {/* Standalone Authentication Routes */}
         <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/" element={<AdminLayout />}>
-          {/* Main Pages */}
+        {/* Main Admin Routes - Protected */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/" element={<AdminLayout />}>
+            {/* Main Pages */}
           <Route index element={<DashboardPage />} />
           <Route path="posts" element={<PostsPage />} />
           <Route path="posts/add" element={<AddPostPage />} />
@@ -79,6 +82,7 @@ export default function App() {
 
           {/* Fallback 404 Route */}
           <Route path="*" element={<GenericPage title="404 - Not Found" description="The page you are looking for does not exist." />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -4,6 +4,7 @@ const Article = require('../../models/Article');
 const Category = require('../../models/Category');
 const LiveStream = require('../../models/LiveStream');
 const sendResponse = require('../../utils/responseHandler');
+const { getActiveAds, trackAdClick, trackAdImpression } = require('../../controllers/adController');
 
 // Default initial categories if DB is empty
 const defaultCategories = [
@@ -154,5 +155,10 @@ router.get('/categories', async (req, res, next) => {
     next(error);
   }
 });
+
+// GET /api/v1/public/ads
+router.get('/ads', getActiveAds);
+router.post('/ads/:id/click', trackAdClick);
+router.post('/ads/:id/impression', trackAdImpression);
 
 module.exports = router;

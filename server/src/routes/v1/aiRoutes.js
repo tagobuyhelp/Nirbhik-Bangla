@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const AIService = require('../../services/ai/aiService');
+const AIService = require('../../services/aiService');
 const sendResponse = require('../../utils/responseHandler');
 
 // POST /api/v1/ai/headlines
@@ -51,8 +51,30 @@ router.post('/seo', async (req, res, next) => {
 router.post('/fact-check', async (req, res, next) => {
   try {
     const { text } = req.body;
-    const factCheckResult = await AIService.factCheck(text);
-    return sendResponse(res, 200, 'AI fact check completed', factCheckResult);
+    const factCheck = await AIService.factCheck(text);
+    return sendResponse(res, 200, 'AI fact-check completed', factCheck);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/ai/generate-social
+router.post('/generate-social', async (req, res, next) => {
+  try {
+    const { title, excerpt, lang = 'bn' } = req.body;
+    const captions = await AIService.generateSocialCaptions(title, excerpt, lang);
+    return sendResponse(res, 200, 'AI social captions generated', captions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/ai/suggest-tags
+router.post('/suggest-tags', async (req, res, next) => {
+  try {
+    const { text, lang = 'bn' } = req.body;
+    const tags = await AIService.suggestTags(text, lang);
+    return sendResponse(res, 200, 'AI tags suggested', tags);
   } catch (error) {
     next(error);
   }

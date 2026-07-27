@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import {
   FolderPlus,
   ChevronRight,
@@ -29,38 +30,38 @@ export default function CreateCategoryPage() {
   const [toastMessage, setToastMessage] = useState('');
 
   // 1. Basic Information State
-  const [categoryName, setCategoryName] = useState('রাজনীতি');
-  const [slug, setSlug] = useState('rajniti');
-  const [color, setColor] = useState('#7C3AED');
-  const [featuredImage, setFeaturedImage] = useState('https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80');
+  const [categoryName, setCategoryName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [color, setColor] = useState('#eb1c24');
+  const [featuredImage, setFeaturedImage] = useState('');
 
   // 2. Multi-language Translations State
   const [activeLangTab, setActiveLangTab] = useState('bn');
   const [translations, setTranslations] = useState({
     en: {
-      name: 'Politics',
-      slug: 'politics',
-      desc: 'Latest political news, updates, and analysis from Bangladesh and around the world.',
+      name: '',
+      slug: '',
+      desc: '',
     },
     hi: {
-      name: 'राजनीति',
-      slug: 'rajneeti',
-      desc: 'রাজনীতি সে জুড়ি তাজা খবর, আপডেট অউর বিশ্লেষণ বাংলাদেশ অউর দুনিয়া ভর সে।',
+      name: '',
+      slug: '',
+      desc: '',
     },
   });
 
   // 3. SEO & Metadata State
-  const [seoTitle, setSeoTitle] = useState('রাজনীতি খবর | বাংলাদেশ ও বিশ্বের সর্বশেষ আপডেট');
-  const [metaDesc, setMetaDesc] = useState('বাংলাদেশ ও বিশ্বের রাজনীতির সর্বশেষ খবর, বিশ্লেষণ, নির্বাচন, সরকার, নীতি এবং আরও অনেক কিছু।');
-  const [canonicalUrl, setCanonicalUrl] = useState('https://nirbhikbangla.com/bn/category/rajniti');
-  const [ogTitle, setOgTitle] = useState('রাজনীতি - সর্বশেষ রাজনৈতিক খবর');
-  const [ogDesc, setOgDesc] = useState('বাংলাদেশ ও আন্তর্জাতিক রাজনীতির টাটকা সংবাদ, বিশ্লেষণ ও মতামত।');
-  const [priority, setPriority] = useState('High');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [metaDesc, setMetaDesc] = useState('');
+  const [canonicalUrl, setCanonicalUrl] = useState('');
+  const [ogTitle, setOgTitle] = useState('');
+  const [ogDesc, setOgDesc] = useState('');
+  const [priority, setPriority] = useState('Medium');
 
   // Tags State
-  const [focusKeywords, setFocusKeywords] = useState(['রাজনীতি', 'নির্বাচন', 'সরকার', 'সংসদ', 'মন্ত্রী', 'নীতি', 'আন্তর্জাতিক']);
-  const [relatedCategories, setRelatedCategories] = useState(['নির্বাচন', 'আন্তর্জাতিক', 'সরকার', 'অর্থনীতি', 'আইন ও বিচার']);
-  const [searchKeywords, setSearchKeywords] = useState(['lok sabha', 'election', 'government', 'parliament', 'bnp', 'awami league', 'minister']);
+  const [focusKeywords, setFocusKeywords] = useState([]);
+  const [relatedCategories, setRelatedCategories] = useState([]);
+  const [searchKeywords, setSearchKeywords] = useState([]);
 
   // Preview Mode
   const [previewDevice, setPreviewDevice] = useState('desktop');
@@ -73,12 +74,85 @@ export default function CreateCategoryPage() {
     }, 3000);
   };
 
-  const handlePublish = (e) => {
+  const handleAiTranslate = async () => {
+    if (!categoryName) return showToast('Please enter category name in Bengali first!');
+    showToast('AI Translation in progress...');
+    try {
+      const [enRes, hiRes] = await Promise.all([
+        api.post('/ai/translate', { text: categoryName, fromLang: 'bn', toLang: 'en' }),
+        api.post('/ai/translate', { text: categoryName, fromLang: 'bn', toLang: 'hi' })
+      ]);
+      setTranslations(prev => ({
+        ...prev,
+        en: { ...prev.en, name: enRes.data.data.translation, slug: enRes.data.data.translation.toLowerCase().replace(/\\s+/g, '-') },
+        hi: { ...prev.hi, name: hiRes.data.data.translation, slug: hiRes.data.data.translation.toLowerCase().replace(/\\s+/g, '-') }
+      }));
+      showToast('AI Translation completed!');
+    } catch (err) {
+      showToast('Failed to generate translation');
+    }
+  };
+
+  const handleAiSeo = async () => {
+    if (!categoryName) return showToast('Please enter category name first!');
+    showToast('AI SEO Generation in progress...');
+    try {
+      const res = await api.post('/ai/seo', { text: categoryName });
+      const { title, description, keywords } = res.data.data;
+      setSeoTitle(title || '');
+      setMetaDesc(description || '');
+      setFocusKeywords(keywords || []);
+      showToast('AI SEO Generation completed!');
+    } catch (err) {
+      showToast('Failed to generate SEO metadata');
+    }
+  };
+
+  const handleAiTagsAndCategories = async () => {
+    if (!categoryName) return showToast('Please enter category name first!');
+    showToast('AI Suggesting Related Categories & Keywords...');
+    try {
+      const res = await api.post('/ai/suggest-tags', { text: categoryName, lang: 'bn' });
+      const { tags } = res.data.data;
+      // Just split them equally between related categories and search keywords for UI effect
+      if (tags && tags.length > 0) {
+        setRelatedCategories(tags.slice(0, Math.ceil(tags.length / 2)));
+        setSearchKeywords(tags.slice(Math.ceil(tags.length / 2)));
+      }
+      showToast('AI Suggestions loaded!');
+    } catch (err) {
+      showToast('Failed to generate suggestions');
+    }
+  };
+
+  const handlePublish = async (e) => {
     e.preventDefault();
-    showToast('নতুন ক্যাটাগরি সফলভাবে তৈরি ও পাবলিশ করা হয়েছে!');
-    setTimeout(() => {
-      navigate('/categories');
-    }, 1500);
+    try {
+      const payload = {
+        slug: slug || categoryName.toLowerCase().replace(/\\s+/g, '-'),
+        translations: {
+          bn: { name: categoryName, description: metaDesc },
+          en: { name: translations.en.name, description: translations.en.desc },
+          hi: { name: translations.hi.name, description: translations.hi.desc }
+        },
+        color,
+        featuredImage,
+        seo: { title: seoTitle, metaDesc, canonicalUrl, ogTitle, ogDesc },
+        priority,
+        focusKeywords,
+        relatedCategories,
+        searchKeywords,
+        isActive: true
+      };
+
+      await api.post('/categories', payload);
+      showToast('নতুন ক্যাটাগরি সফলভাবে তৈরি ও পাবলিশ করা হয়েছে!');
+      setTimeout(() => {
+        navigate('/categories');
+      }, 1200);
+    } catch (error) {
+      showToast(error.response?.data?.message || 'ক্যাটাগরি তৈরি করতে ব্যর্থ হয়েছে');
+    }
   };
 
   return (
@@ -296,7 +370,7 @@ export default function CreateCategoryPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => showToast('AI দ্বারা অনুবাদ রি-জেনারেট করা হলো!')}
+                  onClick={handleAiTranslate}
                   className="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <Sparkles size={13} />
@@ -353,8 +427,8 @@ export default function CreateCategoryPage() {
 
                 <button
                   type="button"
-                  onClick={() => showToast('English অনুবাদ রি-জেনারেট করা হলো!')}
-                  className="text-[10px] text-purple-700 font-bold flex items-center gap-1 hover:underline"
+                  onClick={handleAiTranslate}
+                  className="text-[10px] text-purple-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                 >
                   <RotateCw size={10} /> Regenerate
                 </button>
@@ -402,8 +476,8 @@ export default function CreateCategoryPage() {
 
                 <button
                   type="button"
-                  onClick={() => showToast('Hindi অনুবাদ রি-জেনারেট করা হলো!')}
-                  className="text-[10px] text-purple-700 font-bold flex items-center gap-1 hover:underline"
+                  onClick={handleAiTranslate}
+                  className="text-[10px] text-purple-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                 >
                   <RotateCw size={10} /> Regenerate
                 </button>
@@ -413,13 +487,22 @@ export default function CreateCategoryPage() {
 
           {/* Section 3: SEO & Metadata (AI Generated) Card */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
-              <Sparkles size={15} className="text-purple-600" />
-              <span>SEO & Metadata</span>
-              <span className="text-[9px] text-purple-700 bg-purple-100 font-black px-1.5 py-0.2 rounded">AI Generated</span>
-            </h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+                <Sparkles size={15} className="text-purple-600" />
+                <span>SEO & Metadata</span>
+                <span className="text-[9px] text-purple-700 bg-purple-100 font-black px-1.5 py-0.2 rounded">AI Generated</span>
+              </h3>
+              <button
+                type="button"
+                onClick={handleAiSeo}
+                className="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles size={13} /> Generate SEO
+              </button>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold pt-2">
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -566,12 +649,9 @@ export default function CreateCategoryPage() {
 
             <div className="space-y-2 text-xs font-semibold">
               {[
-                { title: 'Translation', sub: 'AI has translated to 2 languages', icon: Globe },
-                { title: 'Icon Suggestion', sub: 'AI has suggested best icon', icon: Landmark },
-                { title: 'Color Suggestion', sub: 'AI has suggested best color', icon: Palette },
-                { title: 'Description', sub: 'AI has generated description', icon: FileText },
-                { title: 'SEO & Keywords', sub: 'AI has generated SEO data', icon: Search },
-                { title: 'Related Categories', sub: 'AI has suggested related items', icon: FolderPlus },
+                { title: 'Translation', sub: 'AI has translated to 2 languages', icon: Globe, action: handleAiTranslate },
+                { title: 'SEO & Keywords', sub: 'AI has generated SEO data', icon: Search, action: handleAiSeo },
+                { title: 'Related Categories & Keywords', sub: 'AI has suggested related items', icon: FolderPlus, action: handleAiTagsAndCategories },
               ].map((item, idx) => (
                 <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -583,13 +663,15 @@ export default function CreateCategoryPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button type="button" className="text-[10px] text-slate-500 font-bold hover:underline">View</button>
                     <button
                       type="button"
-                      onClick={() => showToast(`${item.title} গ্রহণ করা হলো!`)}
+                      onClick={() => {
+                        if(item.action) item.action();
+                        else showToast(`${item.title} accepted!`);
+                      }}
                       className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-black px-2.5 py-1 rounded-lg border border-purple-200 cursor-pointer"
                     >
-                      Accept
+                      Generate
                     </button>
                   </div>
                 </div>

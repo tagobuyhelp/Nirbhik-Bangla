@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Upload,
   FolderPlus,
@@ -43,6 +44,45 @@ export default function MediaLibraryPage() {
   const [toastMessage, setToastMessage] = useState('');
 
   const [folderName, setFolderName] = useState('');
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMedia = async () => {
+    try {
+      const { data } = await api.get('/media');
+      const formatted = (data.data || []).map((file) => ({
+        id: file._id,
+        name: file.filename,
+        type: file.mimeType ? file.mimeType.split('/')[1]?.toUpperCase() : 'FILE',
+        category: file.resourceType === 'video' ? 'Videos' : 'Images',
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        date: new Date(file.createdAt).toLocaleDateString(),
+        url: file.url,
+        isImage: file.resourceType === 'image',
+        isVideo: file.resourceType === 'video'
+      }));
+      setMediaFiles(formatted);
+    } catch (error) {
+      console.error('Error fetching media:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMedia();
+  }, []);
+
+  const handleDeleteMedia = async (id) => {
+    if (!window.confirm('আপনি কি এই মিডিয়া ফাইলটি মুছে ফেলতে চান?')) return;
+    try {
+      await api.delete(`/media/${id}`);
+      showToast('মিডিয়া ফাইল মুছে ফেলা হয়েছে!');
+      fetchMedia();
+    } catch (error) {
+      showToast('মিডিয়া ফাইল মুছতে ব্যর্থ হয়েছে');
+    }
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -51,171 +91,7 @@ export default function MediaLibraryPage() {
     }, 3000);
   };
 
-  // Initial Media Library Dataset (Exact match to reference UI image)
-  const [mediaFiles, setMediaFiles] = useState([
-    {
-      id: 1,
-      name: 'parliament-building.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '245 KB',
-      date: 'May 21, 2024',
-      dimensions: '1920x1080',
-      url: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 2,
-      name: 'pm-modi-speech.webp',
-      type: 'WEBP',
-      category: 'Images',
-      size: '180 KB',
-      date: 'May 21, 2024',
-      dimensions: '1200x800',
-      url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 3,
-      name: 'bjp-rally.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '320 KB',
-      date: 'May 20, 2024',
-      dimensions: '1920x1080',
-      url: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 4,
-      name: 'india-win-highlights.mp4',
-      type: 'MP4',
-      category: 'Videos',
-      size: '24.5 MB',
-      date: 'May 20, 2024',
-      duration: '02:45',
-      url: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=600&q=80',
-      isVideo: true,
-    },
-    {
-      id: 5,
-      name: 'isro-launch.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '210 KB',
-      date: 'May 19, 2024',
-      dimensions: '1600x900',
-      url: 'https://images.unsplash.com/photo-1517976487492-5750f3195933?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 6,
-      name: 'election-banner.png',
-      type: 'PNG',
-      category: 'Images',
-      size: '450 KB',
-      date: 'May 18, 2024',
-      dimensions: '1200x630',
-      url: 'https://images.unsplash.com/photo-1572949645841-094f3a9c4c94?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 7,
-      name: 'stock-market.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '190 KB',
-      date: 'May 18, 2024',
-      dimensions: '1920x1080',
-      url: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 8,
-      name: 'flood-news.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '310 KB',
-      date: 'May 18, 2024',
-      dimensions: '1600x1000',
-      url: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 9,
-      name: 'report-document.pdf',
-      type: 'PDF',
-      category: 'Documents',
-      size: '1.2 MB',
-      date: 'May 17, 2024',
-      isDoc: true,
-    },
-    {
-      id: 10,
-      name: 'news-audio.mp3',
-      type: 'MP3',
-      category: 'Audio',
-      size: '2.4 MB',
-      date: 'May 17, 2024',
-      duration: '01:12',
-      isAudio: true,
-    },
-    {
-      id: 11,
-      name: 'kolkata-bridge.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '230 KB',
-      date: 'May 16, 2024',
-      dimensions: '1920x1080',
-      url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 12,
-      name: 'health-care.webp',
-      type: 'WEBP',
-      category: 'Images',
-      size: '160 KB',
-      date: 'May 16, 2024',
-      dimensions: '1200x800',
-      url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 13,
-      name: 'education-news.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '200 KB',
-      date: 'May 15, 2024',
-      dimensions: '1600x1000',
-      url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 14,
-      name: 'indian-army.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '215 KB',
-      date: 'May 15, 2024',
-      dimensions: '1920x1080',
-      url: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-    {
-      id: 15,
-      name: 'solar-eclipse.jpg',
-      type: 'JPG',
-      category: 'Images',
-      size: '205 KB',
-      date: 'May 14, 2024',
-      dimensions: '1600x900',
-      url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=600&q=80',
-      isImage: true,
-    },
-  ]);
+
 
   const handleToggleSelect = (id) => {
     if (selectedItems.includes(id)) {

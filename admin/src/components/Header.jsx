@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import SearchResultModal from './SearchResultModal';
 import {
   Search,
@@ -26,6 +27,7 @@ export default function Header({ isCollapsed, toggleSidebar }) {
   const [isDark, setIsDark] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const { user, logout } = useAuth();
   const [activeLang, setActiveLang] = useState('bn');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -199,16 +201,16 @@ export default function Header({ isCollapsed, toggleSidebar }) {
           >
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
-                alt="Super Admin"
+                src={user?.avatar || "https://ui-avatars.com/api/?name=" + (user?.name || "User") + "&background=eb1c24&color=fff"}
+                alt={user?.name || "Admin"}
                 className="w-8 h-8 rounded-full object-cover border border-slate-200 shadow-2xs"
               />
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
             </div>
 
             <div className="hidden sm:block text-left">
-              <h4 className="text-xs font-black text-slate-900 leading-tight">Super Admin</h4>
-              <p className="text-[10px] font-semibold text-slate-400">Administrator</p>
+              <h4 className="text-xs font-black text-slate-900 leading-tight">{user?.name || "Admin"}</h4>
+              <p className="text-[10px] font-semibold text-slate-400">{user?.role || "User"}</p>
             </div>
 
             <ChevronDown size={14} className="text-slate-400 hidden sm:block" />
@@ -218,8 +220,8 @@ export default function Header({ isCollapsed, toggleSidebar }) {
           {showUserDropdown && (
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                <h5 className="font-black text-xs text-slate-900">Super Admin</h5>
-                <p className="text-[11px] text-slate-400 truncate">admin@nirbhikbangla.com</p>
+                <h5 className="font-black text-xs text-slate-900">{user?.name || "Admin"}</h5>
+                <p className="text-[11px] text-slate-400 truncate">{user?.email || "admin@example.com"}</p>
               </div>
 
               <div className="space-y-0.5 text-xs font-semibold text-slate-700">
@@ -231,7 +233,7 @@ export default function Header({ isCollapsed, toggleSidebar }) {
                   <Sliders size={15} className="text-slate-500" />
                   <span>Portal Settings</span>
                 </NavLink>
-                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 text-red-600 transition-colors cursor-pointer">
+                <button onClick={logout} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 text-red-600 transition-colors cursor-pointer">
                   <LogOut size={15} />
                   <span>Log Out</span>
                 </button>

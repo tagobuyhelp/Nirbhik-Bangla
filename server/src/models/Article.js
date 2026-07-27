@@ -51,6 +51,26 @@ const ArticleSchema = new mongoose.Schema({
   isFeatured: { type: Boolean, default: false, index: true },
   viewsCount: { type: Number, default: 0, index: true },
   
+  allowComments: { type: Boolean, default: true },
+  showOnHomepage: { type: Boolean, default: true },
+  socialCaptions: {
+    facebook: { type: String, default: '' },
+    twitter: { type: String, default: '' },
+    whatsapp: { type: String, default: '' },
+    telegram: { type: String, default: '' }
+  },
+  aiSummary: { type: String, default: '' },
+  imageMetadata: {
+    altText: { type: String, default: '' },
+    caption: { type: String, default: '' },
+    credit: { type: String, default: '' }
+  },
+  stats: {
+    wordCount: { type: Number, default: 0 },
+    charCount: { type: Number, default: 0 },
+    readingTime: { type: Number, default: 1 }
+  },
+
   translationStatus: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'failed', 'manual_review'],
