@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import BreakingNewsTicker from '@/components/BreakingNewsTicker';
 import {
+  ArrowUp,
   Bell,
   Bookmark,
   Building2,
@@ -442,22 +443,23 @@ export default function Header() {
           </form>
         )}
 
-        {/* Mobile Category Scroll Ribbon with Icons */}
+        {/* Mobile Category Scroll Ribbon with Icons — 100% Dynamic from API */}
         {!pathname?.includes('/news/') && !pathname?.includes('/article/') && (
           <div
             className="border-b border-red-900/30 px-2 flex items-center h-11 overflow-x-auto scrollbar-none gap-1"
             style={{ background: 'linear-gradient(90deg, #8b0010, #c0000f, #8b0010)' }}
           >
-            {getMobileNavItems(locale).map((item) => {
+            {categories.map((item) => {
               const IconComponent = getCategoryIcon(item.slug);
+              const targetHref = item.href ? (item.href.startsWith('/') ? `/${locale}${item.href === '/' ? '' : item.href}` : item.href) : `/${locale}/category/${item.slug}`;
               const isActive =
                 item.slug === 'home'
                   ? pathname === `/${locale}` || pathname === '/'
-                  : pathname?.startsWith(`/${locale}${item.href}`);
+                  : pathname?.includes(item.slug);
               return (
                 <Link
                   key={item.slug}
-                  href={`/${locale}${item.slug === 'home' ? '' : item.href}`}
+                  href={targetHref}
                   className={`h-full flex items-center gap-1.5 shrink-0 px-3 text-[13px] font-black transition-all ${
                     isActive
                       ? 'text-white bg-white/25 rounded-md shadow-xs'
@@ -469,9 +471,6 @@ export default function Header() {
                 </Link>
               );
             })}
-            <button className="flex items-center justify-center h-6 w-6 rounded-full bg-white/10 text-slate-300 shrink-0 ml-1">
-              <Plus size={12} />
-            </button>
           </div>
         )}
       </div>
@@ -527,20 +526,36 @@ export default function Header() {
                 <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
               </Link>
 
-              {/* 2. Latest */}
-              <Link
-                href={`/${locale}/category/latest`}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
-              >
-                <div className="flex items-center gap-3.5">
-                  <FileText size={20} className="text-slate-700" />
-                  <span className="text-sm font-bold text-slate-800">
-                    {locale === 'en' ? 'Latest' : locale === 'hi' ? 'ताज़ा खबरें' : 'সর্বশেষ'}
+              {/* 2. Dynamic Categories Section */}
+              <div className="bg-slate-50/70 border-y border-slate-100">
+                <div className="px-5 py-2.5 text-[11px] font-black uppercase text-slate-500 tracking-wider flex items-center justify-between border-b border-slate-200/60">
+                  <span className="flex items-center gap-1.5">
+                    <LayoutGrid size={14} className="text-[#d70b18]" />
+                    {locale === 'en' ? 'Categories' : locale === 'hi' ? 'श्रेणियां' : 'বিভাগ সমূহ'}
+                  </span>
+                  <span className="text-[10px] font-bold text-[#d70b18] bg-red-100 px-2 py-0.5 rounded-full">
+                    {categories.length}
                   </span>
                 </div>
-                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
-              </Link>
+                <div className="divide-y divide-slate-100 bg-white">
+                  {categories.map((cat, idx) => (
+                    <Link
+                      key={cat.slug || idx}
+                      href={cat.href ? (cat.href.startsWith('/') ? `/${locale}${cat.href === '/' ? '' : cat.href}` : cat.href) : `/${locale}/category/${cat.slug}`}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-between px-5 py-3 hover:bg-red-50/40 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#d70b18]" />
+                        <span className="text-sm font-extrabold text-slate-800 group-hover:text-[#d70b18] transition-colors">
+                          {cat.label}
+                        </span>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300 group-hover:text-[#d70b18] transition-colors" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
 
               {/* 3. Live TV */}
               <Link
@@ -776,84 +791,167 @@ export default function Header() {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar - Brand Red Theme with Curved Top Corners */}
       {!pathname?.includes('/news/') && !pathname?.includes('/article/') && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/96 backdrop-blur-md border-t border-slate-200 flex items-center justify-around h-[56px] shadow-[0_-2px_20px_rgba(0,0,0,0.08)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#8b0010] via-[#ab0012] to-[#c0000f] text-white/80 backdrop-blur-xl border-t border-x border-red-800/80 rounded-t-2xl flex items-center justify-around h-[58px] shadow-[0_-6px_30px_rgba(139,0,16,0.4)]">
           {/* Home */}
           <Link
             href={`/${locale}`}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-colors ${
-              pathname === `/${locale}` || pathname === '/' ? 'text-[#d70b18]' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname === `/${locale}` || pathname === '/' ? 'text-white font-black' : 'text-white/70 hover:text-white'
             }`}
           >
             {(pathname === `/${locale}` || pathname === '/') && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2.5px] w-8 rounded-full bg-[#d70b18]" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-white shadow-[0_0_10px_#ffffff]" />
             )}
-            <Home size={19} strokeWidth={pathname === `/${locale}` || pathname === '/' ? 2.5 : 1.8} />
-            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'Home' : locale === 'hi' ? 'होम' : 'হোম'}</span>
+            <Home size={19} strokeWidth={pathname === `/${locale}` || pathname === '/' ? 2.5 : 1.8} className={pathname === `/${locale}` || pathname === '/' ? 'text-white' : 'text-white/70'} />
+            <span className="text-[9.5px] font-extrabold tracking-tight">{locale === 'en' ? 'Home' : locale === 'hi' ? 'होम' : 'হোম'}</span>
           </Link>
 
           {/* Live TV */}
           <Link
             href={`/${locale}/live`}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-colors ${
-              pathname?.includes('/live') ? 'text-[#d70b18]' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname?.includes('/live') ? 'text-white font-black' : 'text-white/70 hover:text-white'
             }`}
           >
             {pathname?.includes('/live') && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2.5px] w-8 rounded-full bg-[#d70b18]" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-white shadow-[0_0_10px_#ffffff]" />
             )}
             <div className="relative">
-              <Tv size={19} strokeWidth={pathname?.includes('/live') ? 2.5 : 1.8} />
-              <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-red-600 animate-ping opacity-70" />
-              <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-red-600" />
+              <Tv size={19} strokeWidth={pathname?.includes('/live') ? 2.5 : 1.8} className={pathname?.includes('/live') ? 'text-white' : 'text-white/70'} />
+              <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-amber-300 animate-ping opacity-90" />
+              <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-amber-300" />
             </div>
-            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव' : 'लाइव'}</span>
+            <span className="text-[9.5px] font-extrabold tracking-tight">{locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव' : 'লাইভ'}</span>
           </Link>
 
           {/* Bookmarks */}
           <Link
             href={`/${locale}/bookmarks`}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-colors ${
-              pathname?.includes('/bookmarks') ? 'text-[#d70b18]' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname?.includes('/bookmarks') ? 'text-white font-black' : 'text-white/70 hover:text-white'
             }`}
           >
             {pathname?.includes('/bookmarks') && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2.5px] w-8 rounded-full bg-[#d70b18]" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-white shadow-[0_0_10px_#ffffff]" />
             )}
-            <Bookmark size={19} strokeWidth={pathname?.includes('/bookmarks') ? 2.5 : 1.8} />
-            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'Saved' : locale === 'hi' ? 'सेव' : 'সেভড'}</span>
+            <Bookmark size={19} strokeWidth={pathname?.includes('/bookmarks') ? 2.5 : 1.8} className={pathname?.includes('/bookmarks') ? 'text-white' : 'text-white/70'} />
+            <span className="text-[9.5px] font-extrabold tracking-tight">{locale === 'en' ? 'Saved' : locale === 'hi' ? 'सेव' : 'সেভড'}</span>
           </Link>
 
           {/* Categories */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-colors ${
-              mobileOpen ? 'text-[#d70b18]' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              mobileOpen ? 'text-white font-black' : 'text-white/70 hover:text-white'
             }`}
           >
             {mobileOpen && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2.5px] w-8 rounded-full bg-[#d70b18]" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-white shadow-[0_0_10px_#ffffff]" />
             )}
-            <LayoutGrid size={19} strokeWidth={mobileOpen ? 2.5 : 1.8} />
-            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'More' : locale === 'hi' ? 'श्रेणी' : 'বিভাগ'}</span>
+            <LayoutGrid size={19} strokeWidth={mobileOpen ? 2.5 : 1.8} className={mobileOpen ? 'text-white' : 'text-white/70'} />
+            <span className="text-[9.5px] font-extrabold tracking-tight">{locale === 'en' ? 'More' : locale === 'hi' ? 'श्रेणी' : 'বিভাগ'}</span>
           </button>
 
           {/* Profile */}
           <Link
             href={`/${locale}/profile`}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-colors ${
-              pathname?.includes('/profile') ? 'text-[#d70b18]' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname?.includes('/profile') ? 'text-white font-black' : 'text-white/70 hover:text-white'
             }`}
           >
             {pathname?.includes('/profile') && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2.5px] w-8 rounded-full bg-[#d70b18]" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-white shadow-[0_0_10px_#ffffff]" />
             )}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={pathname?.includes('/profile') ? 2.5 : 1.8} className="w-[19px] h-[19px]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={pathname?.includes('/profile') ? 2.5 : 1.8} className={`w-[19px] h-[19px] ${pathname?.includes('/profile') ? 'text-white' : 'text-white/70'}`}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
             </svg>
-            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'Profile' : locale === 'hi' ? 'प्रोफ़ाइल' : 'প্রোফাইল'}</span>
+            <span className="text-[9.5px] font-extrabold tracking-tight">{locale === 'en' ? 'Profile' : locale === 'hi' ? 'प्रोफ़ाइल' : 'প্রোফাইল'}</span>
           </Link>
+        </div>
+      )}
+
+      {/* Desktop Fixed Bottom Navigation Bar - Brand Red Theme with Curved Top Corners (Identical to Mobile Bar Design) */}
+      {!pathname?.includes('/news/') && !pathname?.includes('/article/') && (
+        <div className="hidden md:flex fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-[#8b0010] via-[#ab0012] to-[#c0000f] text-white/80 backdrop-blur-xl border-t border-x border-red-800/80 rounded-t-2xl items-center justify-around h-[58px] shadow-[0_-6px_30px_rgba(139,0,16,0.4)] max-w-[1360px] mx-auto">
+          {/* Home */}
+          <Link
+            href={`/${locale}`}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname === `/${locale}` || pathname === '/' ? 'text-white font-black' : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {(pathname === `/${locale}` || pathname === '/') && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3.5px] w-10 rounded-full bg-white shadow-[0_0_12px_#ffffff]" />
+            )}
+            <Home size={20} strokeWidth={pathname === `/${locale}` || pathname === '/' ? 2.5 : 1.8} className="text-white" />
+            <span className="text-[10px] font-extrabold tracking-tight">{locale === 'en' ? 'Home' : locale === 'hi' ? 'होम' : 'হোম'}</span>
+          </Link>
+
+          {/* Live TV */}
+          <Link
+            href={`/${locale}/live`}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname?.includes('/live') ? 'text-white font-black' : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {pathname?.includes('/live') && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3.5px] w-10 rounded-full bg-white shadow-[0_0_12px_#ffffff]" />
+            )}
+            <div className="relative">
+              <Tv size={20} strokeWidth={pathname?.includes('/live') ? 2.5 : 1.8} className="text-white" />
+              <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-amber-300 animate-ping opacity-90" />
+              <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-amber-300" />
+            </div>
+            <span className="text-[10px] font-extrabold tracking-tight">{locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव' : 'লাইভ টিভি'}</span>
+          </Link>
+
+          {/* Bookmarks / Saved */}
+          <Link
+            href={`/${locale}/bookmarks`}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname?.includes('/bookmarks') ? 'text-white font-black' : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {pathname?.includes('/bookmarks') && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3.5px] w-10 rounded-full bg-white shadow-[0_0_12px_#ffffff]" />
+            )}
+            <Bookmark size={20} strokeWidth={pathname?.includes('/bookmarks') ? 2.5 : 1.8} className="text-white" />
+            <span className="text-[10px] font-extrabold tracking-tight">{locale === 'en' ? 'Saved' : locale === 'hi' ? 'सेव' : 'সেভড'}</span>
+          </Link>
+
+          {/* Search Trigger */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative text-white/70 hover:text-white transition-all"
+          >
+            <Search size={20} strokeWidth={1.8} className="text-white" />
+            <span className="text-[10px] font-extrabold tracking-tight">{locale === 'en' ? 'Search' : locale === 'hi' ? 'खोज' : 'খুঁজুন'}</span>
+          </button>
+
+          {/* Categories */}
+          <Link
+            href={`/${locale}/category/all`}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all ${
+              pathname?.includes('/category') ? 'text-white font-black' : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {pathname?.includes('/category') && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[3.5px] w-10 rounded-full bg-white shadow-[0_0_12px_#ffffff]" />
+            )}
+            <LayoutGrid size={20} strokeWidth={pathname?.includes('/category') ? 2.5 : 1.8} className="text-white" />
+            <span className="text-[10px] font-extrabold tracking-tight">{locale === 'en' ? 'Categories' : locale === 'hi' ? 'श्रेणी' : 'বিভাগসমূহ'}</span>
+          </Link>
+
+          {/* Scroll to Top */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative text-white/70 hover:text-white transition-all"
+          >
+            <ArrowUp size={20} strokeWidth={2.2} className="text-white" />
+            <span className="text-[10px] font-extrabold tracking-tight">{locale === 'en' ? 'Top' : locale === 'hi' ? 'ऊपर' : 'উপরে'}</span>
+          </button>
         </div>
       )}
     </header>

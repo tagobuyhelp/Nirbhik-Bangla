@@ -548,17 +548,17 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
       </div>
 
       {/* Mobile Fixed Bottom Action Bar — Exact Mockup Match */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex items-center justify-around text-slate-700 shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#8b0010] via-[#ab0012] to-[#c0000f] text-white/80 backdrop-blur-xl border-t border-x border-red-800/80 rounded-t-2xl px-4 py-2.5 flex items-center justify-around shadow-[0_-6px_30px_rgba(139,0,16,0.4)]">
         <button
           onClick={() => setIsBookmarked(!isBookmarked)}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-extrabold transition-colors ${isBookmarked ? 'text-[#d70b18]' : 'text-slate-700 hover:text-[#d70b18]'}`}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-extrabold transition-colors ${isBookmarked ? 'text-white font-black' : 'text-white/80 hover:text-white'}`}
         >
-          <Bookmark size={19} className={isBookmarked ? 'fill-[#d70b18]' : ''} />
+          <Bookmark size={19} className={isBookmarked ? 'fill-white text-white' : 'text-white/80'} />
           <span>{isBookmarked ? (lang === 'en' ? 'Saved' : lang === 'hi' ? 'सहेजा गया' : 'সংরক্ষিত') : (lang === 'en' ? 'Bookmark' : lang === 'hi' ? 'बुकमार्क' : 'বুকমার্ক')}</span>
         </button>
 
-        <a href="#comments" className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-slate-700 hover:text-[#d70b18] transition-colors">
-          <MessageCircle size={19} />
+        <a href="#comments" className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-white/80 hover:text-white transition-colors">
+          <MessageCircle size={19} className="text-white/80" />
           <span>{lang === 'en' ? '12 Comments' : lang === 'hi' ? '12 टिप्पणियां' : '১২ মন্তব্য'}</span>
         </a>
 
@@ -567,17 +567,17 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
             setHasLiked(!hasLiked);
             setLikesCount(hasLiked ? likesCount - 1 : likesCount + 1);
           }}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-extrabold transition-colors ${hasLiked ? 'text-[#d70b18]' : 'text-slate-700 hover:text-[#d70b18]'}`}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-extrabold transition-colors ${hasLiked ? 'text-white font-black' : 'text-white/80 hover:text-white'}`}
         >
-          <ThumbsUp size={19} className={hasLiked ? 'fill-[#d70b18]' : ''} />
+          <ThumbsUp size={19} className={hasLiked ? 'fill-white text-white' : 'text-white/80'} />
           <span>{likesCount} {lang === 'en' ? 'Likes' : lang === 'hi' ? 'पसंद' : 'লাইক'}</span>
         </button>
 
         <button
           onClick={handleCopyLink}
-          className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-slate-700 hover:text-[#d70b18] transition-colors"
+          className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-white/80 hover:text-white transition-colors"
         >
-          <Share2 size={19} />
+          <Share2 size={19} className="text-white/80" />
           <span>{copiedLink ? (lang === 'en' ? 'Copied' : lang === 'hi' ? 'कॉपी हुआ' : 'কপি হয়েছে') : (lang === 'en' ? 'Share' : lang === 'hi' ? 'शेयर' : 'শেয়ার')}</span>
         </button>
       </div>
