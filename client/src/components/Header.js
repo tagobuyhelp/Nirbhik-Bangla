@@ -11,27 +11,37 @@ import {
   Bookmark,
   Building2,
   ChevronDown,
+  ChevronRight,
+  Clock,
   CloudSun,
   Cpu,
+  FileText,
   Film,
   Flag,
   Flame,
   Globe,
   Globe2,
   HeartPulse,
+  HelpCircle,
   Home,
+  Info,
   Landmark,
   LayoutGrid,
+  LogOut,
   MapPin,
   Menu,
   Moon,
+  PlayCircle,
   Plus,
   Search,
+  Settings,
+  ShieldCheck,
   Sparkles,
   Sun,
   TrendingUp,
   Trophy,
   Tv,
+  User,
   Video,
   X,
   Zap,
@@ -63,7 +73,7 @@ const getMobileNavItems = (lang) => [
   { label: lang === 'en' ? 'Home' : lang === 'hi' ? 'मुख्य पृष्ठ' : 'প্রচ্ছদ', slug: 'home', href: '/' },
   { label: lang === 'en' ? 'Latest' : lang === 'hi' ? 'ताज़ा खबरें' : 'সর্বশেষ', slug: 'latest', href: '/category/latest' },
   { label: lang === 'en' ? 'Bengal' : lang === 'hi' ? 'बंगाल' : 'বাংলা', slug: 'paschim-bardhaman', href: '/category/paschim-bardhaman' },
-  { label: lang === 'en' ? 'India' : lang === 'hi' ? 'भारत' : 'ভারত', slug: 'desh', href: '/category/desh' },
+  { label: lang === 'en' ? 'India' : lang === 'hi' ? 'भारत' : 'भारत', slug: 'desh', href: '/category/desh' },
   { label: lang === 'en' ? 'World' : lang === 'hi' ? 'दुनिया' : 'দুনিয়া', slug: 'biswa', href: '/category/biswa' },
   { label: lang === 'en' ? 'Sports' : lang === 'hi' ? 'खेल' : 'খেলা', slug: 'khela', href: '/category/khela' },
   { label: lang === 'en' ? 'Entertainment' : lang === 'hi' ? 'मनोरंजन' : 'বিনোদন', slug: 'binodon', href: '/category/binodon' },
@@ -72,9 +82,9 @@ const getMobileNavItems = (lang) => [
 const getDesktopNavItems = (lang) => [
   { label: lang === 'en' ? 'Home' : lang === 'hi' ? 'मुख्य पृष्ठ' : 'প্রচ্ছদ', href: '/', slug: 'home' },
   { label: lang === 'en' ? 'Breaking News' : lang === 'hi' ? 'ब्रेकिंग न्यूज़' : 'ব্রেকিং নিউজ', href: '/category/breaking', slug: 'breaking' },
-  { label: lang === 'en' ? 'Paschim Bardhaman' : lang === 'hi' ? 'पश्चिम बर्धमान' : 'পশ্চিম বর্ধমান', href: '/category/paschim-bardhaman', slug: 'paschim-bardhaman' },
+  { label: lang === 'en' ? 'Paschim Bardhaman' : lang === 'hi' ? 'पश्चिम बर्धमान' : 'पश्चिम বর্ধমান', href: '/category/paschim-bardhaman', slug: 'paschim-bardhaman' },
   { label: lang === 'en' ? 'Asansol' : lang === 'hi' ? 'आसनसोल' : 'আসানসোল', href: '/category/asansol', slug: 'asansol' },
-  { label: lang === 'en' ? 'Durgapur' : lang === 'hi' ? 'दुर्गापुर' : 'দুর্গাপুর', href: '/category/durgapur', slug: 'durgapur' },
+  { label: lang === 'en' ? 'Durgapur' : lang === 'hi' ? 'दुर्गापुर' : 'दुर्गापुर', href: '/category/durgapur', slug: 'durgapur' },
   { label: lang === 'en' ? 'State' : lang === 'hi' ? 'राज्य' : 'রাজ্য', href: '/category/rajya', slug: 'rajya' },
   { label: lang === 'en' ? 'National' : lang === 'hi' ? 'देश' : 'দেশ', href: '/category/desh', slug: 'desh' },
   { label: lang === 'en' ? 'World' : lang === 'hi' ? 'विश्व' : 'বিশ্ব', href: '/category/biswa', slug: 'biswa' },
@@ -261,7 +271,7 @@ export default function Header() {
         >
           <div className="mx-auto flex h-[48px] max-w-[1360px] items-center px-2">
 
-            {/* Hamburger — opens mobile drawer on desktop too */}
+            {/* Hamburger — opens drawer on desktop too */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="flex items-center justify-center h-[48px] w-[46px] text-white hover:bg-white/20 shrink-0 mr-1 transition-colors"
@@ -355,7 +365,7 @@ export default function Header() {
           </Link>
 
           <div className="flex items-center gap-1.5">
-            {/* Language Switcher */}
+            {/* Mobile Language Switcher */}
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
@@ -469,26 +479,300 @@ export default function Header() {
       {/* Breaking News Ticker */}
       <BreakingNewsTicker />
 
-      {/* Mobile Drawer — full-screen category grid with icons */}
+      {/* ===== MOBILE SLIDE-OVER DRAWER MENU (EXACT MATCH TO DESIGN SCREENSHOT) ===== */}
       {mobileOpen && (
-        <div
-          className="md:hidden border-t border-red-900/40 p-3 grid grid-cols-2 gap-2 text-sm text-white"
-          style={{ background: 'linear-gradient(135deg, #8b0010, #c0000f)' }}
-        >
-          {categories.map((item) => {
-            const IconComponent = getCategoryIcon(item.slug);
-            return (
-              <Link
-                key={item.slug}
-                href={item.slug === 'home' ? `/${locale}` : `/${locale}${item.href}`}
-                className="px-3.5 py-2.5 rounded-xl font-bold bg-white/10 hover:bg-white/25 border border-white/10 hover:border-white/30 transition-all text-white flex items-center gap-2"
-                onClick={() => setMobileOpen(false)}
-              >
-                <IconComponent size={16} className="text-white/90" />
-                <span>{item.label}</span>
+        <div className="fixed inset-0 z-50 flex">
+          {/* Dark Backdrop Overlay */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileOpen(false)}
+          />
+
+          {/* White Slide-Over Panel */}
+          <div className="relative w-[85%] max-w-[340px] bg-white h-full overflow-y-auto flex flex-col justify-between shadow-2xl z-10 transition-transform duration-300">
+            
+            {/* Header */}
+            <div className="sticky top-0 bg-white z-20 px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <Link href={`/${locale}`} onClick={() => setMobileOpen(false)} className="flex items-center">
+                <img
+                  src="/images/logos/Nirbhik-Bangla-Logo-No-Bg.png"
+                  alt="Nirbhik Bangla"
+                  className="h-10 w-auto object-contain"
+                />
               </Link>
-            );
-          })}
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-1 rounded-full text-slate-800 hover:bg-slate-100 transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Menu List Items */}
+            <div className="flex-1 divide-y divide-slate-100">
+              
+              {/* 1. Home */}
+              <Link
+                href={`/${locale}`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-red-50/50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Home size={20} className="text-[#d70b18]" />
+                  <span className="text-sm font-extrabold text-[#d70b18]">
+                    {locale === 'en' ? 'Home' : locale === 'hi' ? 'मुख्य पृष्ठ' : 'হোম'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 2. Latest */}
+              <Link
+                href={`/${locale}/category/latest`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <FileText size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Latest' : locale === 'hi' ? 'ताज़ा खबरें' : 'সর্বশেষ'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 3. Live TV */}
+              <Link
+                href={`/${locale}/live`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <PlayCircle size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव टीवी' : 'লাইভ টিভি'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 4. Video */}
+              <Link
+                href={`/${locale}/category/video`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Film size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Video' : locale === 'hi' ? 'वीडियो' : 'ভিডিও'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 5. Saved/Bookmarks */}
+              <Link
+                href={`/${locale}/bookmarks`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Bookmark size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Saved' : locale === 'hi' ? 'संग्रहीत' : 'সংরক্ষিত'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 6. Reading History */}
+              <Link
+                href={`/${locale}/history`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Clock size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Reading History' : locale === 'hi' ? 'पढ़ने का इतिहास' : 'পড়ার ইতিহাস'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 7. Notifications */}
+              <Link
+                href={`/${locale}/notifications`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Bell size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Notifications' : locale === 'hi' ? 'सूचनाएं' : 'নোটিফিকেশন'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 8. My Profile */}
+              <Link
+                href={`/${locale}/profile`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <User size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'My Profile' : locale === 'hi' ? 'मेरी प्रोफ़ाइल' : 'আমার প্রোফাইল'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 9. Light Mode / Dark Mode Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  {theme === 'dark' ? <Sun size={20} className="text-amber-500" /> : <Sun size={20} className="text-slate-700" />}
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Light Mode' : locale === 'hi' ? 'लाइट मोड' : 'আলো মোড'}
+                  </span>
+                </div>
+              </button>
+
+              {/* 10. Language Switcher Row & Segmented Selector */}
+              <div className="px-5 py-3.5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3.5">
+                    <Globe size={20} className="text-slate-700" />
+                    <span className="text-sm font-bold text-slate-800">
+                      {locale === 'en' ? 'Language' : locale === 'hi' ? 'भाषा बदलें' : 'ভাষা পরিবর্তন'}
+                    </span>
+                  </div>
+                  <ChevronDown size={18} className="text-slate-400" />
+                </div>
+
+                {/* Segmented Pill Selector */}
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/60">
+                  <button
+                    onClick={() => handleLangChange('bn')}
+                    className={`py-2 text-xs font-black rounded-lg transition-all ${
+                      locale === 'bn'
+                        ? 'bg-[#d70b18] text-white shadow-sm'
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    বাংলা
+                  </button>
+                  <button
+                    onClick={() => handleLangChange('en')}
+                    className={`py-2 text-xs font-black rounded-lg transition-all ${
+                      locale === 'en'
+                        ? 'bg-[#d70b18] text-white shadow-sm'
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    English
+                  </button>
+                  <button
+                    onClick={() => handleLangChange('hi')}
+                    className={`py-2 text-xs font-black rounded-lg transition-all ${
+                      locale === 'hi'
+                        ? 'bg-[#d70b18] text-white shadow-sm'
+                        : 'bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    हिंदी
+                  </button>
+                </div>
+              </div>
+
+              {/* 11. Settings */}
+              <Link
+                href={`/${locale}/settings`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Settings size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Settings' : locale === 'hi' ? 'सेटिंग्स' : 'সেটিংস'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 12. Help & Support */}
+              <Link
+                href={`/${locale}/help`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <HelpCircle size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Help & Support' : locale === 'hi' ? 'सहायता और समर्थन' : 'সাহায্য ও সহায়তা'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 13. Privacy Policy */}
+              <Link
+                href={`/${locale}/privacy`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <ShieldCheck size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'Privacy Policy' : locale === 'hi' ? 'गोपनीयता नीति' : 'গোপনীয়তা নীতি'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+              {/* 14. About Us */}
+              <Link
+                href={`/${locale}/about`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Info size={20} className="text-slate-700" />
+                  <span className="text-sm font-bold text-slate-800">
+                    {locale === 'en' ? 'About Us' : locale === 'hi' ? 'हमारे बारे में' : 'আমাদের সম্পর্কে'}
+                  </span>
+                </div>
+                <ChevronRight size={18} className="text-slate-400 group-hover:text-[#d70b18] transition-colors" />
+              </Link>
+
+            </div>
+
+            {/* Bottom Logout Button & Copyright */}
+            <div className="p-4 border-t border-slate-100 bg-white">
+              <button
+                onClick={() => {
+                  alert(locale === 'en' ? 'Logged out successfully' : locale === 'hi' ? 'लॉग आउट सफल' : 'সফলভাবে লগ আউট হয়েছে');
+                  setMobileOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-[#d70b18] font-bold text-sm hover:bg-red-50 transition-colors shadow-2xs"
+              >
+                <LogOut size={18} />
+                <span>{locale === 'en' ? 'Log Out' : locale === 'hi' ? 'लॉग आउट' : 'লগ আউট'}</span>
+              </button>
+
+              <p className="mt-3.5 text-center text-[10.5px] font-medium text-slate-400">
+                © 2024 Nirbhik Bangla. {locale === 'en' ? 'All rights reserved.' : locale === 'hi' ? 'सर्वाधिकार सुरक्षित।' : 'সর্বস্বত্ব সংরক্ষিত।'}
+              </p>
+            </div>
+
+          </div>
         </div>
       )}
 
@@ -524,7 +808,7 @@ export default function Header() {
               <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-red-600 animate-ping opacity-70" />
               <span className="absolute -top-0.5 -right-1.5 h-2 w-2 rounded-full bg-red-600" />
             </div>
-            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव' : 'লাইভ'}</span>
+            <span className="text-[9.5px] font-bold tracking-tight">{locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव' : 'लाइव'}</span>
           </Link>
 
           {/* Bookmarks */}

@@ -132,6 +132,27 @@ const bn = {
   },
 
   // Common
+  category_page: {
+    all_news: 'সব খবর',
+    more: 'আরও',
+    latest: 'সর্বশেষ',
+    popular: 'জনপ্রিয়',
+    top_story: 'শীর্ষ খবর',
+    latest_news: 'সর্বশেষ খবর',
+    view_all: 'সব দেখুন',
+    view_more: 'আরও দেখুন',
+    follow: 'ফলো করুন',
+    following: 'ফলো করছেন',
+    followers: 'ফলোয়ার্স',
+    load_more: 'আরও খবর দেখুন',
+    loading_more: 'আরও খবর লোড হচ্ছে...',
+    staff_reporter: 'নিজস্ব সংবাদদাতা',
+    inbox_heading: 'আপনার ইনবক্সে সেরা খবর',
+    inbox_desc: 'দৈনিক গুরুত্বপূর্ণ সব আপডেট পেতে সাবস্ক্রাইব করুন',
+    email_placeholder: 'আপনার ইমেইল দিন',
+    subscribe: 'সাবস্ক্রাইব করুন',
+    subscribed_success: 'সাবস্ক্রাইব করার জন্য আপনাকে ধন্যবাদ!',
+  },
   common: {
     loading: 'লোড হচ্ছে...',
     error: 'একটি ত্রুটি ঘটেছে',

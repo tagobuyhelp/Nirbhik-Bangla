@@ -227,6 +227,15 @@ router.get('/livestreams', async (req, res, next) => {
   }
 });
 
+// POST /api/v1/public/subscribe
+router.post('/subscribe', (req, res) => {
+  const { email } = req.body || {};
+  if (!email || !email.includes('@')) {
+    return sendResponse(res, 400, 'Valid email required');
+  }
+  return sendResponse(res, 200, 'Subscribed successfully', { email });
+});
+
 // GET /api/v1/public/ads
 router.get('/ads', getActiveAds);
 router.post('/ads/:id/click', trackAdClick);
