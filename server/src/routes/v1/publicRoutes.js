@@ -26,10 +26,10 @@ const defaultCategories = [
 // GET /api/v1/public/news
 router.get('/news', async (req, res, next) => {
   try {
-    const { category, lang = 'bn', isFeatured, isBreaking } = req.query;
+    const { category, lang = 'bn', isFeatured, isBreaking, isTrending, isVideo, search, limit } = req.query;
     const query = {};
 
-    if (category) {
+    if (category && category !== 'all') {
       query.categorySlug = category;
     }
     if (isFeatured === 'true') {
@@ -38,15 +38,53 @@ router.get('/news', async (req, res, next) => {
     if (isBreaking === 'true') {
       query.isBreaking = true;
     }
+    if (isTrending === 'true') {
+      query.isTrending = true;
+    }
+    if (isVideo === 'true') {
+      query.isVideo = true;
+    }
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { 'translations.bn.title': searchRegex },
+        { 'translations.en.title': searchRegex },
+        { 'translations.hi.title': searchRegex },
+        { 'translations.bn.content': searchRegex },
+        { 'translations.en.content': searchRegex },
+        { 'translations.hi.content': searchRegex },
+        { categoryName: searchRegex },
+        { categorySlug: searchRegex },
+      ];
+    }
 
-    const articles = await Article.find(query).sort({ createdAt: -1 });
+    let articleQuery = Article.find(query).sort({ createdAt: -1 });
+    if (limit && !isNaN(parseInt(limit))) {
+      articleQuery = articleQuery.limit(parseInt(limit));
+    }
+
+    const articles = await articleQuery;
+
+    // Build a set of unique category slugs to look up localized names
+    const slugSet = new Set(articles.map((a) => a.categorySlug).filter(Boolean));
+    const cats = await Category.find({ slug: { $in: [...slugSet] } }).lean();
+    const catMap = {};
+    cats.forEach((c) => { catMap[c.slug] = c.name; });
 
     const formatted = articles.map((art) => {
       const langData = art.translations.get(lang) || art.translations.get('bn') || {};
+      const catNames = catMap[art.categorySlug];
+      const localizedCategoryName = catNames
+        ? (catNames[lang] || catNames.bn || art.categoryName)
+        : art.categoryName;
+      const tags = (langData.tags && langData.tags.length > 0) ? langData.tags : (art.tags || []);
+      const imageCaption = langData.imageMetadata?.caption || art.imageMetadata?.caption || '';
+      const imageCredit = langData.imageMetadata?.credit || art.imageMetadata?.credit || '';
+      const imageAltText = langData.imageMetadata?.altText || art.imageMetadata?.altText || '';
       return {
         id: art._id,
         categorySlug: art.categorySlug,
-        categoryName: art.categoryName,
+        categoryName: localizedCategoryName,
         featuredImageUrl: art.featuredImageUrl,
         galleryUrls: art.galleryUrls,
         videoUrl: art.videoUrl,
@@ -59,6 +97,10 @@ router.get('/news', async (req, res, next) => {
         slug: langData.slug || '',
         excerpt: langData.excerpt || '',
         content: langData.content || '',
+        tags,
+        imageCaption,
+        imageCredit,
+        imageAltText,
         seo: langData.seo || {},
         author: art.authorName,
         publishedAt: art.publishedAt || art.createdAt,
@@ -95,10 +137,24 @@ router.get('/news/by-slug/:slug', async (req, res, next) => {
 
     const langData = article.translations.get(lang) || article.translations.get('bn') || {};
 
+    // Look up the Category to get the localized name
+    let localizedCategoryName = article.categoryName;
+    if (article.categorySlug) {
+      const cat = await Category.findOne({ slug: article.categorySlug }).lean();
+      if (cat && cat.name) {
+        localizedCategoryName = cat.name[lang] || cat.name.bn || article.categoryName;
+      }
+    }
+
+    const tags = (langData.tags && langData.tags.length > 0) ? langData.tags : (article.tags || []);
+    const imageCaption = langData.imageMetadata?.caption || article.imageMetadata?.caption || '';
+    const imageCredit = langData.imageMetadata?.credit || article.imageMetadata?.credit || '';
+    const imageAltText = langData.imageMetadata?.altText || article.imageMetadata?.altText || '';
+
     const formatted = {
       id: article._id,
       categorySlug: article.categorySlug,
-      categoryName: article.categoryName,
+      categoryName: localizedCategoryName,
       featuredImageUrl: article.featuredImageUrl,
       galleryUrls: article.galleryUrls,
       videoUrl: article.videoUrl,
@@ -111,6 +167,10 @@ router.get('/news/by-slug/:slug', async (req, res, next) => {
       slug: langData.slug || '',
       excerpt: langData.excerpt || '',
       content: langData.content || '',
+      tags,
+      imageCaption,
+      imageCredit,
+      imageAltText,
       seo: langData.seo || {},
       author: article.authorName,
       publishedAt: article.publishedAt || article.createdAt,
@@ -144,6 +204,7 @@ router.get('/breaking', async (req, res, next) => {
 });
 
 // GET /api/v1/public/categories
+// GET /api/v1/public/categories
 router.get('/categories', async (req, res, next) => {
   try {
     let categories = await Category.find({ isActive: true }).sort({ order: 1 });
@@ -151,6 +212,16 @@ router.get('/categories', async (req, res, next) => {
       categories = await Category.insertMany(defaultCategories);
     }
     return sendResponse(res, 200, 'Categories fetched successfully', categories);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/v1/public/livestreams
+router.get('/livestreams', async (req, res, next) => {
+  try {
+    const streams = await LiveStream.find().sort({ isDefault: -1, createdAt: -1 });
+    return sendResponse(res, 200, 'Live streams fetched successfully', streams);
   } catch (error) {
     next(error);
   }

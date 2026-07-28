@@ -1,0 +1,27 @@
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Node dependencies
+node_modules/
+
+# Next.js & Vite build output
+client/.next/
+client/out/
+admin/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & IDE
+.DS_Store
+.vscode/
+.idea/

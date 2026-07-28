@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Play,
@@ -22,6 +22,7 @@ import {
   Home,
   Radio,
 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 const INITIAL_SCHEDULE = [
   { timeStart: '11:00 AM', timeEnd: '12:00 PM', title: 'দিনের গুরুত্বপূর্ণ খবর', isLive: true },

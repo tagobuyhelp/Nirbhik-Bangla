@@ -31,8 +31,8 @@ const fallbackArticle = {
   authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
   publishedAt: '২৪ মে ২০২৪, ০৯:১৬ AM',
   featuredImageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85',
-  imageCaption: 'সংসদ ভবন, নয়াদিল্লি',
-  imageCredit: 'ছবি: সংগৃহীত',
+  imageCaption: '',
+  imageCredit: '',
   viewsCount: '১৪.৫K',
   content: `
     <p>আজ দেশের রাজনৈতিক ভবিষ্যৎ নির্ধারণের দিন। লোকসভা নির্বাচনের ফল ঘোষণা হবে আজ, শনিবার। সকাল ৮টা থেকে শুরু হয়েছে ভোটগণনার প্রক্রিয়া। সারা দেশে মোট ৪০০০-এর বেশি কেন্দ্রে ভোটগণনা চলছে। নির্বাচন কমিশন সূত্রে খবর, ফল প্রকাশ না হওয়া পর্যন্ত সর্বত্র কড়া নিরাপত্তা বজায় রাখা হয়েছে।</p>
@@ -43,7 +43,7 @@ const fallbackArticle = {
     <p>প্রধান নির্বাচন কমিশনার বলেছেন, ফলাফল প্রকাশের পর বিজয়ী মিছিল সংক্রান্ত নির্দেশিকাও সমস্ত রাজ্যের রাজ্যপাল এবং মুখ্যসচিবদের পাঠিয়ে দেওয়া হয়েছে। বিশৃঙ্খলা এড়াতে নির্বাচন কমিশনের পক্ষ থেকে কড়া ব্যবস্থা নেওয়ার সতর্কতা দেওয়া হয়েছে।</p>
     <p>ফলাফেলের সর্বশেষ আপডেট পেতে আমাদের সঙ্গে থাকুন...</p>
   `,
-  tags: ['লোকসভা নির্বাচন ২০২৪', 'ফল ঘোষণা', 'নির্বাচন কমিশন', 'নিরাপত্তা'],
+  tags: [],
 };
 
 const fallbackRelatedNews = [
@@ -90,25 +90,20 @@ const fallbackSidebarLatest = [
   { slug: 'smart-phone-ai-feature-launch', title: 'কম দামে বাজারে এল এআই সেন্সরযুক্ত নতুন স্মার্টফোন', time: '২৪ মে ২০২৪, ০৬:১৫ AM', img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=200&q=80' },
 ];
 
-function formatBanglaDate(dateStr) {
-  if (!dateStr) return '২১ জুলাই ২০২৬, ০৭:৩৭ PM';
-  if (typeof dateStr === 'string' && (dateStr.includes('মে') || dateStr.includes('জুলাই') || dateStr.includes('জুন') || dateStr.includes('জানুয়ারি'))) {
-    return dateStr;
-  }
+function formatArticleDate(dateStr, currentLang = 'bn') {
+  if (!dateStr) return '';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-    const toBnNum = (str) => String(str).replace(/\d/g, (ch) => '০১২৩৪৫৬৭৮৯'[ch]);
-    const day = toBnNum(d.getDate());
-    const month = months[d.getMonth()];
-    const year = toBnNum(d.getFullYear());
-    let hours = d.getHours();
-    const minutes = toBnNum(String(d.getMinutes()).padStart(2, '0'));
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    const bnHours = toBnNum(hours);
-    return `${day} ${month} ${year}, ${bnHours}:${minutes} ${ampm}`;
+    const localeCode = currentLang === 'en' ? 'en-US' : currentLang === 'hi' ? 'hi-IN' : 'bn-BD';
+    return d.toLocaleDateString(localeCode, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   } catch (e) {
     return dateStr;
   }
@@ -116,6 +111,8 @@ function formatBanglaDate(dateStr) {
 
 export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-result' }) {
   const [article, setArticle] = useState(fallbackArticle);
+  const [relatedArticles, setRelatedArticles] = useState([]);
+  const [sidebarLatest, setSidebarLatest] = useState([]);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [fontSizeClass, setFontSizeClass] = useState('text-base');
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -132,9 +129,31 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
             ...fallbackArticle,
             ...data.data,
           });
+
+          // Fetch related news by category
+          if (data.data.categorySlug) {
+            fetch(`http://localhost:5000/api/v1/public/news?category=${data.data.categorySlug}&lang=${lang}&limit=6`)
+              .then((res) => res.json())
+              .then((relData) => {
+                if (relData.success && Array.isArray(relData.data)) {
+                  setRelatedArticles(relData.data.filter((item) => item.slug !== slug));
+                }
+              })
+              .catch((err) => console.log('Related news fetch error:', err));
+          }
         }
       })
       .catch((err) => console.log('Using fallback article data:', err));
+
+    // Fetch sidebar latest news
+    fetch(`http://localhost:5000/api/v1/public/news?lang=${lang}&limit=10`)
+      .then((res) => res.json())
+      .then((latestData) => {
+        if (latestData.success && Array.isArray(latestData.data)) {
+          setSidebarLatest(latestData.data);
+        }
+      })
+      .catch((err) => console.log('Sidebar news fetch error:', err));
   }, [slug, lang]);
 
   const handleCopyLink = () => {
@@ -145,20 +164,29 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
     }
   };
 
+  const homeBreadcrumb = lang === 'en' ? 'Home' : lang === 'hi' ? 'मुख्य पृष्ठ' : 'প্রচ্ছদ';
+  const shareText = lang === 'en' ? 'Share' : lang === 'hi' ? 'शेयर करें' : 'শেয়ার করুন';
+  const copyLinkTooltip = copiedLink
+    ? (lang === 'en' ? 'Link Copied!' : lang === 'hi' ? 'लिंक कॉपी हो गया!' : 'লিঙ্ক কপি করা হয়েছে!')
+    : (lang === 'en' ? 'Copy Link' : lang === 'hi' ? 'लिंक कॉपी करें' : 'লিঙ্ক কপি করুন');
+  const audioText = isPlayingAudio
+    ? (lang === 'en' ? 'Stop' : lang === 'hi' ? 'रोकें' : 'থামুন')
+    : (lang === 'en' ? 'Listen to News' : lang === 'hi' ? 'यह खबर सुनें' : 'শুনুন এই খবর');
+
   return (
     <div className="bg-white min-h-screen pb-24 md:pb-12 text-slate-900">
       <div className="mx-auto max-w-[1360px] px-3 pt-3">
         {/* Breadcrumb Row */}
         <nav className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-slate-500 overflow-x-auto whitespace-nowrap">
-          <Link href={`/${lang}`} className="hover:text-[#d70b18] transition-colors">প্রচ্ছদ</Link>
+          <Link href={`/${lang}`} className="hover:text-[#d70b18] transition-colors">{homeBreadcrumb}</Link>
           <ChevronRight size={13} className="text-slate-400 shrink-0" />
-          <Link href={`/${lang}/category/${article.categoryName}`} className="hover:text-[#d70b18] transition-colors">{article.categoryName}</Link>
+          <Link href={`/${lang}/category/${article.categorySlug}`} className="hover:text-[#d70b18] transition-colors">{article.categoryName}</Link>
           <ChevronRight size={13} className="text-slate-400 shrink-0" />
           <span className="text-slate-800 font-bold truncate max-w-[300px] md:max-w-none">{article.title}</span>
         </nav>
 
         {/* Main 12-Col Grid */}
-        <div className="grid grid-cols-12 gap-5">
+        <div className="grid grid-cols-12 gap-5 items-start">
           {/* Main Article Left Column (col-span-12 md:col-span-8) */}
           <main className="col-span-12 md:col-span-8 min-w-0 space-y-3">
             {/* Category Pill & Font Resizer Bar */}
@@ -195,11 +223,13 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
               {article.title}
             </h1>
 
-            {/* Subtitle / Excerpt */}
+            {/* Subtitle / Excerpt Callout */}
             {article.excerpt && (
-              <p className="text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
-                {article.excerpt}
-              </p>
+              <div className="my-2 rounded-r-lg border-l-4 border-[#d70b18] bg-slate-50 p-3.5 sm:p-4 text-slate-800 shadow-2xs">
+                <p className="text-sm sm:text-base font-bold leading-relaxed text-slate-700 italic">
+                  {article.excerpt}
+                </p>
+              </div>
             )}
 
             {/* Author & Share Bar — Parity Match */}
@@ -216,13 +246,13 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                     <CheckCircle size={12} className="text-[#d70b18] fill-[#d70b18] text-white shrink-0" />
                   </div>
                   <div className="text-[10px] font-semibold text-slate-400 leading-none mt-0.5 whitespace-nowrap">
-                    {formatBanglaDate(article.publishedAt)}
+                    {formatArticleDate(article.publishedAt, lang)}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
-                <span className="text-[11px] font-bold text-slate-500 mr-0.5 hidden sm:inline">শেয়ার করুন</span>
+                <span className="text-[11px] font-bold text-slate-500 mr-0.5 hidden sm:inline">{shareText}</span>
                 <a
                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
                   target="_blank"
@@ -254,7 +284,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                   onClick={handleCopyLink}
                   className="h-7 w-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-300 transition-colors shrink-0"
                   aria-label="Copy link"
-                  title={copiedLink ? 'লিঙ্ক কপি করা হয়েছে!' : 'লিঙ্ক কপি করুন'}
+                  title={copyLinkTooltip}
                 >
                   <Link2 size={13} />
                 </button>
@@ -270,14 +300,16 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                   className="h-full w-full object-cover object-center"
                 />
               </div>
-              <div className="flex items-center gap-2 bg-slate-50/90 px-3.5 py-2 text-[11px] font-semibold text-slate-400 border-t border-slate-200/60">
-                <span>{article.imageCaption || 'সংসদ ভবন, নয়াদিল্লি'}</span>
-                <span>|</span>
-                <span>{article.imageCredit || 'ছবি: সংগৃহীত'}</span>
-              </div>
+              {(article.imageCaption || article.imageCredit) && (
+                <div className="flex items-center gap-2 bg-slate-50/90 px-3.5 py-2 text-[11px] font-semibold text-slate-400 border-t border-slate-200/60">
+                  {article.imageCaption && <span>{article.imageCaption}</span>}
+                  {article.imageCaption && article.imageCredit && <span>|</span>}
+                  {article.imageCredit && <span>{article.imageCredit}</span>}
+                </div>
+              )}
             </div>
 
-            {/* Audio Reader Widget (shunung ei khobor) — Equalizer Waveform Match */}
+            {/* Audio Reader Widget */}
             <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs flex items-center justify-between gap-2.5">
               <button
                 onClick={() => setIsPlayingAudio(!isPlayingAudio)}
@@ -286,7 +318,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-[#d70b18] text-white shadow-xs">
                   {isPlayingAudio ? <VolumeX size={14} /> : <Play size={14} fill="white" className="ml-0.5" />}
                 </span>
-                <span>{isPlayingAudio ? 'থামুন' : 'শুনুন এই খবর'}</span>
+                <span>{audioText}</span>
               </button>
 
               {/* Equalizer waveform vertical bars */}
@@ -308,23 +340,26 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
 
             {/* Article Content Body */}
             <div
-              className={`prose max-w-none text-slate-800 leading-relaxed font-medium ${fontSizeClass}`}
+              className={`prose max-w-none text-slate-800 leading-relaxed font-medium bengali-article-content ${fontSizeClass}`}
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
 
             {/* Tags & Bookmark Row */}
             <div className="flex flex-wrap items-center justify-between border-t border-slate-200 pt-4 gap-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black text-slate-900">ট্যাগসমূহ:</span>
-                {article.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-[#d70b18] hover:text-white transition-colors cursor-pointer"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {article.tags && article.tags.length > 0 ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-slate-900">{lang === 'en' ? 'Tags:' : lang === 'hi' ? 'टैग:' : 'ট্যাগসমূহ:'}</span>
+                  {article.tags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={`/${lang}/search?q=${encodeURIComponent(tag)}`}
+                      className="rounded bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-[#d70b18] hover:text-white transition-colors cursor-pointer"
+                    >
+                      {tag}
+                    </Link>
+                  ))}
+                </div>
+              ) : <div />}
 
               <button
                 onClick={() => setIsBookmarked(!isBookmarked)}
@@ -335,7 +370,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                 }`}
               >
                 <Bookmark size={14} className={isBookmarked ? 'fill-[#d70b18]' : ''} />
-                <span>{isBookmarked ? 'সংসংরক্ষিত' : 'বুকমার্ক'}</span>
+                <span>{isBookmarked ? (lang === 'en' ? 'Saved' : lang === 'hi' ? 'सहेजा गया' : 'সংরক্ষিত') : (lang === 'en' ? 'Bookmark' : lang === 'hi' ? 'बुकमार्क' : 'বুকমার্ক')}</span>
               </button>
             </div>
 
@@ -362,38 +397,46 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
               </div>
             </div>
 
-            {/* Related News Section (সম্পর্কিত খবর) */}
+            {/* Related News Section */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
-                <h2 className="text-sm font-extrabold text-slate-900">সম্পর্কিত খবর</h2>
-                <Link href={`/${lang}/category/${article.categoryName}`} className="flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-[#d70b18]">
-                  সব দেখুন <ArrowRight size={13} className="text-[#d70b18]" />
+                <h2 className="text-sm font-extrabold text-slate-900">{lang === 'en' ? 'Related News' : lang === 'hi' ? 'संबंधित खबरें' : 'সম্পর্কিত খবর'}</h2>
+                <Link href={`/${lang}/category/${article.categorySlug}`} className="flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-[#d70b18]">
+                  {lang === 'en' ? 'View All' : lang === 'hi' ? 'सभी देखें' : 'সব দেখুন'} <ArrowRight size={13} className="text-[#d70b18]" />
                 </Link>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {fallbackRelatedNews.map((item, idx) => (
-                  <Link key={idx} href={`/${lang}/news/${item.slug}`} className="group flex flex-col overflow-hidden rounded-md border border-slate-100 bg-white shadow-2xs hover:shadow-md transition-all">
-                    <div className="h-[105px] w-full overflow-hidden bg-slate-100 relative shrink-0">
-                      <img src={item.img} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
-                    </div>
-                    <div className="p-2 flex-1 flex flex-col justify-between">
-                      <div>
-                        <span className="text-[9.5px] font-black text-[#d70b18] uppercase">{item.cat}</span>
-                        <h3 className="line-clamp-2 text-xs font-bold text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors mt-0.5">
-                          {item.title}
-                        </h3>
+                {(relatedArticles.length > 0 ? relatedArticles : fallbackRelatedNews).map((item, idx) => {
+                  const formattedDate = item.publishedAt
+                    ? new Date(item.publishedAt).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'hi' ? 'hi-IN' : 'bn-BD', {
+                        day: 'numeric',
+                        month: 'short',
+                      })
+                    : (item.date || '২৩ মে ২০২৪');
+                  return (
+                    <Link key={idx} href={`/${lang}/news/${item.slug}`} className="group flex flex-col overflow-hidden rounded-md border border-slate-100 bg-white shadow-2xs hover:shadow-md transition-all">
+                      <div className="h-[105px] w-full overflow-hidden bg-slate-100 relative shrink-0">
+                        <img src={item.featuredImageUrl || item.img} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                       </div>
-                      <span className="mt-2 text-[9px] font-semibold text-slate-400">{item.date}</span>
-                    </div>
-                  </Link>
-                ))}
+                      <div className="p-2 flex-1 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[9.5px] font-black text-[#d70b18] uppercase">{item.categoryName || item.cat}</span>
+                          <h3 className="line-clamp-2 text-xs font-bold text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors mt-0.5">
+                            {item.title}
+                          </h3>
+                        </div>
+                        <span className="mt-2 text-[9px] font-semibold text-slate-400">{formattedDate}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </main>
 
-          {/* Right Sidebar (col-span-12 md:col-span-4) */}
-          <aside className="col-span-12 md:col-span-4 space-y-4">
+          {/* Right Sidebar (col-span-12 md:col-span-4) — Sticky Scroll */}
+          <aside className="col-span-12 md:col-span-4 space-y-4 md:sticky md:top-[210px] self-start">
             {/* Live TV Widget */}
             <div className="rounded-lg bg-[#07090c] p-3.5 text-white shadow-xs">
               <div className="mb-2.5 flex items-center justify-between">
@@ -418,10 +461,10 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
               <div className="mt-2.5 flex items-center justify-between border-t border-white/10 pt-2.5 text-xs">
                 <div>
                   <h3 className="font-bold text-white">Nirbhik Bangla Live</h3>
-                  <p className="text-[9.5px] text-white/70">24x7 নির্ভীক সংবাদ</p>
+                  <p className="text-[9.5px] text-white/70">{lang === 'en' ? '24x7 Fearless News' : lang === 'hi' ? '24x7 निष्पक्ष समाचार' : '24x7 নির্ভীক সংবাদ'}</p>
                 </div>
                 <Link href={`/${lang}/live`} className="rounded bg-[#d70b18] px-3 py-1 text-[11px] font-extrabold text-white hover:bg-red-700 transition-colors">
-                  এখনই দেখুন
+                  {lang === 'en' ? 'Watch Now' : lang === 'hi' ? 'अभी देखें' : 'এখনই দেখুন'}
                 </Link>
               </div>
             </div>
@@ -434,27 +477,35 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d70b18] opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-[#d70b18]"></span>
                   </span>
-                  <h2 className="text-sm font-extrabold text-slate-900">সর্বশেষ খবর</h2>
+                  <h2 className="text-sm font-extrabold text-slate-900">{lang === 'en' ? 'Latest News' : lang === 'hi' ? 'ताज़ा खबरें' : 'সর্বশেষ খবর'}</h2>
                 </div>
                 <Link href={`/${lang}/category/latest`} className="flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-[#d70b18]">
-                  সব দেখুন <ArrowRight size={13} className="text-[#d70b18]" />
+                  {lang === 'en' ? 'View All' : lang === 'hi' ? 'सभी देखें' : 'সব দেখুন'} <ArrowRight size={13} className="text-[#d70b18]" />
                 </Link>
               </div>
 
               {/* Auto-scrolling list container with smooth vertical marquee */}
               <div className="h-[320px] overflow-hidden relative group">
                 <div className="animate-vertical-scroll space-y-2.5">
-                  {[...fallbackSidebarLatest, ...fallbackSidebarLatest].map((item, idx) => (
-                    <Link key={idx} href={`/${lang}/news/${item.slug}`} className="flex items-center gap-2.5 group/item border-b border-slate-100 pb-2 last:border-0 last:pb-0">
-                      <div className="h-[48px] w-[62px] min-w-[62px] max-w-[62px] overflow-hidden rounded bg-slate-100 shrink-0">
-                        <img src={item.img} alt="" className="h-full w-full object-cover group-hover/item:scale-105 transition-transform" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="line-clamp-2 text-xs font-bold text-slate-900 group-hover/item:text-[#d70b18] transition-colors leading-tight">{item.title}</h3>
-                        <p className="mt-0.5 text-[9.5px] text-slate-400 font-medium">{item.time}</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {(sidebarLatest.length > 0 ? sidebarLatest : fallbackSidebarLatest).map((item, idx) => {
+                    const formattedDate = item.publishedAt
+                      ? new Date(item.publishedAt).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'hi' ? 'hi-IN' : 'bn-BD', {
+                          day: 'numeric',
+                          month: 'short',
+                        })
+                      : (item.time || '২৪ মে ২০২৪');
+                    return (
+                      <Link key={idx} href={`/${lang}/news/${item.slug}`} className="flex items-center gap-2.5 group/item border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                        <div className="h-[48px] w-[62px] min-w-[62px] max-w-[62px] overflow-hidden rounded bg-slate-100 shrink-0">
+                          <img src={item.featuredImageUrl || item.img} alt="" className="h-full w-full object-cover group-hover/item:scale-105 transition-transform" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="line-clamp-2 text-xs font-bold text-slate-900 group-hover/item:text-[#d70b18] transition-colors leading-tight">{item.title}</h3>
+                          <p className="mt-0.5 text-[9.5px] text-slate-400 font-medium">{formattedDate}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -463,13 +514,13 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
             <div className="rounded-lg bg-gradient-to-br from-[#1e1b4b] to-[#311b92] p-4 text-white shadow-md relative overflow-hidden">
               <div className="relative z-10">
                 <h2 className="text-base font-black leading-snug text-white max-w-[200px]">
-                  আপনার ব্যবসার জন্য সেরা বিজ্ঞাপন প্ল্যাটফর্ম
+                  {lang === 'en' ? 'Best Advertising Platform for Your Business' : lang === 'hi' ? 'आपके व्यवसाय के लिए सर्वश्रेष्ठ विज्ञापन मंच' : 'আপনার ব্যবসার জন্য সেরা বিজ্ঞাপন প্ল্যাটফর্ম'}
                 </h2>
                 <Link
                   href="/advertise"
                   className="mt-3 inline-block rounded bg-amber-400 px-3.5 py-1.5 text-xs font-black text-slate-900 hover:bg-amber-300 transition-colors shadow-sm"
                 >
-                  বিজ্ঞাপন দিন
+                  {lang === 'en' ? 'Advertise' : lang === 'hi' ? 'विज्ञापन दें' : 'বিজ্ঞাপন দিন'}
                 </Link>
               </div>
               <div className="absolute right-2 bottom-2 opacity-20 pointer-events-none">
@@ -479,16 +530,16 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
 
             {/* Newsletter Subscribe Box */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
-              <h2 className="text-sm font-extrabold text-slate-900">নিউজলেটার সাবস্ক্রাইব করুন</h2>
-              <p className="mt-0.5 text-xs text-slate-500 font-medium">সর্বশেষ খবর সরাসরি ইমেইলে পেতে সাবস্ক্রাইব করুন</p>
+              <h2 className="text-sm font-extrabold text-slate-900">{lang === 'en' ? 'Subscribe to Newsletter' : lang === 'hi' ? 'न्यूज़लेटर की सदस्यता लें' : 'নিউজলেটার সাবস্ক্রাইব করুন'}</h2>
+              <p className="mt-0.5 text-xs text-slate-500 font-medium">{lang === 'en' ? 'Subscribe to get the latest news delivered directly to your email.' : lang === 'hi' ? 'ईमेल में ताज़ा खबरें पाने के लिए सदस्यता लें' : 'সর্বশেষ খবর সরাসরি ইমেইলে পেতে সাবস্ক্রাইব করুন'}</p>
               <form onSubmit={(e) => e.preventDefault()} className="mt-3 space-y-2">
                 <input
                   type="email"
-                  placeholder="আপনার ইমেইল দিন"
+                  placeholder={lang === 'en' ? 'Enter your email' : lang === 'hi' ? 'अपना ईमेल दर्ज करें' : 'আপনার ইমেইল দিন'}
                   className="w-full rounded border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-[#d70b18] focus:bg-white"
                 />
                 <button type="submit" className="w-full rounded bg-[#d70b18] py-2 text-xs font-black uppercase text-white hover:bg-red-700 transition-colors shadow-xs">
-                  সাবস্ক্রাইব করুন
+                  {lang === 'en' ? 'Subscribe' : lang === 'hi' ? 'सब्सक्राइब करें' : 'সাবস্ক্রাইব করুন'}
                 </button>
               </form>
             </div>
@@ -503,12 +554,12 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
           className={`flex flex-col items-center gap-0.5 text-[10px] font-extrabold transition-colors ${isBookmarked ? 'text-[#d70b18]' : 'text-slate-700 hover:text-[#d70b18]'}`}
         >
           <Bookmark size={19} className={isBookmarked ? 'fill-[#d70b18]' : ''} />
-          <span>বুকমার্ক</span>
+          <span>{isBookmarked ? (lang === 'en' ? 'Saved' : lang === 'hi' ? 'सहेजा गया' : 'সংরক্ষিত') : (lang === 'en' ? 'Bookmark' : lang === 'hi' ? 'बुकमार्क' : 'বুকমার্ক')}</span>
         </button>
 
         <a href="#comments" className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-slate-700 hover:text-[#d70b18] transition-colors">
           <MessageCircle size={19} />
-          <span>১২ মন্তব্য</span>
+          <span>{lang === 'en' ? '12 Comments' : lang === 'hi' ? '12 टिप्पणियां' : '১২ মন্তব্য'}</span>
         </a>
 
         <button
@@ -519,7 +570,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
           className={`flex flex-col items-center gap-0.5 text-[10px] font-extrabold transition-colors ${hasLiked ? 'text-[#d70b18]' : 'text-slate-700 hover:text-[#d70b18]'}`}
         >
           <ThumbsUp size={19} className={hasLiked ? 'fill-[#d70b18]' : ''} />
-          <span>{likesCount} লাইক</span>
+          <span>{likesCount} {lang === 'en' ? 'Likes' : lang === 'hi' ? 'पसंद' : 'লাইক'}</span>
         </button>
 
         <button
@@ -527,7 +578,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
           className="flex flex-col items-center gap-0.5 text-[10px] font-extrabold text-slate-700 hover:text-[#d70b18] transition-colors"
         >
           <Share2 size={19} />
-          <span>{copiedLink ? 'কপি হয়েছে' : 'শেয়ার'}</span>
+          <span>{copiedLink ? (lang === 'en' ? 'Copied' : lang === 'hi' ? 'कॉपी हुआ' : 'কপি হয়েছে') : (lang === 'en' ? 'Share' : lang === 'hi' ? 'शेयर' : 'শেয়ার')}</span>
         </button>
       </div>
     </div>

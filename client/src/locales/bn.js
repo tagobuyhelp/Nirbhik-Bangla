@@ -14,7 +14,7 @@ const bn = {
     dashboard: 'ড্যাশবোর্ড',
   },
 
-  // Categories
+  // Categories (generic)
   categories: {
     politics: 'রাজনীতি',
     sports: 'খেলাধুলা',
@@ -31,6 +31,29 @@ const bn = {
     religion: 'ধর্ম',
     crime: 'অপরাধ',
     science: 'বিজ্ঞান',
+  },
+
+  // Category names by slug (for homepage category grids)
+  category_names: {
+    'paschim-bardhaman': 'পশ্চিম বর্ধমান',
+    'asansol': 'আসানসোল',
+    'durgapur': 'দুর্গাপুর',
+    'rajya': 'রাজ্য',
+    'desh': 'দেশ',
+    'biswa': 'বিশ্ব',
+    'khela': 'খেলা',
+    'binodon': 'বিনোদন',
+    'lifestyle': 'লাইফস্টাইল',
+    'projukti': 'প্রযুক্তি',
+    'tech': 'প্রযুক্তি',
+    'rajniti': 'রাজনীতি',
+    'arthaniti': 'অর্থনীতি',
+    'video': 'ভিডিও',
+    'breaking': 'ব্রেকিং নিউজ',
+    'latest': 'সর্বশেষ খবর',
+    'popular': 'জনপ্রিয় খবর',
+    'special-report': 'বিশেষ প্রতিবেদন',
+    'all': 'সব বিভাগ',
   },
 
   // Homepage Sections
@@ -50,6 +73,20 @@ const bn = {
     poll_title: 'আজকের জনমত',
     poll_vote: 'ভোট দিন',
     poll_results: 'ফলাফল দেখুন',
+    top_categories: 'টপ ক্যাটাগরি',
+    categories_section: 'বিভাগ সমূহ',
+    special_reports: 'বিশেষ প্রতিবেদন',
+    live_tv: 'লাইভ টিভি',
+    popular_news: 'জনপ্রিয় খবর',
+    newsletter_heading: 'গুরুত্বপূর্ণ খবর',
+    newsletter_subheading: 'সবার আগে পেতে',
+    newsletter_desc: 'সাবস্ক্রাইব করুন আমাদের নিউজলেটার',
+    email_placeholder: 'আপনার ইমেইল লিখুন',
+    subscribe: 'সাবস্ক্রাইব করুন',
+    terms_agree: 'আমি শর্তাবলী এবং গোপনীয়তা নীতি অনুসরণ করছি',
+    main_news: 'প্রধান খবর',
+    watch_now: 'এখনই দেখুন',
+    news_count_suffix: 'খবর',
   },
 
   // Article Page

@@ -14,6 +14,8 @@ const articleIds = [
   'railway-vande-bharat-expansion',
 ];
 
+export const dynamicParams = true;
+
 export function generateStaticParams() {
   return articleIds.map((id) => ({ id }));
 }

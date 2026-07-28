@@ -4,21 +4,17 @@ import api from '../utils/api';
 import {
   Download,
   Plus,
-  ChevronDown,
   Calendar,
   Filter,
   Search,
-  ArrowUpDown,
   Eye,
   Pencil,
-  MoreVertical,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
   FileText,
   Clock,
   Trash2,
-  AlertCircle,
   TrendingUp,
 } from 'lucide-react';
 
@@ -27,6 +23,12 @@ export default function PostsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
+  const [postsList, setPostsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -35,29 +37,38 @@ export default function PostsPage() {
     }, 3000);
   };
 
-  const [postsList, setPostsList] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const fetchArticles = async () => {
+    setLoading(true);
     try {
       const { data } = await api.get('/articles');
-      const formatted = (data.data || []).map((art) => ({
-        id: art._id,
-        title: art.translations?.bn?.title || art.translations?.en?.title || 'Untitled Article',
-        category: art.category?.translations?.bn?.name || 'Uncategorized',
-        catBg: 'bg-rose-50 text-rose-700 border-rose-200',
-        reporter: art.author?.name || 'Admin',
-        reporterEmail: art.author?.email || '',
-        reporterAvatar: art.author?.avatar || 'https://ui-avatars.com/api/?name=' + (art.author?.name || 'Admin'),
-        image: art.featuredImage?.url || 'https://via.placeholder.com/120',
-        status: (art.status || 'DRAFT').toUpperCase(),
-        views: art.viewsCount || 0,
-        date: new Date(art.createdAt).toLocaleDateString(),
-        time: new Date(art.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }));
+      const formatted = (data.data || []).map((art) => {
+        const bnData = art.translations?.bn || {};
+        const statusVal = art.status || bnData.status || art.translations?.en?.status || 'published';
+        const categoryVal = art.categoryName || art.category?.translations?.bn?.name || art.category?.name || 'সাধারণ';
+        const reporterVal = art.authorName || art.author?.name || 'নির্ভীক বাংলা সংবাদ প্রতিনিধি';
+        const reporterEmailVal = art.author?.email || 'news@nirbhikbangla.com';
+        const reporterAvatarVal = art.author?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporterVal)}`;
+
+        return {
+          id: art._id,
+          title: bnData.title || art.translations?.en?.title || art.translations?.hi?.title || art.title || 'Untitled Article',
+          slug: bnData.slug || art.slug || '',
+          category: categoryVal,
+          catBg: 'bg-purple-50 text-purple-700 border-purple-200',
+          reporter: reporterVal,
+          reporterEmail: reporterEmailVal,
+          reporterAvatar: reporterAvatarVal,
+          image: art.featuredImageUrl || art.featuredImage?.url || art.featuredImage || 'https://via.placeholder.com/120',
+          status: statusVal.toUpperCase(),
+          views: art.viewsCount || art.views || 0,
+          date: new Date(art.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          time: new Date(art.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+      });
       setPostsList(formatted);
     } catch (error) {
       console.error('Error fetching articles:', error);
+      showToast('পোস্ট লোড করতে ব্যর্থ হয়েছে');
     } finally {
       setLoading(false);
     }
@@ -66,6 +77,7 @@ export default function PostsPage() {
   useEffect(() => {
     fetchArticles();
   }, []);
+
   const handleDeletePost = async (id) => {
     if (!window.confirm('আপনি কি এই পোস্টটি মুছে ফেলতে চান?')) return;
     try {
@@ -77,9 +89,22 @@ export default function PostsPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedPosts.length === 0) return;
+    if (!window.confirm(`আপনি কি নির্বাচিত ${selectedPosts.length} টি পোস্ট মুছে ফেলতে চান?`)) return;
+    try {
+      await Promise.all(selectedPosts.map((id) => api.delete(`/articles/${id}`).catch(() => null)));
+      showToast(`${selectedPosts.length} টি পোস্ট সফলভাবে মুছে ফেলা হয়েছে!`);
+      setSelectedPosts([]);
+      fetchArticles();
+    } catch (err) {
+      showToast('পোস্টগুলি মুছতে সমস্যা হয়েছে');
+    }
+  };
+
   const toggleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedPosts(postsList.map((p) => p.id));
+      setSelectedPosts(paginatedPosts.map((p) => p.id));
     } else {
       setSelectedPosts([]);
     }
@@ -93,6 +118,31 @@ export default function PostsPage() {
     }
   };
 
+  // CSV Export
+  const handleExportCSV = () => {
+    if (postsList.length === 0) return showToast('কোনো পোস্ট ডাটা নেই!');
+    const headers = ['ID', 'Title', 'Category', 'Reporter', 'Status', 'Views', 'Date'];
+    const rows = postsList.map((p) => [
+      `"${p.id}"`,
+      `"${p.title.replace(/"/g, '""')}"`,
+      `"${p.category}"`,
+      `"${p.reporter}"`,
+      `"${p.status}"`,
+      p.views,
+      `"${p.date} ${p.time}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `nirbhik_bangla_posts_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('CSV ফাইল সফলভাবে ডাউনলোড করা হয়েছে!');
+  };
+
+  // Filter & Search Logic
   const filteredPosts = postsList.filter((p) => {
     const matchesSearch =
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -106,6 +156,18 @@ export default function PostsPage() {
     return matchesSearch;
   });
 
+  // Dynamic KPI counts
+  const totalCount = postsList.length;
+  const publishedCount = postsList.filter((p) => p.status === 'PUBLISHED').length;
+  const draftCount = postsList.filter((p) => p.status === 'DRAFT').length;
+  const scheduledCount = postsList.filter((p) => p.status === 'SCHEDULED').length;
+  const trashCount = postsList.filter((p) => p.status === 'TRASH' || p.status === 'ARCHIVED').length;
+
+  // Pagination Math
+  const totalPages = Math.ceil(filteredPosts.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPosts = filteredPosts.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="space-y-6 font-outfit text-slate-800 relative pb-10">
 
@@ -114,6 +176,27 @@ export default function PostsPage() {
         <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-3 border border-slate-700">
           <CheckCircle2 size={16} className="text-emerald-400" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedPosts.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-800 animate-in fade-in slide-in-from-bottom-3">
+          <span>{selectedPosts.length} টি পোস্ট নির্বাচিত হয়েছে</span>
+          <div className="h-4 w-px bg-slate-700" />
+          <button
+            onClick={handleBulkDelete}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Trash2 size={14} />
+            <span>Delete Selected</span>
+          </button>
+          <button
+            onClick={() => setSelectedPosts([])}
+            className="text-slate-400 hover:text-white px-2 py-1 transition-colors cursor-pointer"
+          >
+            Deselect All
+          </button>
         </div>
       )}
 
@@ -130,7 +213,7 @@ export default function PostsPage() {
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => showToast('সকল পোস্ট ডাটা এক্সপোর্ট করা হয়েছে!')}
+            onClick={handleExportCSV}
             className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer font-outfit"
           >
             <Download size={15} className="text-slate-500" />
@@ -147,14 +230,14 @@ export default function PostsPage() {
         </div>
       </div>
 
-      {/* 2. Top Summary KPI Cards */}
+      {/* 2. Dynamic Top Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Posts</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">1,248</h3>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">{totalCount}</h3>
             <span className="text-[9.5px] font-bold text-emerald-600 mt-0.5 flex items-center gap-0.5">
-              <TrendingUp size={10} /> ↑ 12% this month
+              <TrendingUp size={10} /> Live Stats
             </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -165,8 +248,10 @@ export default function PostsPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Published</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">1,120</h3>
-            <span className="text-[9.5px] font-bold text-slate-400 mt-0.5">89.7% of total</span>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">{publishedCount}</h3>
+            <span className="text-[9.5px] font-bold text-slate-400 mt-0.5">
+              {totalCount > 0 ? ((publishedCount / totalCount) * 100).toFixed(1) : 0}% of total
+            </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <CheckCircle2 size={18} />
@@ -176,7 +261,7 @@ export default function PostsPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drafts</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">84</h3>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">{draftCount}</h3>
             <span className="text-[9.5px] font-bold text-amber-600 mt-0.5">In progress</span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -187,7 +272,7 @@ export default function PostsPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Scheduled</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">32</h3>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">{scheduledCount}</h3>
             <span className="text-[9.5px] font-bold text-blue-600 mt-0.5">Upcoming release</span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -198,7 +283,7 @@ export default function PostsPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Trash</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">12</h3>
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">{trashCount}</h3>
             <span className="text-[9.5px] font-bold text-slate-400 mt-0.5">Archived items</span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-slate-500 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -212,14 +297,17 @@ export default function PostsPage() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto scrollbar-none">
             {[
-              { id: 'all', label: 'All Posts', count: 1248 },
-              { id: 'published', label: 'Published', count: 1120 },
-              { id: 'draft', label: 'Draft', count: 84 },
-              { id: 'scheduled', label: 'Scheduled', count: 32 },
+              { id: 'all', label: 'All Posts', count: totalCount },
+              { id: 'published', label: 'Published', count: publishedCount },
+              { id: 'draft', label: 'Draft', count: draftCount },
+              { id: 'scheduled', label: 'Scheduled', count: scheduledCount },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setCurrentPage(1);
+                }}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs'
@@ -240,7 +328,10 @@ export default function PostsPage() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Search articles, reporters..."
                 className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#eb1c24] font-medium"
               />
@@ -264,7 +355,7 @@ export default function PostsPage() {
                   <input
                     type="checkbox"
                     onChange={toggleSelectAll}
-                    checked={selectedPosts.length === postsList.length && postsList.length > 0}
+                    checked={selectedPosts.length === paginatedPosts.length && paginatedPosts.length > 0}
                     className="rounded border-slate-300 text-[#eb1c24]"
                   />
                 </th>
@@ -278,125 +369,161 @@ export default function PostsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredPosts.map((post) => (
-                <tr key={post.id} className="hover:bg-slate-50/70 transition-colors group">
-                  <td className="p-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedPosts.includes(post.id)}
-                      onChange={() => toggleSelect(post.id)}
-                      className="rounded border-slate-300 text-[#eb1c24]"
-                    />
-                  </td>
-
-                  <td className="py-3.5 px-3">
-                    <div className="flex items-center gap-3 min-w-[260px]">
-                      <img src={post.image} alt="" className="w-12 h-10 rounded-lg object-cover border border-slate-200 shrink-0 shadow-2xs" />
-                      <h4 className="font-bangla font-extrabold text-slate-900 text-xs leading-snug line-clamp-2 group-hover:text-[#eb1c24] transition-colors">
-                        {post.title}
-                      </h4>
-                    </div>
-                  </td>
-
-                  <td className="py-3.5 px-3">
-                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bangla font-extrabold border ${post.catBg}`}>
-                      {post.category}
-                    </span>
-                  </td>
-
-                  <td className="py-3.5 px-3">
-                    <div className="flex items-center gap-2">
-                      <img src={post.reporterAvatar} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0" />
-                      <div>
-                        <h5 className="font-bangla font-bold text-slate-900 text-xs leading-tight">{post.reporter}</h5>
-                        <span className="text-[10px] text-slate-400 font-normal block">{post.reporterEmail}</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="py-3.5 px-3">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider ${
-                        post.status === 'PUBLISHED'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : post.status === 'SCHEDULED'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}
-                    >
-                      {post.status}
-                    </span>
-                  </td>
-
-                  <td className="py-3.5 px-3 font-mono font-bold text-slate-800">
-                    {post.views}
-                  </td>
-
-                  <td className="py-3.5 px-3 text-slate-500 text-[11px]">
-                    <div>{post.date}</div>
-                    <div className="text-[10px] text-slate-400 font-semibold">{post.time}</div>
-                  </td>
-
-                  <td className="py-3.5 px-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => showToast(`পোস্টটি ওয়েবসাইট প্রিভিউ করা হলো!`)}
-                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        title="View Preview"
-                      >
-                        <Eye size={14} />
-                      </button>
-                      <Link
-                        to={`/posts/edit/${post.id}`}
-                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        title="Edit Article"
-                      >
-                        <Pencil size={14} />
-                      </Link>
-                      <button
-                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        title="More Options"
-                      >
-                        <MoreVertical size={14} />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="py-12 text-center text-slate-400 font-bold">
+                    পোস্ট লোড করা হচ্ছে...
                   </td>
                 </tr>
-              ))}
+              ) : paginatedPosts.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-12 text-center text-slate-400 font-bold">
+                    কোনো পোস্ট পাওয়া যায়নি!
+                  </td>
+                </tr>
+              ) : (
+                paginatedPosts.map((post) => (
+                  <tr key={post.id} className="hover:bg-slate-50/70 transition-colors group">
+                    <td className="p-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedPosts.includes(post.id)}
+                        onChange={() => toggleSelect(post.id)}
+                        className="rounded border-slate-300 text-[#eb1c24]"
+                      />
+                    </td>
+
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-center gap-3 min-w-[260px]">
+                        <img src={post.image} alt="" className="w-12 h-10 rounded-lg object-cover border border-slate-200 shrink-0 shadow-2xs" />
+                        <h4 className="font-bangla font-extrabold text-slate-900 text-xs leading-snug line-clamp-2 group-hover:text-[#eb1c24] transition-colors">
+                          {post.title}
+                        </h4>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-3">
+                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bangla font-extrabold border ${post.catBg}`}>
+                        {post.category}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <img src={post.reporterAvatar} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0" />
+                        <div>
+                          <h5 className="font-bangla font-bold text-slate-900 text-xs leading-tight">{post.reporter}</h5>
+                          <span className="text-[10px] text-slate-400 font-normal block">{post.reporterEmail}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-3">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider ${
+                          post.status === 'PUBLISHED'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : post.status === 'SCHEDULED'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}
+                      >
+                        {post.status}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-3 font-mono font-bold text-slate-800">
+                      {post.views}
+                    </td>
+
+                    <td className="py-3.5 px-3 text-slate-500 text-[11px]">
+                      <div>{post.date}</div>
+                      <div className="text-[10px] text-slate-400 font-semibold">{post.time}</div>
+                    </td>
+
+                    <td className="py-3.5 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <a
+                          href={`${(import.meta.env.VITE_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')}/bn/news/${post.slug || post.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                          title="View Live Article"
+                        >
+                          <Eye size={14} />
+                        </a>
+                        <Link
+                          to={`/posts/edit/${post.id}`}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit Article"
+                        >
+                          <Pencil size={14} />
+                        </Link>
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Post"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Table Pagination Footer */}
+        {/* Dynamic Table Pagination Footer */}
         <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500 bg-slate-50/50">
-          <span>Showing 1 to {filteredPosts.length} of 1,248 posts</span>
+          <span>
+            Showing {filteredPosts.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredPosts.length)} of {filteredPosts.length} posts
+          </span>
 
           <div className="flex items-center gap-1.5">
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               <ChevronLeft size={16} />
             </button>
-            <button className="w-8 h-8 rounded-lg bg-[#eb1c24] text-white font-bold flex items-center justify-center shadow-2xs">
-              1
-            </button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-              2
-            </button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-              3
-            </button>
-            <span className="px-1 text-slate-400 font-bold">...</span>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-              125
-            </button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer">
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                  currentPage === pageNum
+                    ? 'bg-[#eb1c24] text-white shadow-2xs'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               <ChevronRight size={16} />
             </button>
           </div>
 
-          <select className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none cursor-pointer">
-            <option value="10">10 / page</option>
-            <option value="20">20 / page</option>
-            <option value="50">50 / page</option>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none cursor-pointer font-bold"
+          >
+            <option value={10}>10 / page</option>
+            <option value={20}>20 / page</option>
+            <option value={50}>50 / page</option>
           </select>
         </div>
       </div>

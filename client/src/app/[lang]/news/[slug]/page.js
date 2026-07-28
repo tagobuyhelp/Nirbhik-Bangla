@@ -20,6 +20,8 @@ const knownSlugs = [
 
 const supportedLangs = ['bn', 'en', 'hi'];
 
+export const dynamicParams = true;
+
 export function generateStaticParams() {
   return supportedLangs.flatMap((lang) =>
     knownSlugs.map((slug) => ({ lang, slug }))

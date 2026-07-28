@@ -11,15 +11,23 @@ const LANG_KEY = 'nirbhik-lang';
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [locale, setLocale] = useState(() => {
-    if (typeof window === 'undefined') return 'bn';
-    const saved = localStorage.getItem(LANG_KEY);
-    return saved && translations[saved] ? saved : 'bn';
-  });
+  const [locale, setLocale] = useState('bn');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
+    setMounted(true);
+    const saved = localStorage.getItem(LANG_KEY);
+    if (saved && translations[saved]) {
+      setLocale(saved);
+      document.documentElement.lang = saved;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.lang = locale;
+    }
+  }, [locale, mounted]);
 
   const switchLanguage = useCallback((lang) => {
     if (translations[lang]) {

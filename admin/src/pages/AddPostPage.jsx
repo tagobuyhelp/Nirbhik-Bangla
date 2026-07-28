@@ -1019,7 +1019,9 @@ export default function AddPostPage() {
                 </button>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://nirbhikbangla.com/news/${slug}`);
+                    const baseUrl = (import.meta.env.VITE_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+                    const currentLang = activeLang || 'bn';
+                    navigator.clipboard.writeText(`${baseUrl}/${currentLang}/news/${slug}`);
                     showToast('লিংক কপি করা হয়েছে!');
                   }}
                   className="p-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
@@ -2002,7 +2004,7 @@ export default function AddPostPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="bg-[#eb1c24] text-white text-[10px] font-black px-2 py-0.5 rounded uppercase">Live Preview</span>
-                <span className="text-xs text-slate-400 font-sans font-semibold">https://nirbhikbangla.com/news/{slug}</span>
+                <span className="text-xs text-slate-400 font-sans font-semibold">{(import.meta.env.VITE_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')}/{activeLang || 'bn'}/news/{slug}</span>
               </div>
               <button onClick={() => setShowPreviewModal(false)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X size={20} />
