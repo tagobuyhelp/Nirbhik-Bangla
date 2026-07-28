@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/api';
 import {
   Save,
@@ -55,21 +55,35 @@ import {
 
 export default function AddPostPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
 
   // 1. Form Core States
+  const [activeLang, setActiveLang] = useState('bn');
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [seoTitle, setSeoTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [focusKeywords, setFocusKeywords] = useState([]);
+  const [newKeywordInput, setNewKeywordInput] = useState('');
+  
+  // Multilingual Store
+  const [translationsStore, setTranslationsStore] = useState({
+    bn: { title: '', content: '', excerpt: '', seoTitle: '', metaDescription: '', focusKeywords: [], tags: [], altText: '', caption: '', credit: '' },
+    en: { title: '', content: '', excerpt: '', seoTitle: '', metaDescription: '', focusKeywords: [], tags: [], altText: '', caption: '', credit: '' },
+    hi: { title: '', content: '', excerpt: '', seoTitle: '', metaDescription: '', focusKeywords: [], tags: [], altText: '', caption: '', credit: '' }
+  });
+  const [translatingLang, setTranslatingLang] = useState(null);
   
   // 2. Categories & Tags States
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [tags, setTags] = useState([]);
   const [newTagInput, setNewTagInput] = useState('');
   const [showAddCatModal, setShowAddCatModal] = useState(false);
+  const [newCatInput, setNewCatInput] = useState('');
 
 
   useEffect(() => {
@@ -78,7 +92,7 @@ export default function AddPostPage() {
         const { data } = await api.get('/categories');
         const list = data.data || [];
         setCategories(list);
-        if (list.length > 0) {
+        if (list.length > 0 && !selectedCategory) {
           setSelectedCategory(list[0]._id);
         }
       } catch (err) {
@@ -87,6 +101,65 @@ export default function AddPostPage() {
     };
     loadCategories();
   }, []);
+
+  // Fetch article when editing an existing post
+  useEffect(() => {
+    if (!id) return;
+    const fetchArticle = async () => {
+      try {
+        setIsAiLoading(true);
+        const { data } = await api.get(`/articles/${id}`);
+        const art = data.data;
+        if (!art) return;
+
+        const bnData = art.translations?.bn || {};
+        const enData = art.translations?.en || {};
+        const hiData = art.translations?.hi || {};
+
+        const loadedTitle = bnData.title || art.title || '';
+        const loadedSlug = bnData.slug || art.slug || '';
+        const loadedExcerpt = bnData.excerpt || art.excerpt || '';
+        const loadedSeoTitle = bnData.seo?.title || loadedTitle;
+        const loadedMetaDesc = bnData.seo?.description || loadedExcerpt;
+        const loadedKeywords = bnData.seo?.keywords || [];
+        const rawContent = bnData.content || art.content || '';
+        const loadedContent = rawContent.replace(/font-size:\s*[^;"]+;?/gi, '');
+
+        setTitle(loadedTitle);
+        setSlug(loadedSlug);
+        setExcerpt(loadedExcerpt);
+        setSeoTitle(loadedSeoTitle);
+        setMetaDescription(loadedMetaDesc);
+        setFocusKeywords(loadedKeywords);
+        if (art.tags && art.tags.length > 0) setTags(art.tags);
+        if (art.category?._id) setSelectedCategory(art.category._id);
+        const imgUrl = art.featuredImageUrl || art.featuredImage?.url || art.featuredImage || '';
+        if (imgUrl) setFeaturedImage(imgUrl);
+        if (art.imageMetadata?.altText) setAltText(art.imageMetadata.altText);
+        if (art.imageMetadata?.caption) setCaption(art.imageMetadata.caption);
+        if (art.imageMetadata?.credit) setCredit(art.imageMetadata.credit);
+
+        if (editorRef.current) {
+          editorRef.current.innerHTML = loadedContent || '<p><br></p>';
+          if (typeof handleEditorInput === 'function') handleEditorInput();
+        }
+
+        setTranslationsStore({
+          bn: { title: loadedTitle, content: loadedContent, excerpt: loadedExcerpt, seoTitle: loadedSeoTitle, metaDescription: loadedMetaDesc, focusKeywords: loadedKeywords, tags: bnData.tags || art.tags || [], altText: bnData.imageMetadata?.altText || art.imageMetadata?.altText || '', caption: bnData.imageMetadata?.caption || art.imageMetadata?.caption || '', credit: bnData.imageMetadata?.credit || art.imageMetadata?.credit || '' },
+          en: { title: enData.title || '', content: enData.content || '', excerpt: enData.excerpt || '', seoTitle: enData.seo?.title || '', metaDescription: enData.seo?.description || '', focusKeywords: enData.seo?.keywords || [], tags: enData.tags || art.tags || [], altText: enData.imageMetadata?.altText || '', caption: enData.imageMetadata?.caption || '', credit: enData.imageMetadata?.credit || '' },
+          hi: { title: hiData.title || '', content: hiData.content || '', excerpt: hiData.excerpt || '', seoTitle: hiData.seo?.title || '', metaDescription: hiData.seo?.description || '', focusKeywords: hiData.seo?.keywords || [], tags: hiData.tags || art.tags || [], altText: hiData.imageMetadata?.altText || '', caption: hiData.imageMetadata?.caption || '', credit: hiData.imageMetadata?.credit || '' }
+        });
+
+        showToast('পোস্টের তথ্য সফলভাবে লোড করা হয়েছে!');
+      } catch (err) {
+        console.error('Failed to fetch article for edit:', err);
+        showToast('পোস্ট লোড করতে ব্যর্থ হয়েছে');
+      } finally {
+        setIsAiLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [id]);
 
   // 3. Publish & Social Options States
   const [publishOptions, setPublishOptions] = useState({
@@ -125,8 +198,78 @@ export default function AddPostPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
+  // 6.3 Draft Save State
+  const [lastSavedTime, setLastSavedTime] = useState(null);
+  const [savedStatusText, setSavedStatusText] = useState('Draft not saved yet');
+
+  // Relative time tracker for saved draft
+  useEffect(() => {
+    const updateRelativeTime = () => {
+      if (!lastSavedTime) {
+        setSavedStatusText('Draft not saved yet');
+        return;
+      }
+      const diffMs = Date.now() - lastSavedTime;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+
+      if (diffSecs < 10) {
+        setSavedStatusText('Draft saved just now');
+      } else if (diffSecs < 60) {
+        setSavedStatusText(`Draft saved ${diffSecs} seconds ago`);
+      } else if (diffMins === 1) {
+        setSavedStatusText('Draft saved 1 minute ago');
+      } else {
+        setSavedStatusText(`Draft saved ${diffMins} minutes ago`);
+      }
+    };
+
+    updateRelativeTime();
+    const interval = setInterval(updateRelativeTime, 5000);
+    return () => clearInterval(interval);
+  }, [lastSavedTime]);
+
+  // Save Draft Handler
+  const handleSaveDraft = () => {
+    const editorContent = editorRef.current ? editorRef.current.innerHTML : '';
+    const draftData = {
+      title,
+      slug,
+      excerpt,
+      seoTitle,
+      metaDescription,
+      focusKeywords,
+      tags,
+      content: editorContent,
+      savedAt: Date.now()
+    };
+    try {
+      localStorage.setItem('nirbhik_post_draft', JSON.stringify(draftData));
+      setLastSavedTime(Date.now());
+      showToast('খসড়া (Draft) সফলভাবে সংরক্ষণ করা হয়েছে!');
+    } catch (e) {
+      showToast('Draft সংরক্ষণ করতে ব্যর্থ হয়েছে');
+    }
+  };
+
+  // 6.2 AI Title Modal State
+  const [generatedTitles, setGeneratedTitles] = useState([]);
+  const [showTitleModal, setShowTitleModal] = useState(false);
+
+  // 6.5 AI Suggestions State
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState({
+    excerpt: '',
+    seoTitle: '',
+    metaDescription: '',
+    focusKeywords: [],
+    tags: [],
+    category: ''
+  });
+
   // 7. Editor Interactive State
   const editorRef = useRef(null);
+  const imageFileInputRef = useRef(null);
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
@@ -161,35 +304,235 @@ export default function AddPostPage() {
     }
   };
 
-  // Generate AI Title
+  // Generate AI Title Options
   const handleAiGenerateTitle = async () => {
     const text = editorRef.current ? editorRef.current.innerText : '';
     if (!text || text.trim().length < 50) return showToast('Please write some content first (at least 50 chars)!');
-    showToast('AI Generating Title...');
+    setIsAiLoading(true);
+    showToast('AI-এর মাধ্যমে শিরোনাম সমূহের অপশন তৈরি হচ্ছে...');
     try {
-      const res = await api.post('/ai/headlines', { text, lang: 'bn' });
+      const res = await api.post('/ai/headlines', { text, lang: activeLang || 'bn' });
       const titles = res.data.data;
-      if (titles && titles.length > 0) {
-        setTitle(titles[0]);
-        handleAiOptimizeSlug(titles[0]);
-        showToast('AI Generated Title applied!');
+      if (Array.isArray(titles) && titles.length > 0) {
+        setGeneratedTitles(titles);
+        setShowTitleModal(true);
+        showToast('AI শিরোনাম সমূহের অপশন তৈরি সম্পন্ন!');
+      } else {
+        showToast('কোনো শিরোনাম অপশন তৈরি করা যায়নি');
       }
     } catch (err) {
-      showToast('Failed to generate title');
+      showToast('শিরোনাম অপশন জেনারেট করতে ব্যর্থ হয়েছে');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // User selects an AI Title option from modal
+  const handleSelectGeneratedTitle = async (selectedTitle) => {
+    setTitle(selectedTitle);
+    setShowTitleModal(false);
+    showToast('নির্বাচিত শিরোনাম যুক্ত হয়েছে!');
+    await handleAiOptimizeSlug(selectedTitle);
+    await handleAiRegenerateSidebar('all');
+  };
+
+  // Multilingual Tab Switcher with Background AI Auto-Drafting
+  const handleSwitchLanguage = async (targetLang) => {
+    if (targetLang === activeLang || isAiLoading) return;
+
+    // 1. Save current active language fields into translationsStore
+    const currentContent = editorRef.current ? editorRef.current.innerHTML : '';
+    const updatedStore = {
+      ...translationsStore,
+      [activeLang]: {
+        title: title,
+        content: currentContent,
+        excerpt: excerpt,
+        seoTitle: seoTitle,
+        metaDescription: metaDescription,
+        focusKeywords: focusKeywords,
+        tags: tags,
+        altText: altText,
+        caption: caption,
+        credit: credit
+      }
+    };
+    setTranslationsStore(updatedStore);
+
+    // 2. Check if target language version already exists in store
+    const existing = updatedStore[targetLang];
+    if (existing && (existing.title.trim() || existing.content.trim())) {
+      setActiveLang(targetLang);
+      setTitle(existing.title || '');
+      setExcerpt(existing.excerpt || '');
+      setSeoTitle(existing.seoTitle || '');
+      setMetaDescription(existing.metaDescription || '');
+      setFocusKeywords(existing.focusKeywords || []);
+      setAltText(existing.altText || '');
+      setCaption(existing.caption || '');
+      setCredit(existing.credit || 'Nirbhik Bangla Photo');
+      if (Array.isArray(existing.tags) && existing.tags.length > 0) {
+        setTags(existing.tags);
+      }
+      if (editorRef.current) {
+        editorRef.current.innerHTML = existing.content || '<p><br></p>';
+        handleEditorInput();
+      }
+      setAiSuggestions(prev => ({
+        ...prev,
+        excerpt: existing.excerpt || prev.excerpt,
+        seoTitle: existing.seoTitle || prev.seoTitle,
+        metaDescription: existing.metaDescription || prev.metaDescription,
+        focusKeywords: existing.focusKeywords || prev.focusKeywords,
+        tags: existing.tags || prev.tags
+      }));
+      showToast(`${targetLang.toUpperCase()} সংস্করণে সুইচ করা হয়েছে!`);
+      return;
+    }
+
+    // 3. Auto-draft target language via AI translation in background!
+    setIsAiLoading(true);
+    setTranslatingLang(targetLang);
+    const langLabel = targetLang === 'en' ? 'English' : targetLang === 'hi' ? 'Hindi' : targetLang.toUpperCase();
+    showToast(`AI-এর মাধ্যমে ${langLabel} ভার্সন তৈরি (Auto-Draft) করা হচ্ছে...`);
+
+    try {
+      const sourceTitle = title || updatedStore.bn?.title || '';
+      const sourceContentText = editorRef.current ? editorRef.current.innerText : '';
+      const sourceContent = sourceContentText || updatedStore.bn?.content || '';
+      const sourceExcerpt = excerpt || updatedStore.bn?.excerpt || '';
+      const sourceSeoTitle = seoTitle || updatedStore.bn?.seoTitle || '';
+      const sourceMetaDesc = metaDescription || updatedStore.bn?.metaDescription || '';
+      const sourceKeywordsStr = (focusKeywords.length > 0 ? focusKeywords : updatedStore.bn?.focusKeywords || []).join(', ');
+      const sourceTagsStr = (tags.length > 0 ? tags : updatedStore.bn?.tags || []).join(', ');
+      const sourceAltText = altText || updatedStore.bn?.altText || '';
+      const sourceCaption = caption || updatedStore.bn?.caption || '';
+
+      const [transTitleRes, transContentRes, transExcerptRes, transSeoRes, transMetaRes, transKwRes, transTagsRes, transAltRes, transCapRes] = await Promise.all([
+        sourceTitle ? api.post('/ai/translate', { text: sourceTitle, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceContent ? api.post('/ai/translate', { text: sourceContent, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceExcerpt ? api.post('/ai/translate', { text: sourceExcerpt, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceSeoTitle ? api.post('/ai/translate', { text: sourceSeoTitle, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceMetaDesc ? api.post('/ai/translate', { text: sourceMetaDesc, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceKeywordsStr ? api.post('/ai/translate', { text: sourceKeywordsStr, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceTagsStr ? api.post('/ai/translate', { text: sourceTagsStr, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceAltText ? api.post('/ai/translate', { text: sourceAltText, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+        sourceCaption ? api.post('/ai/translate', { text: sourceCaption, fromLang: activeLang, toLang: targetLang }).catch(() => null) : null,
+      ]);
+
+      let translatedContentHtml = transContentRes?.data?.data?.translation || sourceContent;
+      if (translatedContentHtml && !translatedContentHtml.includes('<p>')) {
+        translatedContentHtml = translatedContentHtml
+          .split('\n')
+          .filter(p => p.trim())
+          .map(p => `<p>${p.trim()}</p>`)
+          .join('');
+      }
+
+      const translatedKeywords = transKwRes?.data?.data?.translation
+        ? transKwRes.data.data.translation.split(',').map(s => s.trim()).filter(Boolean)
+        : focusKeywords;
+
+      const translatedTags = transTagsRes?.data?.data?.translation
+        ? transTagsRes.data.data.translation.split(',').map(s => s.trim()).filter(Boolean)
+        : tags;
+
+      const draftedData = {
+        title: transTitleRes?.data?.data?.translation || sourceTitle,
+        content: translatedContentHtml,
+        excerpt: transExcerptRes?.data?.data?.translation || sourceExcerpt,
+        seoTitle: transSeoRes?.data?.data?.translation || sourceSeoTitle,
+        metaDescription: transMetaRes?.data?.data?.translation || sourceMetaDesc,
+        focusKeywords: translatedKeywords,
+        tags: translatedTags,
+        altText: transAltRes?.data?.data?.translation || sourceAltText,
+        caption: transCapRes?.data?.data?.translation || sourceCaption,
+        credit: credit || 'Nirbhik Bangla Photo'
+      };
+
+      setTranslationsStore(prev => ({
+        ...prev,
+        [targetLang]: draftedData
+      }));
+
+      setActiveLang(targetLang);
+      setTitle(draftedData.title);
+      setExcerpt(draftedData.excerpt);
+      setSeoTitle(draftedData.seoTitle);
+      setMetaDescription(draftedData.metaDescription);
+      setFocusKeywords(draftedData.focusKeywords);
+      setAltText(draftedData.altText);
+      setCaption(draftedData.caption);
+      setCredit(draftedData.credit);
+      if (draftedData.tags.length > 0) setTags(draftedData.tags);
+
+      if (editorRef.current) {
+        editorRef.current.innerHTML = draftedData.content || '<p><br></p>';
+        handleEditorInput();
+      }
+
+      setAiSuggestions({
+        excerpt: draftedData.excerpt,
+        seoTitle: draftedData.seoTitle,
+        metaDescription: draftedData.metaDescription,
+        focusKeywords: draftedData.focusKeywords,
+        tags: draftedData.tags,
+        category: draftedData.tags[0] || 'সাধারণ'
+      });
+
+      showToast(`🎉 ${langLabel} ড্রাফট রেডি!`);
+    } catch (err) {
+      console.error('Language auto-drafting failed:', err);
+      showToast(`${langLabel} ড্রাফট তৈরি করতে ব্যর্থ হয়েছে`);
+    } finally {
+      setIsAiLoading(false);
+      setTranslatingLang(null);
     }
   };
 
   // Auto Generate / Optimize Slug
-  const handleAiOptimizeSlug = (customTitle = null) => {
+  const handleAiOptimizeSlug = async (customTitle = null) => {
     const targetTitle = customTitle || title;
-    if (!targetTitle) return;
-    const cleanSlug = targetTitle
-      .toLowerCase()
-      .replace(/[^\\w\\s-]/g, '')
-      .replace(/\\s+/g, '-')
-      .substring(0, 70);
-    setSlug(cleanSlug || 'post-slug');
-    showToast('SEO Slug optimized!');
+    if (!targetTitle || !targetTitle.trim()) return;
+    setIsAiLoading(true);
+    showToast('AI-এর মাধ্যমে ইংরেজি স্ল্যাগ তৈরি করা হচ্ছে...');
+    try {
+      const res = await api.post('/ai/translate', { text: targetTitle, fromLang: 'bn', toLang: 'en' });
+      let englishText = res.data?.data?.translation || res.data?.data;
+      if (typeof englishText === 'object' && englishText !== null) {
+        englishText = englishText.translation || Object.values(englishText)[0];
+      }
+
+      let cleanSlug = '';
+      if (englishText && typeof englishText === 'string') {
+        cleanSlug = englishText
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .substring(0, 75);
+      }
+
+      if (!cleanSlug || cleanSlug === '-') {
+        const sanitized = targetTitle
+          .replace(/১৯/g, '19').replace(/২১/g, '21')
+          .replace(/[^\x00-\x7F]/g, '')
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-');
+        cleanSlug = sanitized || 'news-' + Date.now().toString().slice(-6);
+      }
+
+      setSlug(cleanSlug);
+      showToast('ইংরেজি SEO Slug তৈরি সম্পন্ন!');
+    } catch (err) {
+      console.error('Slug generation failed:', err);
+      showToast('স্ল্যাগ তৈরি করতে সমস্যা হয়েছে');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   // Add / Remove Category
@@ -201,14 +544,26 @@ export default function AddPostPage() {
     }
   };
 
-  const handleAddNewCategory = () => {
-    if (newCatInput.trim() && !categoryList.includes(newCatInput.trim())) {
-      const added = newCatInput.trim();
-      setCategoryList([...categoryList, added]);
-      setSelectedCategories([...selectedCategories, added]);
+  const handleAddNewCategory = async () => {
+    if (!newCatInput.trim()) return;
+    try {
+      const res = await api.post('/categories', {
+        translations: {
+          bn: { name: newCatInput.trim(), slug: newCatInput.trim().toLowerCase().replace(/\s+/g, '-'), description: '' },
+          en: { name: newCatInput.trim(), slug: newCatInput.trim().toLowerCase().replace(/\s+/g, '-'), description: '' }
+        },
+        slug: newCatInput.trim().toLowerCase().replace(/\s+/g, '-'),
+        color: '#7C3AED',
+        icon: '📁'
+      });
+      const newCat = res.data.data;
+      setCategories(prev => [...prev, newCat]);
+      setSelectedCategory(newCat._id);
       setNewCatInput('');
       setShowAddCatModal(false);
-      showToast(`নতুন ক্যাটাগরি "${added}" যুক্ত হয়েছে!`);
+      showToast(`নতুন ক্যাটাগরি "${newCatInput.trim()}" যুক্ত হয়েছে!`);
+    } catch (err) {
+      showToast('Failed to create category');
     }
   };
 
@@ -233,28 +588,170 @@ export default function AddPostPage() {
     showToast(`AI ${type} সফলভাবে পোস্টে যুক্ত করা হয়েছে!`);
   };
 
-  // Handle Image Change
+  // Handle Image Upload / Change
   const handleFeaturedImageChange = () => {
-    const url = prompt('নতুন ফিচার্ড ইমেজের URL দিন:', featuredImage);
-    if (url) {
-      setFeaturedImage(url);
-      showToast('ফিচার্ড ইমেজ পরিবর্তন করা হয়েছে!');
+    if (imageFileInputRef.current) {
+      imageFileInputRef.current.click();
     }
   };
 
-  // AI Regenerate Image Details
-  const handleAiRegenerateImageDetails = async () => {
-    if (!title) return showToast('Title required to generate image metadata');
-    showToast('AI generating image metadata...');
+  const handleImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsAiLoading(true);
+    showToast('ইমেজ ক্লাউডিনারিতে আপলোড ও প্রসেস (WebP, Auto-Crop) করা হচ্ছে...');
+
     try {
-      const res = await api.post('/ai/seo', { text: title });
-      const { keywords, description } = res.data.data;
-      setAltText(title);
-      setCaption(description || title);
-      setCredit('Nirbhik Bangla AI');
-      showToast('Image metadata generated!');
+      const res = await api.post('/media', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const mediaUrl = res.data?.data?.url || res.data?.data?.secure_url;
+      if (mediaUrl) {
+        setFeaturedImage(mediaUrl);
+        showToast('ইমেজ ক্লাউডিনারিতে WebP আকারে সেভ হয়েছে!');
+      } else {
+        throw new Error('Cloudinary URL return status failed');
+      }
     } catch (err) {
-      showToast('Failed to generate image metadata');
+      console.error('Cloudinary upload failed:', err);
+      const fallbackUrl = URL.createObjectURL(file);
+      setFeaturedImage(fallbackUrl);
+      showToast('ছবি আপলোড করা হয়েছে (Local Preview)');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // AI Regenerate Image Details (Alt Text, Caption, Credit)
+  const handleAiRegenerateImageDetails = async () => {
+    if (!title) return showToast('Image Details তৈরি করতে খবরের টাইটেল থাকা আবশ্যক!');
+    showToast('AI-এর মাধ্যমে ছবির বিবরণ (Alt, Caption, Credit) তৈরি করা হচ্ছে...');
+    setIsAiLoading(true);
+    try {
+      const res = await api.post('/ai/image-alt', { title, excerpt, lang: activeLang || 'bn' });
+      const data = res.data?.data;
+      if (data) {
+        setAltText(data.altText || title);
+        setCaption(data.caption || title);
+        setCredit(data.credit || 'Nirbhik Bangla Photo');
+        showToast('ছবির তথ্য সফলভাবে তৈরি হয়েছে!');
+      }
+    } catch (err) {
+      showToast('ছবির তথ্য তৈরি করতে ব্যর্থ হয়েছে');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // --- AI Editor Actions ---
+  const handleAiEditorAction = async (actionType) => {
+    const text = editorRef.current?.innerText;
+    if (!text || text.trim().length < 20) return showToast('Please write some content first to edit!');
+    
+    setIsAiLoading(true);
+    showToast(`AI is processing (${actionType})...`);
+    try {
+      const res = await api.post('/ai/editor', { text, actionType });
+      const editedText = res.data.data.editedText;
+      if (editedText) {
+        // Simple implementation: replace all text.
+        // In a real robust block editor, we would replace the selected block/text.
+        editorRef.current.innerText = editedText;
+        handleEditorInput();
+        showToast(`AI ${actionType} completed!`);
+      }
+    } catch (err) {
+      showToast(`Failed to ${actionType} text`);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAiFactCheck = async () => {
+    const text = editorRef.current?.innerText;
+    if (!text || text.trim().length < 50) return showToast('Not enough content to fact-check!');
+    
+    setIsAiLoading(true);
+    showToast('AI is checking facts...');
+    try {
+      const res = await api.post('/ai/fact-check', { text });
+      const { score, flaggedClaims, verdict } = res.data.data;
+      if (score < 80 || flaggedClaims.length > 0) {
+        alert(`⚠️ AI Fact Check Alert (Score: ${score}/100)\n\nVerdict: ${verdict}\n\nFlagged Claims:\n- ${flaggedClaims.join('\n- ')}`);
+      } else {
+        showToast(`✅ Fact Check Passed (Score: ${score}/100) - ${verdict}`);
+      }
+    } catch (err) {
+      showToast('Failed to run fact check');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // --- AI Suggestions Sidebar Handlers ---
+  const handleAiRegenerateSidebar = async (type = 'all') => {
+    const editorContent = editorRef.current?.innerText || '';
+    const text = (title + ' ' + editorContent).trim();
+    if (!text || text.length < 10) return showToast('অনুগ্রহ করে টাইটেল বা পোস্ট কন্টেন্ট লিখুন!');
+    
+    setIsAiLoading(true);
+    showToast('AI-এর মাধ্যমে পরামর্শ তৈরি করা হচ্ছে...');
+    
+    try {
+      const updates = {};
+      const promises = [];
+
+      if (type === 'all' || type === 'excerpt') {
+        promises.push(
+          api.post('/ai/summary', { text, lang: activeLang || 'bn' }).then(res => {
+            if (res.data?.data?.summary) {
+              updates.excerpt = res.data.data.summary;
+            }
+          }).catch(e => console.warn('AI Summary failed:', e.message))
+        );
+      }
+      
+      if (type === 'all' || type === 'seo') {
+        promises.push(
+          api.post('/ai/seo', { text }).then(res => {
+            const data = res.data?.data;
+            if (data) {
+              if (data.title) updates.seoTitle = data.title;
+              if (data.description) updates.metaDescription = data.description;
+              if (Array.isArray(data.keywords)) updates.focusKeywords = data.keywords;
+            }
+          }).catch(e => console.warn('AI SEO failed:', e.message))
+        );
+      }
+
+      if (type === 'all' || type === 'tags') {
+        promises.push(
+          api.post('/ai/suggest-tags', { text, lang: activeLang || 'bn' }).then(res => {
+            const tags = res.data?.data?.tags || [];
+            if (tags.length > 0) {
+              updates.tags = tags;
+              updates.category = tags[0];
+            }
+          }).catch(e => console.warn('AI Tags failed:', e.message))
+        );
+      }
+
+      await Promise.all(promises);
+      
+      setAiSuggestions(prev => ({ ...prev, ...updates }));
+      showToast(`AI পরামর্শ সফলভাবে আপডেট হয়েছে (${type})!`);
+    } catch (err) {
+      console.error(err);
+      showToast('AI পরামর্শ তৈরি করতে ব্যর্থ হয়েছে');
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -264,31 +761,107 @@ export default function AddPostPage() {
       alert('অনুগ্রহ করে পোস্টের টাইটেল প্রদান করুন!');
       return;
     }
+    const editorContent = editorRef.current ? editorRef.current.innerHTML : '';
+    if (!editorContent || editorContent === '<p><br></p>') {
+      alert('অনুগ্রহ করে পোস্টের কন্টেন্ট লিখুন!');
+      return;
+    }
+    const postSlug = slug || title.toLowerCase().replace(/\s+/g, '-');
+    
+    // Find selected category details
+    const selectedCat = categories.find(c => c._id === selectedCategory);
+    let catSlug = 'general';
+    if (selectedCat) {
+      if (typeof selectedCat.slug === 'string') catSlug = selectedCat.slug;
+      else if (selectedCat.slug && typeof selectedCat.slug === 'object') catSlug = selectedCat.slug.bn || selectedCat.slug.en || 'general';
+      else if (selectedCat.translations?.bn?.slug) catSlug = selectedCat.translations.bn.slug;
+    }
+
+    let catName = 'সাধারণ';
+    if (selectedCat) {
+      if (typeof selectedCat.translations?.bn?.name === 'string') catName = selectedCat.translations.bn.name;
+      else if (typeof selectedCat.name === 'string') catName = selectedCat.name;
+      else if (selectedCat.name && typeof selectedCat.name === 'object') catName = selectedCat.name.bn || selectedCat.name.en || selectedCat.name.hi || 'সাধারণ';
+    }
+
+    // 1. Sync current active language state to store
+    const updatedStore = {
+      ...translationsStore,
+      [activeLang]: {
+        title: title,
+        content: editorContent,
+        excerpt: excerpt,
+        seoTitle: seoTitle,
+        metaDescription: metaDescription,
+        focusKeywords: focusKeywords,
+        tags: tags,
+        altText: altText,
+        caption: caption,
+        credit: credit
+      }
+    };
+
+    // 2. Build multilingual translations payload for MongoDB
+    const translationsPayload = {};
+    for (const langKey of ['bn', 'en', 'hi']) {
+      const data = updatedStore[langKey];
+      if (data && (data.title?.trim() || data.content?.trim())) {
+        translationsPayload[langKey] = {
+          title: data.title || title,
+          slug: langKey === 'bn' ? postSlug : `${postSlug}-${langKey}`,
+          excerpt: data.excerpt || excerpt,
+          content: data.content || editorContent,
+          status: 'published',
+          tags: (data.tags && data.tags.length > 0) ? data.tags : tags,
+          imageMetadata: {
+            altText: data.altText || altText,
+            caption: data.caption || caption,
+            credit: data.credit || credit
+          },
+          seo: {
+            title: data.seoTitle || data.title || title,
+            description: data.metaDescription || data.excerpt || excerpt,
+            keywords: (data.focusKeywords && data.focusKeywords.length > 0) ? data.focusKeywords : focusKeywords
+          }
+        };
+      }
+    }
+
     setIsPublishing(true);
     try {
       const payload = {
-        slug: slug || title.toLowerCase().replace(/\s+/g, '-'),
-        status: 'published',
-        translations: {
-          bn: {
-            title: title,
-            content: excerpt, // use excerpt as content for now
-            excerpt: excerpt
-          }
-        },
-        featuredImage: {
-          url: featuredImage,
+        translations: translationsPayload,
+        categorySlug: catSlug,
+        categoryName: catName,
+        tags: (updatedStore.bn?.tags && updatedStore.bn.tags.length > 0) ? updatedStore.bn.tags : tags,
+        featuredImageUrl: featuredImage,
+        imageMetadata: {
+          altText: altText,
           caption: caption,
-          alt: altText
+          credit: credit
         },
-        category: selectedCategory || null
+        socialCaptions: socialCaptions,
+        isBreaking: publishOptions.breaking,
+        isFeatured: publishOptions.featured,
+        allowComments: publishOptions.allowComments,
+        showOnHomepage: publishOptions.showHomepage,
+        stats: {
+          wordCount: wordCount,
+          charCount: charCount,
+          readingTime: readingTime
+        }
       };
 
-      await api.post('/articles', payload);
-      alert('🎉 পোস্টটি সফলভাবে প্রকাশ (Publish) করা হয়েছে!');
+      if (isEditMode) {
+        await api.put(`/articles/${id}`, payload);
+        alert('🎉 পোস্টটি সফলভাবে আপডেট (Update) করা হয়েছে!');
+      } else {
+        await api.post('/articles', payload);
+        alert('🎉 পোস্টটি সফলভাবে প্রকাশ (Publish) করা হয়েছে!');
+      }
       navigate('/posts');
     } catch (error) {
-      alert(error.response?.data?.message || 'পোস্ট প্রকাশ করতে ব্যর্থ হয়েছে');
+      alert(error.response?.data?.message || 'পোস্ট সংরক্ষণ করতে ব্যর্থ হয়েছে');
     } finally {
       setIsPublishing(false);
     }
@@ -296,12 +869,24 @@ export default function AddPostPage() {
 
   // Calculate SEO Score dynamically
   const calcSeoScore = () => {
-    let score = 50;
-    if (title.length > 20) score += 15;
-    if (metaDescription.length > 20) score += 15;
-    if (focusKeywords.length > 0) score += 10;
-    if (featuredImage) score += 10;
-    return Math.min(100, score);
+    let score = 0;
+    const hasTitle = Boolean((seoTitle || title || aiSuggestions.seoTitle)?.length > 10);
+    const hasMeta = Boolean((metaDescription || excerpt || aiSuggestions.metaDescription)?.length > 20);
+    const hasKw = Boolean(focusKeywords.length > 0 || (aiSuggestions.focusKeywords && aiSuggestions.focusKeywords.length > 0));
+    const hasWordCount = Boolean(wordCount > 50);
+    const hasImage = Boolean(featuredImage);
+    const hasSlug = Boolean(slug || title);
+    const hasTags = Boolean(tags.length > 0 || (aiSuggestions.tags && aiSuggestions.tags.length > 0));
+
+    if (hasTitle) score += 20;
+    if (hasMeta) score += 20;
+    if (hasKw) score += 15;
+    if (hasWordCount) score += 15;
+    if (hasImage) score += 15;
+    if (hasSlug) score += 7;
+    if (hasTags) score += 8;
+
+    return Math.min(100, Math.max(0, score));
   };
 
   return (
@@ -324,21 +909,21 @@ export default function AddPostPage() {
             <span>›</span>
             <NavLink to="/posts" className="hover:text-[#eb1c24] transition-colors">Posts</NavLink>
             <span>›</span>
-            <span className="text-slate-900 font-bold">Add New Post</span>
+            <span className="text-slate-900 font-bold">{isEditMode ? 'Edit Post' : 'Add New Post'}</span>
           </nav>
 
           <span className="h-3.5 w-px bg-slate-300 hidden sm:block" />
 
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
-            <CheckCircle2 size={15} />
-            <span>Draft saved 2 minutes ago</span>
+            <CheckCircle2 size={15} className={lastSavedTime ? 'text-emerald-600' : 'text-slate-400'} />
+            <span className={lastSavedTime ? 'text-emerald-600' : 'text-slate-500'}>{savedStatusText}</span>
           </div>
         </div>
 
         {/* Top Right Action Buttons */}
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => showToast('খসড়া (Draft) সফলভাবে সংরক্ষণ করা হয়েছে!')}
+            onClick={handleSaveDraft}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
             <Save size={15} className="text-slate-500" />
@@ -360,7 +945,7 @@ export default function AddPostPage() {
               className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/25 transition-all cursor-pointer disabled:opacity-50"
             >
               <Rocket size={15} />
-              <span>{isPublishing ? 'PUBLISHING...' : 'PUBLISH'}</span>
+              <span>{isPublishing ? (isEditMode ? 'UPDATING...' : 'PUBLISHING...') : isEditMode ? 'UPDATE' : 'PUBLISH'}</span>
               <ChevronDown size={14} />
             </button>
           </div>
@@ -376,9 +961,9 @@ export default function AddPostPage() {
           {/* Title & Subtitle Card */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">Add New Post</h1>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight">{isEditMode ? 'Edit Article' : 'Add New Post'}</h1>
               <p className="text-xs font-medium text-slate-500 mt-0.5">
-                Create engaging content with the power of AI.
+                {isEditMode ? 'Update and refine your news article with AI assistance.' : 'Create engaging content with the power of AI.'}
               </p>
             </div>
 
@@ -396,18 +981,19 @@ export default function AddPostPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter news title..."
-                    className="w-full h-10 px-3.5 pr-14 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all font-bangla"
+                    className="w-full h-12 px-4 pr-16 text-base md:text-lg font-black text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all font-bangla shadow-2xs"
                   />
-                  <span className="absolute right-3 top-3 text-[10px] font-bold text-slate-400">
+                  <span className="absolute right-3.5 top-3.5 text-xs font-extrabold text-slate-400">
                     {title.length}/100
                   </span>
                 </div>
                 <button
                   onClick={handleAiGenerateTitle}
-                  className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
+                  disabled={isAiLoading}
+                  className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-bold px-4 h-12 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0 disabled:opacity-50"
                 >
-                  <Sparkles size={14} />
-                  <span>AI Generate Title</span>
+                  <Sparkles size={15} className={isAiLoading ? 'animate-spin' : ''} />
+                  <span>{isAiLoading ? 'Generating...' : 'AI Generate Title'}</span>
                 </button>
               </div>
             </div>
@@ -420,14 +1006,16 @@ export default function AddPostPage() {
                   type="text"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
+                  placeholder="post-url-slug"
                   className="flex-1 h-10 px-3.5 text-xs font-mono font-medium text-slate-700 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all"
                 />
                 <button
                   onClick={() => handleAiOptimizeSlug()}
-                  className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
+                  disabled={isAiLoading}
+                  className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0 disabled:opacity-50"
                 >
-                  <Wand2 size={14} />
-                  <span>AI Optimize Slug</span>
+                  <Wand2 size={14} className={isAiLoading ? 'animate-spin' : ''} />
+                  <span>{isAiLoading ? 'Generating...' : 'AI Generate Slug'}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -451,28 +1039,42 @@ export default function AddPostPage() {
                 <Sparkles size={13} />
                 AI Tools
               </span>
-              <button onClick={() => { execCmd('insertHTML', '<p className="font-bangla">নতুন এআই অনুচ্ছেদ যুক্ত হলো...</p>'); showToast('AI Auto-Write: নতুন অনুচ্ছেদ লেখা হলো!'); }} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={() => handleAiEditorAction('write')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
                 <PenTool size={13} /> Write
               </button>
-              <button onClick={() => { execCmd('insertHTML', '<h3 className="font-bangla text-base font-extrabold pt-2">নতুন এআই সাব-হেডিং</h3>'); showToast('AI Headline যুক্ত করা হলো!'); }} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={() => handleAiEditorAction('headlines')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
                 <Heading size={13} /> Headlines
               </button>
-              <button onClick={() => showToast('AI Rewrite: লেখাটিকে মার্জিত রূপ প্রদান করা হলো!')} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
-                <RotateCw size={13} /> Rewrite
+              <button onClick={() => handleAiEditorAction('rewrite')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                <RotateCw size={13} className={isAiLoading ? 'animate-spin' : ''} /> Rewrite
               </button>
-              <button onClick={() => showToast('AI Expand: কন্টেন্ট সংবর্ধিত করা হলো!')} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={() => handleAiEditorAction('expand')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
                 <Maximize2 size={13} /> Expand
               </button>
-              <button onClick={() => showToast('AI Shorten: কন্টেন্ট সংক্ষেপ করা হলো!')} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={() => handleAiEditorAction('shorten')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
                 <Minimize2 size={13} /> Shorten
               </button>
-              <button onClick={() => showToast('AI Translate: খবরটি ইংরেজিতে রূপান্তর করা হলো!')} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={async () => {
+                const text = editorRef.current?.innerText;
+                if (!text || text.trim().length < 20) return showToast('Please write some content first!');
+                setIsAiLoading(true);
+                showToast('AI translating to English...');
+                try {
+                  const res = await api.post('/ai/translate', { text, fromLang: 'bn', toLang: 'en' });
+                  if (res.data.data.translation) {
+                    editorRef.current.innerText = res.data.data.translation;
+                    handleEditorInput();
+                    showToast('Content translated to English!');
+                  }
+                } catch (err) { showToast('Translation failed'); }
+                finally { setIsAiLoading(false); }
+              }} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
                 <Languages size={13} /> Translate
               </button>
-              <button onClick={() => showToast('AI SEO Optimization: কিউওয়ার্ড অপটিমাইজ করা হলো!')} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={() => handleAiRegenerateSidebar('seo')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
                 <SearchCheck size={13} /> SEO
               </button>
-              <button onClick={() => showToast('AI Fact Check: কোনো অসত্য তথ্য পাওয়া যায়নি (Verified)!')} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer">
+              <button onClick={handleAiFactCheck} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50 ml-auto bg-red-800/50 px-2 py-0.5 rounded">
                 <ShieldCheck size={13} /> Fact Check
               </button>
             </div>
@@ -539,6 +1141,115 @@ export default function AddPostPage() {
             </div>
           </div>
 
+          {/* Excerpt Box */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                <FileText size={15} className="text-[#eb1c24]" />
+                <span>Post Excerpt (সংক্ষেপ)</span>
+              </label>
+              <span className="text-[10px] font-bold text-slate-400">
+                {excerpt.length}/300
+              </span>
+            </div>
+            <textarea
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              placeholder="Write brief news summary (Excerpt) or accept from AI Suggestions..."
+              rows={3}
+              className="w-full p-3 text-xs font-bangla text-slate-800 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all resize-none"
+            />
+          </div>
+
+          {/* SEO Metadata Settings Box */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                <SearchCheck size={15} className="text-[#eb1c24]" />
+                <span>SEO Settings</span>
+              </h4>
+              <span className="text-[10px] font-extrabold text-white bg-[#eb1c24] px-2 py-0.5 rounded flex items-center gap-1 shadow-xs">
+                <Sparkles size={11} /> AI Powered
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {/* SEO Title */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-700">SEO Title</label>
+                  <span className="text-[10px] font-bold text-slate-400">{seoTitle.length}/60</span>
+                </div>
+                <input
+                  type="text"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  placeholder="Enter search engine title or accept from AI Suggestions..."
+                  className="w-full px-3 py-2 text-xs font-bangla text-slate-800 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all"
+                />
+              </div>
+
+              {/* Meta Description */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-700">Meta Description</label>
+                  <span className="text-[10px] font-bold text-slate-400">{metaDescription.length}/160</span>
+                </div>
+                <textarea
+                  value={metaDescription}
+                  onChange={(e) => setMetaDescription(e.target.value)}
+                  placeholder="Enter meta description summary or accept from AI Suggestions..."
+                  rows={2}
+                  className="w-full px-3 py-2 text-xs font-bangla text-slate-800 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all resize-none"
+                />
+              </div>
+
+              {/* Focus Keywords */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 mb-1 block">Focus Keywords</label>
+                <div className="flex flex-wrap gap-1.5 mb-2 font-sans">
+                  {focusKeywords.length > 0 ? focusKeywords.map((kw, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-red-50 text-[#eb1c24] border border-red-200 text-xs font-bold rounded-lg flex items-center gap-1.5">
+                      {kw}
+                      <button onClick={() => setFocusKeywords(focusKeywords.filter((_, i) => i !== idx))} className="cursor-pointer hover:text-red-800">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  )) : (
+                    <span className="text-[11px] text-slate-400 italic">No focus keywords added yet</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Type keyword and press Enter..."
+                    value={newKeywordInput}
+                    onChange={(e) => setNewKeywordInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newKeywordInput.trim()) {
+                        e.preventDefault();
+                        setFocusKeywords([...new Set([...focusKeywords, newKeywordInput.trim()])]);
+                        setNewKeywordInput('');
+                      }
+                    }}
+                    className="flex-1 px-3 py-1.5 text-xs font-bangla border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
+                  />
+                  <button
+                    onClick={() => {
+                      if (newKeywordInput.trim()) {
+                        setFocusKeywords([...new Set([...focusKeywords, newKeywordInput.trim()])]);
+                        setNewKeywordInput('');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Bottom 4 Panels Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -575,7 +1286,7 @@ export default function AddPostPage() {
                 <div className="flex items-center gap-2 pt-1">
                   <input
                     type="text"
-                    placeholder="ক্যাটাগরির নাম..."
+                    placeholder="Category name..."
                     value={newCatInput}
                     onChange={(e) => setNewCatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
@@ -721,8 +1432,12 @@ export default function AddPostPage() {
                 <Sparkles size={15} className="text-[#eb1c24]" />
                 AI Generated Suggestions
               </h3>
-              <button onClick={() => showToast('সমস্ত AI সাজেশন রি-জেনারেট করা হয়েছে!')} className="text-[11px] font-bold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer">
-                <RotateCw size={12} /> Regenerate All
+              <button 
+                onClick={() => handleAiRegenerateSidebar('all')} 
+                disabled={isAiLoading}
+                className="text-[11px] font-bold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              >
+                <RotateCw size={12} className={isAiLoading ? 'animate-spin' : ''} /> Regenerate All
               </button>
             </div>
 
@@ -733,17 +1448,22 @@ export default function AddPostPage() {
                 <span>Excerpt</span>
               </p>
               <p className="text-[11px] text-slate-600 leading-relaxed font-bangla">
-                {excerpt}
+                {isAiLoading ? 'Generating...' : aiSuggestions.excerpt || <span className="text-slate-400 italic">Write content or click Regenerate to generate Excerpt...</span>}
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <button
-                  onClick={() => applyAiSuggestion('excerpt', excerpt)}
-                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                  onClick={() => applyAiSuggestion('excerpt', aiSuggestions.excerpt)}
+                  disabled={!aiSuggestions.excerpt}
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs disabled:opacity-50"
                 >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('AI Excerpt রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('excerpt')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -755,17 +1475,22 @@ export default function AddPostPage() {
                 <span>SEO Title</span>
               </p>
               <p className="text-[11px] text-slate-600 font-semibold font-bangla">
-                {seoTitle}
+                {isAiLoading ? 'Generating...' : aiSuggestions.seoTitle || <span className="text-slate-400 italic">Write content to generate SEO Title...</span>}
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <button
-                  onClick={() => applyAiSuggestion('seoTitle', seoTitle)}
-                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                  onClick={() => applyAiSuggestion('seoTitle', aiSuggestions.seoTitle)}
+                  disabled={!aiSuggestions.seoTitle}
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs disabled:opacity-50"
                 >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('AI SEO Title রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('seo')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -777,17 +1502,22 @@ export default function AddPostPage() {
                 <span>Meta Description</span>
               </p>
               <p className="text-[11px] text-slate-600 leading-relaxed font-bangla">
-                {metaDescription}
+                {isAiLoading ? 'Generating...' : aiSuggestions.metaDescription || <span className="text-slate-400 italic">Write content to generate Meta Description...</span>}
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <button
-                  onClick={() => applyAiSuggestion('metaDescription', metaDescription)}
-                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                  onClick={() => applyAiSuggestion('metaDescription', aiSuggestions.metaDescription)}
+                  disabled={!aiSuggestions.metaDescription}
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs disabled:opacity-50"
                 >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('AI Meta Description রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('seo')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -799,18 +1529,28 @@ export default function AddPostPage() {
                 <span>Focus Keywords</span>
               </p>
               <div className="flex flex-wrap gap-1">
-                {focusKeywords.map((kw, i) => (
+                {isAiLoading ? <span className="text-[11px] text-slate-500">Generating...</span> : aiSuggestions.focusKeywords?.length > 0 ? aiSuggestions.focusKeywords.map((kw, i) => (
                   <span key={i} className="px-2 py-0.5 bg-white border border-slate-200 text-slate-900 text-[10px] font-bold rounded">
                     {kw}
                   </span>
-                ))}
+                )) : <span className="text-[11px] text-slate-400 italic">No keywords generated yet</span>}
               </div>
               <div className="flex items-center gap-2 pt-1">
-                <button onClick={() => showToast('Focus Keywords যুক্ত করা হয়েছে!')} className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                <button 
+                  onClick={() => {
+                    setFocusKeywords(Array.from(new Set([...focusKeywords, ...aiSuggestions.focusKeywords])));
+                    showToast('Focus Keywords যুক্ত করা হয়েছে!');
+                  }}
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('Keywords রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('seo')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -822,18 +1562,28 @@ export default function AddPostPage() {
                 <span>Tags</span>
               </p>
               <div className="flex flex-wrap gap-1 font-bangla">
-                {['ভারত', 'ইংল্যান্ড', 'টেস্ট সিরিজ', 'রোহিত শর্মা', 'যশস্বী জয়সওয়াল', 'ক্রিকেট'].map((t, i) => (
+                {isAiLoading ? <span className="text-[11px] text-slate-500">Generating...</span> : aiSuggestions.tags?.length > 0 ? aiSuggestions.tags.map((t, i) => (
                   <span key={i} className="px-2 py-0.5 bg-white border border-slate-200 text-slate-900 text-[10px] font-bold rounded">
                     {t}
                   </span>
-                ))}
+                )) : <span className="text-[11px] text-slate-400 italic">No tags generated yet</span>}
               </div>
               <div className="flex items-center gap-2 pt-1">
-                <button onClick={() => showToast('Tags গ্রহণ করা হয়েছে!')} className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                <button 
+                  onClick={() => {
+                    setTags(Array.from(new Set([...tags, ...aiSuggestions.tags])));
+                    showToast('Tags গ্রহণ করা হয়েছে!');
+                  }} 
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('Tags রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('tags')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -845,14 +1595,24 @@ export default function AddPostPage() {
                 <span>Suggested Category</span>
               </p>
               <p className="text-[11px] font-extrabold text-slate-800 font-bangla">
-                খেলা › ক্রিকেট <span className="text-emerald-600 ml-1 font-bold">Confidence: 95%</span>
+                {isAiLoading ? 'Generating...' : aiSuggestions.category} <span className="text-emerald-600 ml-1 font-bold">Confidence: High</span>
               </p>
               <div className="flex items-center gap-2 pt-1">
-                <button onClick={() => showToast('Suggested Category গ্রহণ করা হয়েছে!')} className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                <button 
+                  onClick={() => {
+                    toggleCategory(aiSuggestions.category);
+                    showToast('Suggested Category গ্রহণ করা হয়েছে!');
+                  }} 
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('Category রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('tags')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -864,14 +1624,21 @@ export default function AddPostPage() {
                 <span>AI Summary</span>
               </p>
               <p className="text-[11px] text-slate-600 leading-relaxed font-bangla">
-                ভারত দ্বিতীয় টেস্টে দাপুটে জয় নিয়ে সিরিজে ২-০ তে অগ্রগতি করেছে। ব্যাটিং ও বোলিং দুই বিভাগেই ভারত দেখিয়েছে অসাধারণ পারফরম্যান্স।
+                {isAiLoading ? 'Generating...' : aiSuggestions.excerpt}
               </p>
               <div className="flex items-center gap-2 pt-1">
-                <button onClick={() => showToast('AI Summary সংক্ষেপ গ্রহণ করা হয়েছে!')} className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                <button 
+                  onClick={() => { setExcerpt(aiSuggestions.excerpt); showToast('AI Summary গ্রহণ করা হয়েছে!'); }} 
+                  className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                >
                   <Check size={12} /> Accept
                 </button>
-                <button onClick={() => showToast('AI Summary রিফ্রেশ করা হয়েছে!')} className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer">
-                  <RotateCw size={11} />
+                <button 
+                  onClick={() => handleAiRegenerateSidebar('excerpt')} 
+                  disabled={isAiLoading}
+                  className="px-2 py-1 border border-slate-300 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCw size={11} className={isAiLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
             </div>
@@ -879,11 +1646,15 @@ export default function AddPostPage() {
             {/* 8. Fact Check */}
             <div className="p-3 bg-emerald-600 text-white rounded-xl flex items-center justify-between shadow-xs">
               <div>
-                <span className="bg-white text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded uppercase">Verified</span>
-                <p className="text-[10px] font-bold text-white mt-1">No major factual issues found.</p>
+                <span className="bg-white text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">AI Powered</span>
+                <p className="text-[10px] font-bold text-white mt-1">Click to run fact-check analysis.</p>
               </div>
-              <button onClick={() => alert('Fact Check Details: ঘটনা ও তারিখের সমস্ত তথ্য ১০০% সত্য ও বিসিসিআই রিপোর্ট দ্বারা সামঞ্জস্যপূর্ণ।')} className="text-[10px] font-extrabold text-white underline cursor-pointer">
-                View Details
+              <button 
+                onClick={handleAiFactCheck} 
+                disabled={isAiLoading}
+                className="text-[10px] font-extrabold text-white underline cursor-pointer disabled:opacity-50"
+              >
+                Run Fact Check
               </button>
             </div>
           </div>
@@ -894,103 +1665,218 @@ export default function AddPostPage() {
 
           {/* 1. Languages Box */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <h3 className="font-extrabold text-xs text-slate-900">Languages</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-xs text-slate-900">Languages</h3>
+              <span className="text-[10px] font-extrabold text-[#eb1c24] bg-red-50 border border-red-200 px-2 py-0.5 rounded flex items-center gap-1 shadow-2xs">
+                <Sparkles size={11} /> Auto Draft
+              </span>
+            </div>
             <div className="space-y-2 text-xs">
-              <div className="p-2.5 bg-slate-800 text-white rounded-xl flex items-center justify-between shadow-xs">
+              {/* Bengali Tab */}
+              <div 
+                onClick={() => handleSwitchLanguage('bn')}
+                className={`p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all ${activeLang === 'bn' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border border-slate-200'}`}
+              >
                 <div className="flex items-center gap-2 font-bold">
-                  <Globe2 size={15} className="text-white" />
+                  <Globe2 size={15} className={activeLang === 'bn' ? 'text-white' : 'text-slate-500'} />
                   <span className="font-bangla">বাংলা (Default)</span>
                 </div>
-                <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded">
-                  Active
+                <span className={`${activeLang === 'bn' ? 'bg-emerald-500' : 'bg-slate-300 text-slate-700'} text-white text-[10px] font-black px-2 py-0.5 rounded`}>
+                  {activeLang === 'bn' ? 'Active' : 'Ready'}
                 </span>
               </div>
 
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+              {/* English Tab */}
+              <div 
+                onClick={() => handleSwitchLanguage('en')}
+                className={`p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all ${activeLang === 'en' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border border-slate-200'}`}
+              >
                 <div>
-                  <div className="font-bold text-slate-800">English</div>
-                  <div className="text-[10px] text-slate-400">Generated by AI</div>
+                  <div className={`font-bold ${activeLang === 'en' ? 'text-white' : 'text-slate-800'}`}>English</div>
+                  <div className={`text-[10px] ${activeLang === 'en' ? 'text-slate-300' : 'text-slate-400'}`}>Generated by AI</div>
                 </div>
-                <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded">
-                  Ready
+                <span className={`${activeLang === 'en' ? 'bg-emerald-500' : translatingLang === 'en' ? 'bg-amber-500 animate-pulse' : translationsStore.en?.title ? 'bg-emerald-600' : 'bg-slate-300 text-slate-700'} text-white text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1`}>
+                  {translatingLang === 'en' && <RotateCw size={10} className="animate-spin" />}
+                  {activeLang === 'en' ? 'Active' : translatingLang === 'en' ? 'Drafting...' : translationsStore.en?.title ? 'Ready' : 'Auto Draft'}
                 </span>
               </div>
 
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+              {/* Hindi Tab */}
+              <div 
+                onClick={() => handleSwitchLanguage('hi')}
+                className={`p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all ${activeLang === 'hi' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-50 hover:bg-slate-100 border border-slate-200'}`}
+              >
                 <div>
-                  <div className="font-bold text-slate-800 font-bangla">हिंदी</div>
-                  <div className="text-[10px] text-slate-400">Generated by AI</div>
+                  <div className={`font-bold font-bangla ${activeLang === 'hi' ? 'text-white' : 'text-slate-800'}`}>हिंदी</div>
+                  <div className={`text-[10px] ${activeLang === 'hi' ? 'text-slate-300' : 'text-slate-400'}`}>Generated by AI</div>
                 </div>
-                <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded">
-                  Ready
+                <span className={`${activeLang === 'hi' ? 'bg-emerald-500' : translatingLang === 'hi' ? 'bg-amber-500 animate-pulse' : translationsStore.hi?.title ? 'bg-emerald-600' : 'bg-slate-300 text-slate-700'} text-white text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1`}>
+                  {translatingLang === 'hi' && <RotateCw size={10} className="animate-spin" />}
+                  {activeLang === 'hi' ? 'Active' : translatingLang === 'hi' ? 'Drafting...' : translationsStore.hi?.title ? 'Ready' : 'Auto Draft'}
                 </span>
               </div>
             </div>
 
-            <button onClick={() => showToast('নতুন ভাষা সংস্করণ তৈরি করার সুবিধা চালু হয়েছে!')} className="w-full py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer">
+            <button onClick={() => showToast('বাংলা, ইংরেজি ও হিন্দি ড্রাফট প্রস্তুত রয়েছে!')} className="w-full py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer">
               <Plus size={14} /> Add New Language
             </button>
           </div>
 
           {/* 2. SEO Score Box */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-xs text-slate-900">SEO</h3>
+            <h3 className="font-extrabold text-xs text-slate-900">SEO Score</h3>
 
             {/* Circular SEO Score Meter */}
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-slate-500 block">SEO Score</span>
-                <span className="text-emerald-600 font-black text-sm">
-                  {calcSeoScore() > 80 ? 'Excellent' : 'Good'}
+                <span className="text-[11px] font-bold text-slate-500 block">SEO Quality</span>
+                <span className={`font-black text-sm ${calcSeoScore() >= 80 ? 'text-emerald-600' : calcSeoScore() >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                  {calcSeoScore() >= 80 ? 'Excellent' : calcSeoScore() >= 50 ? 'Good' : 'Needs Work'}
                 </span>
               </div>
 
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 transform">
                   <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" strokeWidth="3" />
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#059669" strokeWidth="3" strokeDasharray={`${calcSeoScore()}, 100`} />
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={calcSeoScore() >= 80 ? '#059669' : calcSeoScore() >= 50 ? '#f59e0b' : '#ef4444'} strokeWidth="3" strokeDasharray={`${calcSeoScore()}, 100`} />
                 </svg>
                 <span className="absolute font-black text-base text-slate-900">{calcSeoScore()}</span>
               </div>
             </div>
 
-            {/* SEO Checklist */}
-            <div className="space-y-1.5 text-xs font-semibold text-slate-700 border-t border-slate-100 pt-3">
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Meta Title</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Meta Description</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Keywords</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Readability</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Images</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Schema</div>
-              <div className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Links</div>
+            {/* Real-time SEO Checklist */}
+            <div className="space-y-2 text-xs font-semibold text-slate-700 border-t border-slate-100 pt-3">
+              {/* Meta Title */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(seoTitle || title || aiSuggestions.seoTitle) ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>Meta Title</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${seoTitle || title || aiSuggestions.seoTitle ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {seoTitle || title || aiSuggestions.seoTitle ? 'Good' : 'Missing'}
+                </span>
+              </div>
+
+              {/* Meta Description */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(metaDescription || excerpt || aiSuggestions.metaDescription) ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>Meta Description</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${metaDescription || excerpt || aiSuggestions.metaDescription ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {metaDescription || excerpt || aiSuggestions.metaDescription ? 'Good' : 'Missing'}
+                </span>
+              </div>
+
+              {/* Keywords */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(focusKeywords.length > 0 || (aiSuggestions.focusKeywords && aiSuggestions.focusKeywords.length > 0)) ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>Keywords</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${(focusKeywords.length > 0 || (aiSuggestions.focusKeywords && aiSuggestions.focusKeywords.length > 0)) ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {focusKeywords.length > 0 ? `${focusKeywords.length} Set` : aiSuggestions.focusKeywords?.length > 0 ? `${aiSuggestions.focusKeywords.length} AI` : 'Missing'}
+                </span>
+              </div>
+
+              {/* Readability */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {wordCount > 50 ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>Readability</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${wordCount > 50 ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {wordCount > 100 ? `${wordCount} words` : wordCount > 30 ? 'Medium' : 'Short'}
+                </span>
+              </div>
+
+              {/* Images */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {featuredImage ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>Featured Image</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${featuredImage ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {featuredImage ? 'Added' : 'Missing'}
+                </span>
+              </div>
+
+              {/* URL Slug */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(slug || title) ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>URL Slug</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${(slug || title) ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {slug ? 'Custom' : title ? 'Auto' : 'Missing'}
+                </span>
+              </div>
+
+              {/* Tags */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {(tags.length > 0 || (aiSuggestions.tags && aiSuggestions.tags.length > 0)) ? <CheckCircle2 size={14} className="text-emerald-600" /> : <AlertCircle size={14} className="text-amber-500" />}
+                  <span>Tags</span>
+                </div>
+                <span className={`text-[10px] font-extrabold ${(tags.length > 0 || (aiSuggestions.tags && aiSuggestions.tags.length > 0)) ? 'text-emerald-600' : 'text-amber-500'}`}>
+                  {tags.length > 0 ? `${tags.length} Added` : aiSuggestions.tags?.length > 0 ? `${aiSuggestions.tags.length} AI` : 'Missing'}
+                </span>
+              </div>
             </div>
 
-            <button onClick={() => showToast('SEO Score পুনঃপরীক্ষা করা হলো: 94/100!')} className="w-full py-1.5 text-[#eb1c24] text-xs font-extrabold hover:underline flex items-center justify-center gap-1 cursor-pointer">
-              <RotateCw size={12} /> Analyze Again
+            <button 
+              onClick={() => handleAiRegenerateSidebar('seo')} 
+              disabled={isAiLoading}
+              className="w-full py-1.5 text-[#eb1c24] text-xs font-extrabold hover:underline flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+            >
+              <RotateCw size={12} className={isAiLoading ? 'animate-spin' : ''} /> Re-analyze SEO Score
             </button>
           </div>
 
           {/* 3. Featured Image Box */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <h3 className="font-extrabold text-xs text-slate-900">Featured Image</h3>
+            <input
+              type="file"
+              ref={imageFileInputRef}
+              onChange={handleImageFileUpload}
+              accept="image/*"
+              className="hidden"
+            />
             {featuredImage ? (
               <div className="rounded-xl overflow-hidden border border-slate-200 relative group">
                 <img
                   src={featuredImage}
-                  alt="Featured"
+                  alt={altText || 'Featured'}
                   className="w-full h-36 object-cover"
                 />
               </div>
             ) : (
-              <div className="h-36 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+              <div
+                onClick={handleFeaturedImageChange}
+                className="h-36 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#eb1c24] hover:bg-red-50/20 flex flex-col items-center justify-center text-slate-400 hover:text-[#eb1c24] cursor-pointer transition-all"
+              >
                 <Upload size={24} />
                 <span className="text-xs font-bold mt-1">Upload Featured Image</span>
+                <span className="text-[10px] text-slate-400">Click to select file</span>
               </div>
             )}
 
             <div className="flex items-center gap-2">
               <button onClick={handleFeaturedImageChange} className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer">
-                Change Image
+                {featuredImage ? 'Change Image' : 'Upload Image'}
+              </button>
+              <button
+                onClick={() => {
+                  const url = prompt('ইমেজ URL পেস্ট করুন:', featuredImage);
+                  if (url) {
+                    setFeaturedImage(url);
+                    showToast('ইমেজ URL সেট করা হয়েছে!');
+                  }
+                }}
+                className="py-1.5 px-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                URL
               </button>
               {featuredImage && (
                 <button onClick={() => setFeaturedImage('')} className="py-1.5 px-3 border border-slate-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-lg transition-colors cursor-pointer">
@@ -1000,25 +1886,55 @@ export default function AddPostPage() {
             </div>
 
             {/* AI Generated Image Details */}
-            <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
-              <p className="font-extrabold text-[#eb1c24] flex items-center gap-1">
-                <Sparkles size={13} /> AI Generated Details
-              </p>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block">Alt Text</label>
-                <p className="text-[11px] font-semibold text-slate-700 font-bangla">{altText}</p>
+            <div className="space-y-3 pt-3 border-t border-slate-100 text-xs">
+              <div className="flex items-center justify-between">
+                <p className="font-extrabold text-[#eb1c24] flex items-center gap-1">
+                  <Sparkles size={13} /> AI Generated Details
+                </p>
+                <button
+                  onClick={handleAiRegenerateImageDetails}
+                  disabled={isAiLoading}
+                  className="text-[10px] font-extrabold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles size={11} className={isAiLoading ? 'animate-spin' : ''} />
+                  <span>{isAiLoading ? 'Generating...' : 'Regenerate'}</span>
+                </button>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block">Caption</label>
-                <p className="text-[11px] font-semibold text-slate-700 font-bangla">{caption}</p>
+
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Alt Text</label>
+                  <input
+                    type="text"
+                    value={altText}
+                    onChange={(e) => setAltText(e.target.value)}
+                    placeholder="Image alt text..."
+                    className="w-full px-2.5 py-1.5 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-[#eb1c24]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Caption</label>
+                  <input
+                    type="text"
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    placeholder="Image caption..."
+                    className="w-full px-2.5 py-1.5 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-[#eb1c24]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Credit</label>
+                  <input
+                    type="text"
+                    value={credit}
+                    onChange={(e) => setCredit(e.target.value)}
+                    placeholder="Photo credit..."
+                    className="w-full px-2.5 py-1.5 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-[#eb1c24]"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block">Credit</label>
-                <p className="text-[11px] font-semibold text-slate-700 font-bangla">{credit}</p>
-              </div>
-              <button onClick={handleAiRegenerateImageDetails} className="text-[11px] font-extrabold text-[#eb1c24] hover:underline flex items-center gap-1 pt-1 cursor-pointer">
-                <Sparkles size={12} /> Regenerate with AI
-              </button>
             </div>
           </div>
 
@@ -1096,19 +2012,24 @@ export default function AddPostPage() {
             {/* Simulated Client Website Article View */}
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2 text-xs font-bold">
-                {selectedCategories.map((c) => (
-                  <span key={c} className="bg-[#eb1c24] text-white px-2.5 py-0.5 rounded-md text-[11px]">{c}</span>
+                {(() => {
+                  const cat = categories.find(c => c._id === selectedCategory);
+                  const catName = cat?.translations?.bn?.name || cat?.name || '';
+                  return catName ? <span className="bg-[#eb1c24] text-white px-2.5 py-0.5 rounded-md text-[11px]">{catName}</span> : null;
+                })()}
+                {tags.map((t) => (
+                  <span key={t} className="bg-slate-200 text-slate-800 px-2.5 py-0.5 rounded-md text-[11px]">{t}</span>
                 ))}
               </div>
 
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
-                {title}
+                {title || 'পোস্টের টাইটেল এখানে দেখা যাবে...'}
               </h1>
 
               <div className="flex items-center gap-3 text-xs text-slate-500 font-sans border-y border-slate-100 py-2.5">
                 <span>By Nirbhik Bangla Editorial Desk</span>
                 <span>•</span>
-                <span>Published May 21, 2024</span>
+                <span>Published {new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 <span>•</span>
                 <span>{readingTime} min read</span>
               </div>
@@ -1121,10 +2042,8 @@ export default function AddPostPage() {
               )}
 
               <div className="text-base leading-relaxed text-slate-800 space-y-4">
-                <p className="font-semibold text-slate-900 border-l-4 border-[#eb1c24] pl-3 py-1 bg-slate-50 rounded-r-lg">{excerpt}</p>
-                <p>দ্বিতীয় টেস্ট অসাধারণ পারফরম্যান্সের মাধ্যমে ইংল্যান্ডকে ২৮০ রানে হারিয়ে সিরিজে ২-০ ব্যবধানে এগিয়ে গেল ভারত। দলের হয়ে রোহিত শর্মা ও যশস্বী জয়সওয়াল ব্যাট হাতে দুর্দান্ত পারফরম্যান্স করেন।</p>
-                <h3 className="text-lg font-bold text-slate-900">ম্যাচের সংক্ষিপ্ত বিবরণ</h3>
-                <p>প্রথম ইনিংসে ভারত করে ৪৫০ রান। জবাবে ইংল্যান্ডের প্রথম ইনিংস থামে ২৮০ রানে। দ্বিতীয় ইনিংসে ভারত ২৩৮ রানে অলআউট হয় এবং ইংল্যান্ডের জয়ের জন্য প্রয়োজন ছিল ৪৮১ রান। কিন্তু শেষ পর্যন্ত ইংল্যান্ড করতে পারে মাত্র ২০০ রান।</p>
+                {excerpt && <p className="font-semibold text-slate-900 border-l-4 border-[#eb1c24] pl-3 py-1 bg-slate-50 rounded-r-lg">{excerpt}</p>}
+                <div dangerouslySetInnerHTML={{ __html: editorRef.current?.innerHTML || '<p className="text-slate-400 italic">কন্টেন্ট এখানে প্রিভিউ হবে...</p>' }} />
               </div>
             </div>
 
@@ -1134,6 +2053,67 @@ export default function AddPostPage() {
               </button>
               <button onClick={() => { setShowPreviewModal(false); handlePublishPost(); }} className="px-5 py-2 bg-[#eb1c24] text-white text-xs font-black rounded-xl hover:bg-red-700 cursor-pointer">
                 Publish Article
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Title Options Modal */}
+      {showTitleModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl p-6 space-y-4 font-bangla border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="bg-[#eb1c24] text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase flex items-center gap-1 shadow-xs">
+                  <Sparkles size={12} /> AI Suggestions
+                </span>
+                <h3 className="font-extrabold text-sm text-slate-900">শিরোনাম নির্বাচন করুন</h3>
+              </div>
+              <button onClick={() => setShowTitleModal(false)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 font-medium">
+              AI আপনার সংবাদের উপর ভিত্তি করে নিম্নলিখিত শিরোনামগুলো তৈরি করেছে। আপনার পছন্দের শিরোনামে ক্লিক করে নির্বাচন করুন:
+            </p>
+
+            <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+              {generatedTitles.map((t, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectGeneratedTitle(t)}
+                  className="p-3.5 bg-slate-50 hover:bg-red-50/50 border border-slate-200 hover:border-red-300 rounded-2xl cursor-pointer transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full bg-slate-200 group-hover:bg-[#eb1c24] group-hover:text-white text-slate-700 text-xs font-black flex items-center justify-center shrink-0 transition-colors">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 leading-relaxed font-bangla">
+                      {t}
+                    </span>
+                  </div>
+                  <button className="px-3 py-1 bg-white group-hover:bg-[#eb1c24] text-slate-700 group-hover:text-white border border-slate-200 group-hover:border-red-600 text-[10px] font-extrabold rounded-xl shrink-0 transition-all shadow-2xs">
+                    Choose
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between font-sans">
+              <button
+                onClick={handleAiGenerateTitle}
+                disabled={isAiLoading}
+                className="text-xs font-bold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              >
+                <RotateCw size={13} className={isAiLoading ? 'animate-spin' : ''} /> Regenerate Options
+              </button>
+              <button
+                onClick={() => setShowTitleModal(false)}
+                className="px-4 py-1.5 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
               </button>
             </div>
           </div>

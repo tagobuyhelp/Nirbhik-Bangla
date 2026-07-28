@@ -1,6 +1,14 @@
+const fs = require('fs');
+const path = require('path');
 const Media = require('../models/Media');
 const sendResponse = require('../utils/responseHandler');
 const cloudinary = require('../config/cloudinary');
+
+// Ensure local uploads directory exists
+const uploadsDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Helper to determine resource type
 const getResourceType = (mimetype) => {
@@ -21,24 +29,56 @@ exports.uploadMedia = async (req, res, next) => {
     const fileBuffer = req.file.buffer;
     const resourceType = getResourceType(req.file.mimetype);
 
-    // Upload to cloudinary via stream
-    const uploadToCloudinary = (buffer) => {
-      return new Promise((resolve, reject) => {
+    let mediaUrl = '';
+    let cloudinaryId = '';
+    let width = 1200;
+    let height = 675;
+
+    // Try Cloudinary upload stream first
+    try {
+      const cloudinaryResult = await new Promise((resolve, reject) => {
+        const uploadOptions = {
+          resource_type: resourceType,
+          folder: 'nirbhik_bangla'
+        };
+
+        if (resourceType === 'image') {
+          uploadOptions.transformation = [
+            { width: 1200, height: 675, crop: 'fill', gravity: 'auto' },
+            { quality: 'auto' },
+            { fetch_format: 'webp' }
+          ];
+          uploadOptions.format = 'webp';
+        }
+
         const stream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: 'nirbhik_bangla'
-          },
+          uploadOptions,
           (error, result) => {
             if (error) reject(error);
             else resolve(result);
           }
         );
-        stream.end(buffer);
+        stream.end(fileBuffer);
       });
-    };
 
-    const cloudinaryResult = await uploadToCloudinary(fileBuffer);
+      mediaUrl = cloudinaryResult.secure_url;
+      cloudinaryId = cloudinaryResult.public_id;
+      width = cloudinaryResult.width || 1200;
+      height = cloudinaryResult.height || 675;
+    } catch (cloudinaryError) {
+      console.warn('[MEDIA UPLOAD]: Cloudinary upload failed or not configured, saving to local static storage:', cloudinaryError.message);
+      
+      // Fallback: Save file permanently to local uploads folder
+      const ext = path.extname(req.file.originalname) || (resourceType === 'image' ? '.jpg' : '');
+      const uniqueFilename = `media_${Date.now()}_${Math.random().toString(36).substring(7)}${ext}`;
+      const filePath = path.join(uploadsDir, uniqueFilename);
+      
+      fs.writeFileSync(filePath, fileBuffer);
+      
+      const protocol = req.protocol || 'http';
+      const host = req.get('host') || 'localhost:5000';
+      mediaUrl = `${protocol}://${host}/uploads/${uniqueFilename}`;
+    }
 
     // Save to DB
     const mediaType = resourceType === 'raw' ? 'document' : resourceType;
@@ -48,12 +88,12 @@ exports.uploadMedia = async (req, res, next) => {
       type: mediaType,
       mime: req.file.mimetype,
       size: req.file.size,
-      width: cloudinaryResult.width,
-      height: cloudinaryResult.height,
-      cloudinary_id: cloudinaryResult.public_id,
-      url: cloudinaryResult.secure_url,
-      thumbnailUrl: resourceType === 'image' ? cloudinary.url(cloudinaryResult.public_id, { width: 300, crop: 'scale' }) : '',
-      uploadedBy: req.user.id
+      width,
+      height,
+      cloudinary_id: cloudinaryId,
+      url: mediaUrl,
+      thumbnailUrl: mediaUrl,
+      uploadedBy: req.user ? req.user.id : null
     });
 
     return sendResponse(res, 201, 'Media uploaded successfully', media);

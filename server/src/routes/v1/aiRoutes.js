@@ -7,6 +7,9 @@ const sendResponse = require('../../utils/responseHandler');
 router.post('/headlines', async (req, res, next) => {
   try {
     const { text, lang = 'bn' } = req.body;
+    if (!text || typeof text !== 'string' || text.trim().length < 10) {
+      return sendResponse(res, 400, 'Article text (at least 10 characters) is required to generate headlines');
+    }
     const headlines = await AIService.generateHeadlines(text, lang);
     return sendResponse(res, 200, 'AI headlines generated', headlines);
   } catch (error) {
@@ -17,7 +20,10 @@ router.post('/headlines', async (req, res, next) => {
 // POST /api/v1/ai/translate
 router.post('/translate', async (req, res, next) => {
   try {
-    const { text, fromLang, toLang } = req.body;
+    const { text, fromLang = 'bn', toLang = 'en' } = req.body;
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return sendResponse(res, 400, 'Text is required for translation');
+    }
     const translation = await AIService.translate(text, fromLang, toLang);
     return sendResponse(res, 200, 'AI translation completed', { translation });
   } catch (error) {
@@ -75,6 +81,28 @@ router.post('/suggest-tags', async (req, res, next) => {
     const { text, lang = 'bn' } = req.body;
     const tags = await AIService.suggestTags(text, lang);
     return sendResponse(res, 200, 'AI tags suggested', tags);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/ai/editor
+router.post('/editor', async (req, res, next) => {
+  try {
+    const { text, actionType } = req.body;
+    const editedText = await AIService.editorAction(text, actionType);
+    return sendResponse(res, 200, 'AI editor action completed', { editedText });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/ai/image-alt
+router.post('/image-alt', async (req, res, next) => {
+  try {
+    const { title, excerpt, lang } = req.body;
+    const metadata = await AIService.generateImageAlt(title, excerpt, lang || 'bn');
+    return sendResponse(res, 200, 'AI image metadata generated', metadata);
   } catch (error) {
     next(error);
   }

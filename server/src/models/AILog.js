@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const AILogSchema = new mongoose.Schema({
   service: { type: String, required: true },
   promptName: { type: String, required: true },
-  model: { type: String, default: 'gemini-2.5-flash' },
+  model: { type: String, default: 'gemini-2.0-flash' },
   usage: {
     promptTokens: { type: Number, default: 0 },
     completionTokens: { type: Number, default: 0 },

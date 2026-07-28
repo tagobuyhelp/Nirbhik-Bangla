@@ -42,6 +42,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="posts" element={<PostsPage />} />
           <Route path="posts/add" element={<AddPostPage />} />
+          <Route path="posts/edit/:id" element={<AddPostPage />} />
 
           {/* Content Management Routes */}
           <Route path="categories" element={<CategoriesPage />} />

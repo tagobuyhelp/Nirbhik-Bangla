@@ -13,10 +13,15 @@ connectDB();
 
 const app = express();
 
+const path = require('path');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve local uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Mount Versioned API Routes (/api/v1)
 app.use('/api/v1', v1Router);

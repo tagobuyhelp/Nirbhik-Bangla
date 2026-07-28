@@ -6,6 +6,12 @@ const TranslationSchema = new mongoose.Schema({
   slug: { type: String, required: true, index: true },
   excerpt: { type: String, default: '' },
   content: { type: String, default: '' },
+  tags: [{ type: String }],
+  imageMetadata: {
+    altText: { type: String, default: '' },
+    caption: { type: String, default: '' },
+    credit: { type: String, default: '' },
+  },
   seo: {
     title: { type: String, default: '' },
     description: { type: String, default: '' },

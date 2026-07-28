@@ -23,11 +23,25 @@ class AIValidator {
       }),
       translation: Joi.object({
         translation: Joi.string().required()
+      }),
+      factcheck: Joi.object({
+        score: Joi.number().min(0).max(100).required(),
+        flaggedClaims: Joi.array().items(Joi.string()).default([]),
+        verdict: Joi.string().required()
+      }),
+      editor: Joi.object({
+        editedText: Joi.string().required()
+      }),
+      imagealt: Joi.object({
+        altText: Joi.string().allow(''),
+        caption: Joi.string().allow(''),
+        credit: Joi.string().allow('')
       })
     };
   }
 
   validate(type, data) {
+    if (!data) return null;
     const schema = this.schemas[type];
     if (!schema) {
       console.warn(`No validation schema found for AI output type: ${type}`);
@@ -35,9 +49,11 @@ class AIValidator {
     }
     const { error, value } = schema.validate(data, { stripUnknown: true });
     if (error) {
-      console.error(`AI Validator failed for type ${type}:`, error.message);
-      // We don't necessarily throw, we can just return raw data or handle it based on strictness.
-      // For now, let's just log and return the data, but in strict mode we could throw.
+      console.warn(`AI Validator warning for type ${type}:`, error.message);
+      if (type === 'translation') {
+        const strVal = typeof data === 'string' ? data : (data.translation || data.translatedText || data.text || Object.values(data)[0]);
+        if (typeof strVal === 'string') return { translation: strVal };
+      }
     }
     return value || data;
   }

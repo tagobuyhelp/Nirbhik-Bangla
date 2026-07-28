@@ -1,12 +1,12 @@
-const geminiProvider = require('../ai/providers/gemini.provider');
+const providerFactory = require('../ai/providers');
 const promptBuilder = require('../ai/builders/prompt.builder');
 const aiValidator = require('../ai/validators/ai.validator');
 const AILog = require('../models/AILog');
 
 class AIService {
   async _executeAndLog(serviceName, promptName, promptConfig, validationType) {
-    // 1. Execute via Provider
-    const response = await geminiProvider.execute(promptConfig, { expectJson: true });
+    // 1. Execute via Provider Factory with Automatic Cross-Provider Fallback
+    const response = await providerFactory.executeWithFallback(promptConfig, { expectJson: true });
 
     // 2. Validate output
     let validatedData = response.data;
@@ -32,16 +32,18 @@ class AIService {
     return response.success ? validatedData : null;
   }
 
-  async generateHeadlines(text, lang) {
+  async generateHeadlines(text, lang = 'bn') {
     const config = promptBuilder.buildHeadline(text, lang);
     const data = await this._executeAndLog('AIHeadlineService', 'generate_headlines', config, 'headlines');
-    return data || ['Headline 1', 'Headline 2', 'Headline 3'];
+    return Array.isArray(data) && data.length > 0 ? data : [];
   }
 
-  async translate(text, fromLang, toLang) {
+  async translate(text, fromLang = 'bn', toLang = 'en') {
     const config = promptBuilder.buildTranslation(text, fromLang, toLang);
     const data = await this._executeAndLog('AITranslationService', 'translate_content', config, 'translation');
-    return data?.translation || text;
+    if (data && typeof data.translation === 'string') return data.translation;
+    if (typeof data === 'string') return data;
+    return text;
   }
 
   async summarize(text, lang) {
@@ -69,9 +71,21 @@ class AIService {
   }
 
   async factCheck(text) {
-    // Keep old logic for factCheck as we didn't add prompt file yet, 
-    // or just return default for now until we migrate it in Phase 3.
-    return { score: 100, flaggedClaims: [], verdict: 'Unverified' };
+    const config = promptBuilder.buildFactCheck(text);
+    const data = await this._executeAndLog('AIFactCheckService', 'factcheck_content', config, 'factcheck');
+    return data || { score: 100, flaggedClaims: [], verdict: 'Unverified' };
+  }
+
+  async editorAction(text, actionType) {
+    const config = promptBuilder.buildEditorAction(text, actionType);
+    const data = await this._executeAndLog('AIEditorService', 'editor_action', config, 'editor');
+    return data?.editedText || text;
+  }
+
+  async generateImageAlt(title, excerpt = '', lang = 'bn') {
+    const config = promptBuilder.buildImageAlt(title, excerpt, lang);
+    const data = await this._executeAndLog('AIImageAltService', 'generate_image_alt', config, 'imagealt');
+    return data || { altText: title, caption: title, credit: 'Nirbhik Bangla Photo' };
   }
 }
 

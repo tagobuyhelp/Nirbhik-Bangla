@@ -49,14 +49,38 @@
   outline: none;
 }
 
-.editor-content p {
+.editor-content p,
+.editor-content p span,
+.editor-content div span,
+.editor-content span {
+  font-size: 14px !important;
+  line-height: 1.75 !important;
   margin-bottom: 0.75rem;
-  line-height: 1.75;
 }
 
-.editor-content h1, .editor-content h2, .editor-content h3 {
+.editor-content h1,
+.editor-content h1 span {
+  font-size: 22px !important;
+  font-weight: 900 !important;
   color: #0f172a;
-  font-weight: 800;
   margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.editor-content h2,
+.editor-content h2 span {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #0f172a;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.editor-content h3,
+.editor-content h3 span {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #0f172a;
+  margin-top: 0.75rem;
   margin-bottom: 0.5rem;
 }

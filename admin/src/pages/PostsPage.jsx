@@ -347,7 +347,7 @@ export default function PostsPage() {
                         <Eye size={14} />
                       </button>
                       <Link
-                        to="/posts/add"
+                        to={`/posts/edit/${post.id}`}
                         className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                         title="Edit Article"
                       >

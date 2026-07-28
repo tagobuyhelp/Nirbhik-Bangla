@@ -3,23 +3,28 @@ const { GoogleGenAI } = require('@google/genai');
 class GeminiProvider {
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    this.defaultModel = process.env.AI_MODEL_PRIMARY || 'gemini-2.5-flash';
+    this.defaultModel = process.env.AI_MODEL_PRIMARY || 'gemini-2.0-flash';
   }
 
   /**
-   * Executes a prompt against Gemini API with retry and timeout.
+   * Executes a prompt against Gemini API with automatic model fallback on 429 / errors.
    */
   async execute(promptConfig, options = {}) {
-    const retries = options.retries || parseInt(process.env.AI_RETRY_ATTEMPTS, 10) || 3;
+    const modelsToTry = [
+      promptConfig.model || this.defaultModel,
+      'gemini-1.5-flash',
+      'gemini-1.5-pro'
+    ];
+    const models = [...new Set(modelsToTry)];
     const timeoutMs = options.timeout || parseInt(process.env.AI_TIMEOUT_MS, 10) || 15000;
     
-    let attempt = 0;
     let lastError = null;
 
-    while (attempt < retries) {
+    for (const currentModel of models) {
+      const currentConfig = { ...promptConfig, model: currentModel };
       try {
         const startTime = Date.now();
-        const response = await this._executeWithTimeout(promptConfig, timeoutMs);
+        const response = await this._executeWithTimeout(currentConfig, timeoutMs);
         const executionTime = Date.now() - startTime;
 
         let parsedData = null;
@@ -31,14 +36,13 @@ class GeminiProvider {
 
         const usage = response.usageMetadata || {};
         
-        // Return standard output format
         return {
           success: true,
           message: 'AI request completed successfully',
           data: parsedData,
           metadata: {
             provider: 'gemini',
-            model: promptConfig.model || this.defaultModel,
+            model: currentModel,
             cached: false
           },
           usage: {
@@ -49,19 +53,14 @@ class GeminiProvider {
           executionTime
         };
       } catch (error) {
-        attempt++;
         lastError = error;
-        // Simple exponential backoff
-        if (attempt < retries) {
-          await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
-        }
+        console.warn(`[GeminiProvider] Model '${currentModel}' failed (${error.message}). Trying fallback...`);
       }
     }
 
-    // Standard error output
     return {
       success: false,
-      message: 'AI request failed after retries',
+      message: 'AI request failed on all fallback models',
       error: lastError ? lastError.message : 'Unknown error',
       metadata: { provider: 'gemini' },
       executionTime: 0
