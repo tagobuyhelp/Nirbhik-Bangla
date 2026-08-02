@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_BASE_URL } from '@/utils/config';
 
 const defaultItems = [
   { text: 'কলকাতা মেট্রোর নতুন রুটের সূচনা', href: '#' },
@@ -19,7 +20,7 @@ export default function BreakingNewsTicker() {
   const [tickerItems, setTickerItems] = useState(defaultItems);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/v1/public/breaking?lang=${locale}`)
+    fetch(`${API_BASE_URL}/public/breaking?lang=${locale}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {

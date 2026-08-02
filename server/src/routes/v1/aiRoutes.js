@@ -31,6 +31,20 @@ router.post('/translate', async (req, res, next) => {
   }
 });
 
+// POST /api/v1/ai/translate-video
+router.post('/translate-video', async (req, res, next) => {
+  try {
+    const { title, description } = req.body;
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return sendResponse(res, 400, 'Title is required for video translation');
+    }
+    const translations = await AIService.translateVideo(title, description || '');
+    return sendResponse(res, 200, 'AI video translation completed', translations);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/v1/ai/summary
 router.post('/summary', async (req, res, next) => {
   try {
@@ -45,8 +59,12 @@ router.post('/summary', async (req, res, next) => {
 // POST /api/v1/ai/seo
 router.post('/seo', async (req, res, next) => {
   try {
-    const { text } = req.body;
-    const seoData = await AIService.optimizeSEO(text);
+    const { title, description, text, lang = 'bn' } = req.body;
+    const inputTitle = title || text || '';
+    if (!inputTitle) {
+      return sendResponse(res, 400, 'Title or text is required for SEO generation');
+    }
+    const seoData = await AIService.optimizeSEO(inputTitle, description || '', lang);
     return sendResponse(res, 200, 'AI SEO metadata generated', seoData);
   } catch (error) {
     next(error);

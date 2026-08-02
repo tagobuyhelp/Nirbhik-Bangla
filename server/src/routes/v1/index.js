@@ -9,8 +9,13 @@ const tagRoutes = require('./tagRoutes');
 const mediaRoutes = require('./mediaRoutes');
 const articleRoutes = require('./articleRoutes');
 const liveStreamRoutes = require('./liveStreamRoutes');
+const videoRoutes = require('./videoRoutes');
+const playlistRoutes = require('./playlistRoutes');
+const uploadRoutes = require('./uploadRoutes');
 const adRoutes = require('./adRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
+const socialRoutes = require('./socialRoutes');
+const scheduleRoutes = require('./scheduleRoutes');
 
 // Mount Versioned Routes
 router.use('/public', publicRoutes);
@@ -21,8 +26,13 @@ router.use('/tags', tagRoutes);
 router.use('/media', mediaRoutes);
 router.use('/articles', articleRoutes);
 router.use('/live-streams', liveStreamRoutes);
+router.use('/videos', videoRoutes);
+router.use('/playlists', playlistRoutes);
+router.use('/upload', uploadRoutes);
 router.use('/ads', adRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/social', socialRoutes);
+router.use('/schedules', scheduleRoutes);
 
 // Health check endpoint for v1
 router.get('/health', (req, res) => {

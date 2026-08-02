@@ -24,6 +24,7 @@ import LiveStreamsPage from './pages/LiveStreamsPage';
 import ReportersPage from './pages/ReportersPage';
 import CreateReporterPage from './pages/CreateReporterPage';
 import SettingsPage from './pages/SettingsPage';
+import SocialConnectorPage from './pages/SocialConnectorPage';
 import LoginPage from './pages/LoginPage';
 import GenericPage from './pages/GenericPage';
 import PrivateRoute from './components/PrivateRoute';
@@ -62,8 +63,10 @@ export default function App() {
           <Route path="live-streams" element={<LiveStreamsPage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="videos/create" element={<CreateVideoPage />} />
+          <Route path="videos/edit/:id" element={<CreateVideoPage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="schedule/create" element={<CreateProgramPage />} />
+          <Route path="schedule/edit/:id" element={<CreateProgramPage />} />
 
           {/* Reporter & Team Routes */}
           <Route path="reporters" element={<ReportersPage />} />
@@ -77,6 +80,7 @@ export default function App() {
 
           {/* Analytics & Settings Routes */}
           <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="social-connector" element={<SocialConnectorPage />} />
           <Route path="seo-tools" element={<GenericPage title="SEO Tools" description="Manage sitemaps, meta descriptions, and keywords." />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="system-logs" element={<GenericPage title="System Logs" description="View admin activity and system error logs." />} />

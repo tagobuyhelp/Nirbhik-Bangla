@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_BASE_URL } from '@/utils/config';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -88,13 +89,15 @@ export default function LanguageHomePage({ params }) {
   const [regionalNews, setRegionalNews] = useState([]);
   const [techNews, setTechNews] = useState([]);
   const [economyNews, setEconomyNews] = useState([]);
+  const [videoList, setVideoList] = useState([]);
+  const [hoveredVideoId, setHoveredVideoId] = useState(null);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [bookmarked, setBookmarked] = useState({});
 
   useEffect(() => {
     // 1. General news
-    fetch(`http://localhost:5000/api/v1/public/news?lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -104,7 +107,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 2. Special Reports
-    fetch(`http://localhost:5000/api/v1/public/news?isFeatured=true&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?isFeatured=true&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -114,7 +117,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 3. Politics News
-    fetch(`http://localhost:5000/api/v1/public/news?category=rajniti&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=rajniti&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -124,7 +127,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 4. Sports News
-    fetch(`http://localhost:5000/api/v1/public/news?category=khela&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=khela&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -134,7 +137,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 5. Entertainment News
-    fetch(`http://localhost:5000/api/v1/public/news?category=binodon&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=binodon&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -144,7 +147,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 6. Regional News
-    fetch(`http://localhost:5000/api/v1/public/news?category=paschim-bardhaman&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=paschim-bardhaman&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -154,7 +157,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 7. Tech News
-    fetch(`http://localhost:5000/api/v1/public/news?category=projukti&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=projukti&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -164,11 +167,21 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 8. Economy News
-    fetch(`http://localhost:5000/api/v1/public/news?category=arthaniti&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=arthaniti&lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
           setEconomyNews(data.data);
+        }
+      })
+      .catch(() => {});
+
+    // 9. Dynamic Video List
+    fetch(`${API_BASE_URL}/videos?limit=10`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setVideoList(data.data);
         }
       })
       .catch(() => {});
@@ -625,6 +638,133 @@ export default function LanguageHomePage({ params }) {
           </section>
         )}
 
+        {/* ── VIDEO NEWS HUB (ডেস্কটপ ভিডিও ক্যারোজেল গ্যালারি) ── */}
+        {videoList.length > 0 && (
+          <section className="rounded-2xl bg-slate-950 text-white p-4 shadow-lg border border-slate-800 relative overflow-hidden space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center">
+                  <Play size={16} fill="#ef4444" className="text-red-500 ml-0.5" />
+                </span>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-black text-white leading-none font-bangla tracking-wide">
+                    {t('home.video_news') || 'ভিডিও বুলেটিন'}
+                  </h2>
+                  <span className="bg-red-600 text-white text-[8.5px] font-mono font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider">
+                    HD
+                  </span>
+                </div>
+              </div>
+
+              {/* Carousel Navigation Buttons & View All */}
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/${lang}/videos`}
+                  className="flex items-center gap-1 text-xs font-black text-red-400 hover:text-white transition-colors"
+                >
+                  <span>{t('home.view_all') || 'সবগুলো দেখুন'}</span>
+                  <ArrowRight size={13} />
+                </Link>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('desktop-video-carousel');
+                      if (el) el.scrollBy({ left: -320, behavior: 'smooth' });
+                    }}
+                    className="p-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-800"
+                    aria-label="Previous Video"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('desktop-video-carousel');
+                      if (el) el.scrollBy({ left: 320, behavior: 'smooth' });
+                    }}
+                    className="p-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-800"
+                    aria-label="Next Video"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Horizontal Video Carousel Track */}
+            <div
+              id="desktop-video-carousel"
+              className="flex items-center gap-3.5 overflow-x-auto scrollbar-none scroll-smooth pb-1 pt-0.5"
+            >
+              {videoList.map((vid, idx) => {
+                const titleStr = typeof vid.title === 'object' ? (vid.title[lang] || vid.title.bn) : vid.title;
+                const slugStr = vid.slug || vid._id;
+                const isHovered = hoveredVideoId === (vid._id || idx);
+
+                return (
+                  <div
+                    key={vid._id || idx}
+                    onMouseEnter={() => setHoveredVideoId(vid._id || idx)}
+                    onMouseLeave={() => setHoveredVideoId(null)}
+                    className="w-[260px] min-w-[260px] bg-white rounded-xl overflow-hidden border border-slate-200 shadow-2xs group flex flex-col justify-between shrink-0 hover:shadow-md hover:border-red-200 transition-all"
+                  >
+                    <div className="relative h-[135px] w-full overflow-hidden bg-slate-900">
+                      {isHovered && vid.youtubeId ? (
+                        <iframe
+                          src={`https://www.youtube-nocookie.com/embed/${vid.youtubeId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&disablekb=1&loop=1`}
+                          title={titleStr}
+                          className="w-full h-full border-0 pointer-events-none scale-105"
+                          allow="autoplay"
+                        />
+                      ) : (
+                        <>
+                          <img
+                            src={vid.thumbnail || 'https://images.unsplash.com/photo-1558431382-27e303142255?auto=format&fit=crop&w=400&q=80'}
+                            alt=""
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
+                            <Link
+                              href={`/${lang}/videos/${slugStr}`}
+                              className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform group-hover:scale-110"
+                            >
+                              <Play size={16} fill="white" className="ml-0.5" />
+                            </Link>
+                          </div>
+                          <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[8.5px] font-mono px-1.5 py-0.2 rounded">
+                            {vid.duration || '03:00'}
+                          </span>
+                          {vid.category && (
+                            <span className="absolute top-1.5 left-1.5 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.2 rounded uppercase">
+                              {vid.category}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <div className="p-2.5 flex-1 flex flex-col justify-between">
+                      <Link href={`/${lang}/videos/${slugStr}`}>
+                        <h4 className="line-clamp-2 text-xs font-bold text-slate-900 group-hover:text-red-600 transition-colors leading-snug font-bangla">
+                          {titleStr}
+                        </h4>
+                      </Link>
+                      <div className="mt-2 flex items-center justify-between text-[9.5px] text-slate-400 border-t border-slate-100 pt-1.5 font-mono">
+                        <span>{new Date(vid.createdAt || Date.now()).toLocaleDateString('bn-BD')}</span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Eye size={10} /> {(vid.views || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
 
         {/* ── 5. TECH & ECONOMY DUAL SPLIT SECTION — Hide if both empty ── */}
         {(techNews.length > 0 || economyNews.length > 0) && (
@@ -834,26 +974,34 @@ export default function LanguageHomePage({ params }) {
         )}
 
         {/* Mobile Video News */}
-        <section>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[12.5px] font-black text-slate-900">{t('home.video_news') || 'ভিডিও খবর'}</h2>
-            <Link href={`/${lang}/category/video`} className="flex items-center gap-1 text-[11px] font-bold text-[#d70b18]">{t('home.view_all') || 'সবগুলো দেখুন'} <ArrowRight size={12} /></Link>
-          </div>
-          <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-0.5">
-            {videoNewsList.map((item, idx) => (
-              <div key={idx} className="w-40 shrink-0">
-                <div className="relative h-[90px] w-full overflow-hidden rounded-lg bg-slate-900">
-                  <img src={item.img} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                    <div className="grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white"><Play size={14} fill="white" className="ml-0.5" /></div>
-                  </div>
-                  <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[8.5px] font-bold text-white">{item.duration}</span>
-                </div>
-                <h3 className="mt-1 line-clamp-2 text-[11.5px] font-black text-slate-900 leading-snug">{item.title}</h3>
-              </div>
-            ))}
-          </div>
-        </section>
+        {videoList.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-[12.5px] font-black text-slate-900">{t('home.video_news') || 'ভিডিও খবর'}</h2>
+              <span className="text-[10px] font-bold text-[#d70b18] uppercase tracking-wider">LIVE FEED</span>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-0.5">
+              {videoList.map((item, idx) => {
+                const vidTitle = typeof item.title === 'object' ? (item.title[lang] || item.title.bn || '') : item.title || '';
+                const vidSlug = item.slug || item._id;
+                return (
+                  <Link key={item._id || idx} href={`/${lang}/videos/${vidSlug}`} className="w-40 shrink-0 group">
+                    <div className="relative h-[90px] w-full overflow-hidden rounded-lg bg-slate-900">
+                      <img src={item.thumbnail || 'https://images.unsplash.com/photo-1558431382-27e303142255?auto=format&fit=crop&w=600&q=80'} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                        <div className="grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white group-hover:bg-red-600 transition-colors">
+                          <Play size={14} fill="white" className="ml-0.5" />
+                        </div>
+                      </div>
+                      <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[8.5px] font-bold text-white">{item.duration || '05:00'}</span>
+                    </div>
+                    <h3 className="mt-1 line-clamp-2 text-[11.5px] font-black text-slate-900 leading-snug group-hover:text-red-600 transition-colors">{vidTitle}</h3>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

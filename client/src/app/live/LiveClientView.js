@@ -97,14 +97,34 @@ const BROADCAST_VIDEOS = [
   },
 ];
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+
 export default function LiveClientView() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeShowIndex, setActiveShowIndex] = useState(0);
+  const [schedules, setSchedules] = useState(INITIAL_SCHEDULE);
 
-  const currentProgram = INITIAL_SCHEDULE[activeShowIndex];
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/schedules`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const mapped = data.data.map(item => ({
+            timeStart: item.startTime || '11:00 AM',
+            timeEnd: item.endTime || '12:00 PM',
+            title: typeof item.title === 'object' ? (item.title.bn || item.title.en) : item.title,
+            isLive: item.isLive || item.status === 'Live Now'
+          }));
+          setSchedules(mapped);
+        }
+      })
+      .catch(err => console.error('Error loading live schedule:', err));
+  }, []);
+
+  const currentProgram = schedules[activeShowIndex] || INITIAL_SCHEDULE[0];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 py-4 md:py-6 px-3 md:px-6 pb-20 md:pb-6">
@@ -460,7 +480,7 @@ export default function LiveClientView() {
 
               {/* Schedule List */}
               <div className="flex flex-col gap-1 md:gap-1.5">
-                {INITIAL_SCHEDULE.slice(0, 5).map((item, index) => {
+                {schedules.slice(0, 6).map((item, index) => {
                   const isActive = index === activeShowIndex;
                   return (
                     <div

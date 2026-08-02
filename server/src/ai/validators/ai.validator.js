@@ -4,9 +4,11 @@ class AIValidator {
   constructor() {
     this.schemas = {
       seo: Joi.object({
-        title: Joi.string().allow(''),
-        description: Joi.string().allow(''),
-        keywords: Joi.array().items(Joi.string())
+        seoTitle: Joi.string().allow(''),
+        seoDescription: Joi.string().allow(''),
+        slug: Joi.string().allow(''),
+        keywords: Joi.array().items(Joi.string()),
+        altText: Joi.string().allow('')
       }),
       headlines: Joi.array().items(Joi.string()).min(1),
       summary: Joi.object({

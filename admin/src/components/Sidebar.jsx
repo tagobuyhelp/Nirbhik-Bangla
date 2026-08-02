@@ -23,6 +23,7 @@ import {
   Radio,
   PanelLeftClose,
   PanelLeft,
+  Share2,
 } from 'lucide-react';
 
 export default function Sidebar({ isCollapsed, toggleSidebar }) {
@@ -101,6 +102,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
       ],
     },
     { label: 'Ad Placements', path: '/ad-placements', icon: Target },
+    { label: 'Social Connector', path: '/social-connector', icon: Share2, badge: 'AI' },
     { label: 'Analytics', path: '/analytics', icon: PieChart },
     { label: 'Media Library', path: '/media', icon: ImageIcon },
     { label: 'Users', path: '/reporters', icon: Users },

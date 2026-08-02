@@ -46,16 +46,44 @@ class AIService {
     return text;
   }
 
+  async translateVideo(title, description) {
+    try {
+      const bnTitle = title || '';
+      const bnDesc = description || '';
+
+      const enTitle = await this.translate(bnTitle, 'bn', 'en');
+      const enDesc = bnDesc ? await this.translate(bnDesc, 'bn', 'en') : '';
+
+      const hiTitle = await this.translate(bnTitle, 'bn', 'hi');
+      const hiDesc = bnDesc ? await this.translate(bnDesc, 'bn', 'hi') : '';
+
+      return {
+        bn: { title: bnTitle, description: bnDesc },
+        en: { title: enTitle || bnTitle, description: enDesc || bnDesc },
+        hi: { title: hiTitle || bnTitle, description: hiDesc || bnDesc }
+      };
+    } catch (err) {
+      console.error('Error in translateVideo:', err);
+      return null;
+    }
+  }
+
   async summarize(text, lang) {
     const config = promptBuilder.buildSummary(text, lang);
     const data = await this._executeAndLog('AISummaryService', 'generate_summary', config, 'summary');
     return data?.summary || 'Summary not available.';
   }
 
-  async optimizeSEO(text) {
-    const config = promptBuilder.buildSEO(text);
+  async optimizeSEO(title, description = '', lang = 'bn') {
+    const config = promptBuilder.buildSEO(title, description, lang);
     const data = await this._executeAndLog('AISEOService', 'generate_seo', config, 'seo');
-    return data || { title: 'Auto title', description: 'Auto desc', keywords: ['news'] };
+    return data || {
+      seoTitle: `${title} | Nirbhik Bangla`,
+      seoDescription: description ? description.slice(0, 160) : title,
+      slug: title ? title.toLowerCase().trim().replace(/\s+/g, '-') : 'video-news',
+      keywords: ['NirbhikBangla', 'News', 'Video'],
+      altText: title
+    };
   }
 
   async suggestTags(text, lang = 'bn') {

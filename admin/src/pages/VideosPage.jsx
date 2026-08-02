@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 import {
   Upload,
   Search,
@@ -26,6 +27,7 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  Trash2,
   Landmark,
   Building,
   Trophy,
@@ -36,17 +38,32 @@ import {
   Palette,
   MessageSquare,
   X,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function VideosPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [viewMode, setViewMode] = useState('list');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedPlaylist, setSelectedPlaylist] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const [selectedVideos, setSelectedVideos] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [videos, setVideos] = useState([]);
 
-  // Upload Form State
+  // Dynamic Categories & Playlists list
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [playlistsList, setPlaylistsList] = useState([]);
+
+  // Simple Upload Form State
   const [videoTitle, setVideoTitle] = useState('');
   const [videoCategory, setVideoCategory] = useState('Politics');
 
@@ -57,141 +74,86 @@ export default function VideosPage() {
     }, 3000);
   };
 
-  // Initial Video Dataset (Exact match to reference UI image)
-  const [videos, setVideos] = useState([
-    {
-      id: 1,
-      title: 'লোকসভা নির্বাচন ২০২৪ LIVE',
-      subtitle: 'সর্বশেষ আপডেট, ফলাফল, বিশ্লেষণ',
-      hashtags: ['#Election', '#Live', '#Politics'],
-      category: 'Politics',
-      catColor: 'bg-[#eb1c24]/10 text-[#eb1c24] border-red-200',
-      duration: '02:35:28',
-      views: '125.4K',
-      viewsTrend: '+12.5%',
-      status: 'LIVE',
-      isLive: true,
-      date: 'May 21, 2024',
-      time: '08:15 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 2,
-      title: 'নতুন সেতু চালু: বদলে যাবে দক্ষিণবঙ্গ',
-      subtitle: 'মুখ্যমন্ত্রীর উদ্বোধন',
-      hashtags: ['#Kolkata', '#Development', '#WestBengal'],
-      category: 'State',
-      catColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-      duration: '08:45',
-      views: '82.3K',
-      viewsTrend: '+8.3%',
-      status: 'Published',
-      isLive: false,
-      date: 'May 21, 2024',
-      time: '06:30 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 3,
-      title: 'বাংলায় প্রবল বর্ষণ: কোন কোন জেলায় সতর্কতা?',
-      subtitle: 'আবহাওয়া সংবাদের আপডেট',
-      hashtags: ['#Weather', '#Rain', '#Alert'],
-      category: 'Environment',
-      catColor: 'bg-teal-50 text-teal-700 border-teal-200',
-      duration: '06:12',
-      views: '68.5K',
-      viewsTrend: '+15.7%',
-      status: 'Published',
-      isLive: false,
-      date: 'May 21, 2024',
-      time: '04:15 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 4,
-      title: 'ভারত বনাম বাংলাদেশ - ম্যাচ হাইলাইটস',
-      subtitle: 'সম্পূর্ণ হাইলাইটস | T20 সিরিজ',
-      hashtags: ['#India', '#Bangladesh', '#Cricket'],
-      category: 'Sports',
-      catColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      duration: '10:28',
-      views: '56.2K',
-      viewsTrend: '+22.4%',
-      status: 'Published',
-      isLive: false,
-      date: 'May 21, 2024',
-      time: '01:20 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 5,
-      title: 'বিশেষ সাক্ষাৎকার - শিক্ষা ভবিষ্যৎ ও কর্মসংস্থান',
-      subtitle: 'বিশ্ববিদ্যালয়ের উপাচার্যের সঙ্গে বিশেষ আলোচনা',
-      hashtags: ['#Education', '#Interview'],
-      category: 'Education',
-      catColor: 'bg-purple-50 text-purple-700 border-purple-200',
-      duration: '18:36',
-      views: '42.1K',
-      viewsTrend: '+9.8%',
-      status: 'Published',
-      isLive: false,
-      date: 'May 21, 2024',
-      time: '11:00 AM',
-      thumbnail: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 6,
-      title: 'শেয়ার বাজার আজ কেমন?',
-      subtitle: 'বিনিয়োগকারীদের জন্য বিশেষ বিশ্লেষণ',
-      hashtags: ['#Business', '#StockMarket'],
-      category: 'Business',
-      catColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      duration: '12:14',
-      views: '38.7K',
-      viewsTrend: '+6.2%',
-      status: 'Published',
-      isLive: false,
-      date: 'May 20, 2024',
-      time: '09:30 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 7,
-      title: 'ডেঙ্গু থেকে কীভাবে নিজেকে বাঁচাবেন?',
-      subtitle: 'স্বাস্থ্য বিশেষজ্ঞদের পরামর্শ',
-      hashtags: ['#Health', '#Dengue', '#Awareness'],
-      category: 'Health',
-      catColor: 'bg-blue-50 text-blue-700 border-blue-200',
-      duration: '09:05',
-      views: '34.9K',
-      viewsTrend: '+18.6%',
-      status: 'Scheduled',
-      isLive: false,
-      date: 'May 22, 2024',
-      time: '09:00 AM',
-      thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 8,
-      title: 'কলকাতার রং : বইমেলা ২০২৪',
-      subtitle: 'সংস্কৃতির উদযাপন',
-      hashtags: ['#Kolkata', '#BookFair', '#Culture'],
-      category: 'Lifestyle',
-      catColor: 'bg-pink-50 text-pink-700 border-pink-200',
-      duration: '07:50',
-      views: '29.6K',
-      viewsTrend: '+11.3%',
-      status: 'Draft',
-      isLive: false,
-      date: 'May 20, 2024',
-      time: '05:45 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=400&q=80',
-    },
-  ]);
+  useEffect(() => {
+    // Fetch Categories
+    fetch(`${API_BASE_URL}/categories`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setCategoriesList(data.data);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch Playlists
+    fetch(`${API_BASE_URL}/playlists`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setPlaylistsList(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const extractYtId = (v) => {
+    if (v.youtubeId && v.youtubeId.length === 11) return v.youtubeId;
+    if (v.videoUrl) {
+      const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const match = v.videoUrl.match(regExp);
+      if (match && match[1]) return match[1];
+    }
+    return '';
+  };
+
+  const fetchVideos = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/videos?status=${activeTab}&search=${encodeURIComponent(searchQuery)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        const formatted = data.data.map((v) => {
+          const ytId = extractYtId(v);
+          const rawViewsNum = typeof v.views === 'number' ? v.views : parseInt(v.views || '0', 10);
+          return {
+            id: v._id,
+            _id: v._id,
+            youtubeId: ytId,
+            videoUrl: v.videoUrl || '',
+            playlist: v.playlist || '',
+            rawDate: v.createdAt || Date.now(),
+            rawViews: rawViewsNum,
+            title: typeof v.title === 'object' ? (v.title.bn || v.title.en || v.title.hi || '') : v.title,
+            subtitle: typeof v.subtitle === 'object' ? (v.subtitle.bn || v.subtitle.en || '') : (v.subtitle || ''),
+            hashtags: Array.isArray(v.tags) && v.tags.length > 0 ? v.tags.map(t => t.startsWith('#') ? t : `#${t}`) : ['#NirbhikBangla', '#News'],
+            category: v.category || 'Politics',
+            catColor: 'bg-[#eb1c24]/10 text-[#eb1c24] border-red-200',
+            duration: v.duration || '05:20',
+            views: rawViewsNum > 1000 ? `${(rawViewsNum / 1000).toFixed(1)}K` : `${rawViewsNum}`,
+            viewsTrend: v.viewsTrend || '+0%',
+            status: v.status || 'Published',
+            isLive: v.isLive || false,
+            date: new Date(v.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            time: new Date(v.createdAt || Date.now()).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            thumbnail: v.thumbnail || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=400&q=80'),
+          };
+        });
+        setVideos(formatted);
+      }
+    } catch (err) {
+      console.error('Error fetching videos from server:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVideos();
+  }, [activeTab, searchQuery]);
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedVideos(videos.map((v) => v.id));
+      setSelectedVideos(filteredVideos.map((v) => v.id));
     } else {
       setSelectedVideos([]);
     }
@@ -205,49 +167,116 @@ export default function VideosPage() {
     }
   };
 
-  const handleUploadVideo = (e) => {
+  const handleDeleteVideo = async (id, title) => {
+    if (!window.confirm(`আপনি কি "${title}" ভিডিওটি মুছে ফেলতে চান?`)) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/videos/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('ভিডিওটি মুছে ফেলা হয়েছে!');
+        fetchVideos();
+      }
+    } catch (err) {
+      showToast('মুছে ফেলতে সমস্যা হয়েছে!');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedVideos.length === 0) return;
+    if (!window.confirm(`আপনি কি ${selectedVideos.length}টি ভিডিও মুছে ফেলতে চান?`)) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/videos/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedVideos })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedVideos([]);
+        showToast(`${selectedVideos.length}টি ভিডিও সফলভাবে মুছে ফেলা হয়েছে!`);
+        fetchVideos();
+      }
+    } catch (err) {
+      showToast('বাল্ক ডিলিটে সমস্যা হয়েছে!');
+    }
+  };
+
+  const handleUploadVideo = async (e) => {
     e.preventDefault();
     if (!videoTitle.trim()) return;
 
-    const newVideo = {
-      id: Date.now(),
-      title: videoTitle.trim(),
-      subtitle: 'নতুন আপলোড করা ভিডিও',
-      hashtags: ['#NirbhikBangla', '#News'],
-      category: videoCategory,
-      catColor: 'bg-purple-50 text-purple-700 border-purple-200',
-      duration: '05:20',
-      views: '0',
-      viewsTrend: '0%',
-      status: 'Published',
-      isLive: false,
-      date: 'May 21, 2024',
-      time: '10:00 PM',
-      thumbnail: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=400&q=80',
-    };
-
-    setVideos([newVideo, ...videos]);
-    setVideoTitle('');
-    setShowUploadModal(false);
-    showToast(`নতুন ভিডিও "${newVideo.title}" আপলোড করা হয়েছে!`);
+    try {
+      const res = await fetch(`${API_BASE_URL}/videos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: { bn: videoTitle.trim(), en: videoTitle.trim(), hi: videoTitle.trim() },
+          category: videoCategory,
+          status: 'Published'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVideoTitle('');
+        setShowUploadModal(false);
+        showToast(`নতুন ভিডিও "${videoTitle}" সফলভাবে সেভ করা হয়েছে!`);
+        fetchVideos();
+      }
+    } catch (err) {
+      showToast('ভিডিও সেভ করতে সমস্যা হয়েছে!');
+    }
   };
 
-  const filteredVideos = videos.filter((vid) => {
-    const matchesSearch =
-      vid.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vid.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (activeTab === 'all') return matchesSearch;
-    if (activeTab === 'published') return matchesSearch && vid.status === 'Published';
-    if (activeTab === 'draft') return matchesSearch && vid.status === 'Draft';
-    if (activeTab === 'scheduled') return matchesSearch && vid.status === 'Scheduled';
-    if (activeTab === 'processing') return matchesSearch && vid.status === 'Processing';
-    if (activeTab === 'private') return matchesSearch && vid.status === 'Private';
-    return matchesSearch;
-  });
+  // Dynamic Filtering & Sorting
+  const filteredVideos = videos
+    .filter((vid) => {
+      const matchesSearch =
+        vid.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vid.category.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesTab =
+        activeTab === 'all' ||
+        (activeTab === 'published' && vid.status === 'Published') ||
+        (activeTab === 'draft' && vid.status === 'Draft') ||
+        (activeTab === 'scheduled' && vid.status === 'Scheduled') ||
+        (activeTab === 'processing' && vid.status === 'Processing') ||
+        (activeTab === 'private' && vid.status === 'Private');
+
+      const matchesCategory =
+        selectedCategory === 'all' || vid.category === selectedCategory || vid.category.toLowerCase() === selectedCategory.toLowerCase();
+
+      const matchesPlaylist =
+        selectedPlaylist === 'all' || vid.playlist === selectedPlaylist;
+
+      return matchesSearch && matchesTab && matchesCategory && matchesPlaylist;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.rawDate) - new Date(a.rawDate);
+      if (sortBy === 'oldest') return new Date(a.rawDate) - new Date(b.rawDate);
+      if (sortBy === 'views') return (b.rawViews || 0) - (a.rawViews || 0);
+      return 0;
+    });
+
+  // Dynamic Pagination calculations
+  const totalItems = filteredVideos.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedVideos = filteredVideos.slice(startIndex, startIndex + itemsPerPage);
+
+  // Dynamic Stats Calculations
+  const totalViewsSum = videos.reduce((acc, v) => acc + (v.rawViews || 0), 0);
+  const formattedTotalViews = totalViewsSum > 1000000 ? `${(totalViewsSum / 1000000).toFixed(1)}M` : (totalViewsSum > 1000 ? `${(totalViewsSum / 1000).toFixed(1)}K` : `${totalViewsSum}`);
+  const topPerformingVideos = [...videos].sort((a, b) => (b.rawViews || 0) - (a.rawViews || 0)).slice(0, 5);
+
+  // Dynamic Category Counts
+  const categoryCounts = videos.reduce((acc, v) => {
+    const cat = v.category || 'Politics';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
-    <div className="space-y-6 text-slate-800 font-sans relative">
+    <div className="space-y-6 text-slate-800 font-sans relative pb-12">
 
       {/* Toast Notification Alert */}
       {toastMessage && (
@@ -257,35 +286,33 @@ export default function VideosPage() {
         </div>
       )}
 
-      {/* 1. Top Header Title & Action Buttons Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      {/* 1. Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Videos</h1>
-            <span className="bg-purple-100 text-purple-700 font-extrabold text-xs px-2 py-0.5 rounded-md">
-              126
-            </span>
+            <div className="w-9 h-9 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 shadow-2xs">
+              <Video size={20} className="text-[#eb1c24]" />
+            </div>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight font-outfit">
+              Video Management Hub
+            </h1>
           </div>
-          <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Manage and organize all video content in one place.
+          <p className="text-xs font-semibold text-slate-500">
+            Manage news videos, playlists, YouTube embeds, and real-time streaming analytics.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <select className="bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold px-3 py-2 outline-none cursor-pointer">
-            <option value="">Bulk Actions</option>
-            <option value="delete">Delete Selected</option>
-            <option value="publish">Publish Selected</option>
-          </select>
-
-          <button className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
-            <Filter size={14} className="text-slate-500" />
-            <span>Filter</span>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={fetchVideos}
+            className="p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+            title="Refresh list"
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
-
           <Link
             to="/videos/create"
-            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer"
+            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus size={16} />
             <span>Add New Video</span>
@@ -293,55 +320,120 @@ export default function VideosPage() {
         </div>
       </div>
 
-      {/* 2. Filter Tabs & Search / Layout Controls Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200/80 pb-3">
-        {/* Tabs Row */}
-        <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto scrollbar-none">
-          {[
-            { id: 'all', label: 'All Videos', count: 126 },
-            { id: 'published', label: 'Published', count: 98 },
-            { id: 'draft', label: 'Draft', count: 12 },
-            { id: 'processing', label: 'Processing', count: 6 },
-            { id: 'scheduled', label: 'Scheduled', count: 5 },
-            { id: 'private', label: 'Private', count: 5 },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === tab.id ? 'bg-purple-200 text-purple-800 font-black' : 'bg-slate-100 text-slate-500'}`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Search & Layout View Mode Controls */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-60">
-            <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search videos..."
-              className="w-full h-9 pl-9 pr-3 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all font-medium"
-            />
+      {/* 2. Dynamic Filter & Action Toolbar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        
+        {/* Status Tabs Bar */}
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 border-b border-slate-100">
+          <div className="flex items-center gap-1.5 font-bold text-xs">
+            {[
+              { id: 'all', label: 'All Videos', count: videos.length },
+              { id: 'published', label: 'Published', count: videos.filter(v => v.status === 'Published').length },
+              { id: 'draft', label: 'Drafts', count: videos.filter(v => v.status === 'Draft').length },
+              { id: 'scheduled', label: 'Scheduled', count: videos.filter(v => v.status === 'Scheduled').length },
+              { id: 'private', label: 'Private', count: videos.filter(v => v.status === 'Private').length },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setCurrentPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === tab.id
+                    ? 'bg-slate-900 text-white shadow-2xs font-extrabold'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  activeTab === tab.id ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
           </div>
 
-          <select className="bg-white border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 text-slate-700 outline-none cursor-pointer">
-            <option>Newest First</option>
-            <option>Most Viewed</option>
-            <option>Oldest First</option>
-          </select>
+          {selectedVideos.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <Trash2 size={14} />
+              <span>Delete Selected ({selectedVideos.length})</span>
+            </button>
+          )}
+        </div>
 
-          <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
+        {/* Dynamic Filters Row */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs font-semibold">
+          
+          {/* Search Box & Dropdown Filters */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            {/* Search Input */}
+            <div className="relative min-w-[220px] flex-1 md:flex-initial">
+              <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search by title or category..."
+                className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#eb1c24] font-medium"
+              />
+            </div>
+
+            {/* Dynamic Category Filter */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 text-slate-700 outline-none cursor-pointer"
+            >
+              <option value="all">All Categories</option>
+              {categoriesList.map((cat) => (
+                <option key={cat._id || cat.slug} value={cat.slug || cat.name}>
+                  {typeof cat.name === 'object' ? (cat.name.bn || cat.name.en) : cat.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Dynamic Playlist Filter */}
+            <select
+              value={selectedPlaylist}
+              onChange={(e) => {
+                setSelectedPlaylist(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 text-slate-700 outline-none cursor-pointer"
+            >
+              <option value="all">All Playlists</option>
+              {playlistsList.map((pl) => (
+                <option key={pl._id || pl.slug} value={pl.slug}>
+                  {pl.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Sorting Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold px-3 py-2 text-slate-700 outline-none cursor-pointer"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="views">Most Viewed</option>
+            </select>
+          </div>
+
+          {/* View Mode Controls */}
+          <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 shrink-0 self-end md:self-auto">
             <button
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
@@ -357,401 +449,443 @@ export default function VideosPage() {
               <LayoutGrid size={16} />
             </button>
           </div>
+
         </div>
+
       </div>
 
-      {/* 3. Main Content: Grid Layout (Videos List 9 Cols + Analytics Sidebar 3 Cols) */}
+      {/* 3. Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-        {/* Left Side: Videos List Table (~75% - lg:col-span-9) */}
+        {/* Left Side: Videos List / Grid Table (lg:col-span-9) */}
         <div className="lg:col-span-9 space-y-4">
           
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50/80 text-slate-400 font-extrabold uppercase tracking-wider text-[10px] border-b border-slate-100">
-                  <tr>
-                    <th className="p-3 w-10 text-center">
-                      <input
-                        type="checkbox"
-                        onChange={handleSelectAll}
-                        checked={selectedVideos.length === videos.length && videos.length > 0}
-                        className="rounded border-slate-300 text-[#eb1c24]"
-                      />
-                    </th>
-                    <th className="py-3 px-3">Video</th>
-                    <th className="py-3 px-3">Category</th>
-                    <th className="py-3 px-3">Duration</th>
-                    <th className="py-3 px-3">Views</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3">Date</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
-                  {filteredVideos.map((vid) => (
-                    <tr key={vid.id} className="hover:bg-slate-50/70 transition-colors group">
-                      <td className="p-3 text-center">
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            
+            {loading ? (
+              <div className="p-12 text-center space-y-2 text-slate-400">
+                <RefreshCw size={24} className="mx-auto animate-spin text-purple-600" />
+                <p className="text-xs font-bold">Loading videos from database...</p>
+              </div>
+            ) : filteredVideos.length === 0 ? (
+              <div className="p-12 text-center space-y-3">
+                <Video size={36} className="mx-auto text-slate-300" />
+                <h4 className="font-extrabold text-slate-700 text-sm">No Videos Found</h4>
+                <p className="text-xs text-slate-400 font-medium">Try adjusting your filters or search query.</p>
+                <Link
+                  to="/videos/create"
+                  className="inline-flex items-center gap-1.5 bg-[#eb1c24] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md"
+                >
+                  <Plus size={15} /> Add New Video
+                </Link>
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50/80 text-slate-400 font-extrabold uppercase tracking-wider text-[10px] border-b border-slate-100">
+                    <tr>
+                      <th className="p-3 w-10 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedVideos.includes(vid.id)}
-                          onChange={() => handleToggleSelect(vid.id)}
+                          onChange={handleSelectAll}
+                          checked={selectedVideos.length === filteredVideos.length && filteredVideos.length > 0}
                           className="rounded border-slate-300 text-[#eb1c24]"
                         />
-                      </td>
+                      </th>
+                      <th className="py-3 px-3">Video</th>
+                      <th className="py-3 px-3">Category</th>
+                      <th className="py-3 px-3">Duration</th>
+                      <th className="py-3 px-3">Views</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3">Date</th>
+                      <th className="py-3 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {paginatedVideos.map((vid) => (
+                      <tr key={vid.id} className="hover:bg-slate-50/70 transition-colors group">
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedVideos.includes(vid.id)}
+                            onChange={() => handleToggleSelect(vid.id)}
+                            className="rounded border-slate-300 text-[#eb1c24]"
+                          />
+                        </td>
 
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-start gap-3 min-w-[280px]">
-                          {/* Thumbnail with Duration & Live Badge Overlay */}
-                          <div className="relative w-28 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-200 bg-slate-900 group">
-                            <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                            
-                            {vid.isLive && (
-                              <span className="absolute top-1 left-1 bg-[#eb1c24] text-white text-[8px] font-black px-1.5 py-0.2 rounded flex items-center gap-1 shadow-2xs animate-pulse">
-                                LIVE
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-start gap-3 min-w-[280px]">
+                            {/* Thumbnail with Player Trigger */}
+                            <div
+                              onClick={() => setPlayingVideo(vid)}
+                              className="relative w-28 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-200 bg-slate-900 group/thumb cursor-pointer shadow-2xs"
+                            >
+                              <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform" />
+                              
+                              {vid.isLive && (
+                                <span className="absolute top-1 left-1 bg-[#eb1c24] text-white text-[8px] font-black px-1.5 py-0.2 rounded flex items-center gap-1 shadow-2xs animate-pulse">
+                                  LIVE
+                                </span>
+                              )}
+
+                              <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-mono font-bold px-1.5 py-0.2 rounded">
+                                {vid.duration}
                               </span>
-                            )}
 
-                            <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-mono font-bold px-1.5 py-0.2 rounded">
-                              {vid.duration}
-                            </span>
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                                <div className="w-7 h-7 rounded-full bg-[#eb1c24] text-white flex items-center justify-center shadow-md">
+                                  <Play size={12} fill="white" className="ml-0.5" />
+                                </div>
+                              </div>
+                            </div>
 
-                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="w-7 h-7 rounded-full bg-[#eb1c24] text-white flex items-center justify-center shadow-md">
-                                <Play size={12} fill="white" className="ml-0.5" />
+                            <div className="space-y-1">
+                              <h4
+                                onClick={() => setPlayingVideo(vid)}
+                                className="font-extrabold text-slate-900 text-xs leading-snug line-clamp-1 font-bangla group-hover:text-[#eb1c24] transition-colors cursor-pointer"
+                              >
+                                {vid.title}
+                              </h4>
+                              <p className="text-[11px] text-slate-400 font-medium line-clamp-1 font-bangla">
+                                {vid.subtitle}
+                              </p>
+                              <div className="flex items-center gap-1 text-[10px] text-purple-600 font-bold">
+                                {vid.hashtags.slice(0, 3).map((h, idx) => (
+                                  <span key={idx}>{h}</span>
+                                ))}
                               </div>
                             </div>
                           </div>
+                        </td>
 
-                          <div className="space-y-1">
-                            <h4 className="font-extrabold text-slate-900 text-xs leading-snug line-clamp-1 font-bangla group-hover:text-[#eb1c24] transition-colors">
-                              {vid.title}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 font-medium line-clamp-1 font-bangla">
-                              {vid.subtitle}
-                            </p>
-                            <div className="flex items-center gap-1 text-[10px] text-purple-600 font-bold">
-                              {vid.hashtags.map((h, idx) => (
-                                <span key={idx}>{h}</span>
-                              ))}
-                            </div>
+                        <td className="py-3.5 px-3">
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${vid.catColor}`}>
+                            {vid.category}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-3 font-mono text-slate-600 font-bold">
+                          {vid.duration}
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <div className="space-y-0.5">
+                            <span className="font-black text-slate-900 block">{vid.views}</span>
+                            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                              <TrendingUp size={10} /> {vid.viewsTrend}
+                            </span>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-3.5 px-3">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${vid.catColor}`}>
+                        <td className="py-3.5 px-3">
+                          {vid.isLive ? (
+                            <span className="px-2.5 py-1 rounded-full bg-rose-50 text-[#eb1c24] border border-red-200 text-[10px] font-black flex items-center gap-1 w-fit animate-pulse">
+                              <Radio size={10} /> LIVE
+                            </span>
+                          ) : (
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              vid.status === 'Published'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : vid.status === 'Scheduled'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-purple-50 text-purple-700 border border-purple-200'
+                            }`}>
+                              {vid.status}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-3 text-slate-500 text-[11px]">
+                          <div>{vid.date}</div>
+                          <div className="text-[10px] text-slate-400 font-semibold">{vid.time}</div>
+                        </td>
+
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => navigate(`/videos/edit/${vid.id}`)}
+                              className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              title="Edit Video"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVideo(vid.id, vid.title)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Delete Video"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Grid View Card Layout */
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {paginatedVideos.map((vid) => (
+                  <div key={vid.id} className="bg-slate-50/60 border border-slate-200/80 rounded-2xl p-3 space-y-3 group hover:bg-white hover:shadow-md transition-all">
+                    <div
+                      onClick={() => setPlayingVideo(vid)}
+                      className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 cursor-pointer"
+                    >
+                      <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-9 h-9 rounded-full bg-[#eb1c24] text-white flex items-center justify-center shadow-lg">
+                          <Play size={16} fill="white" className="ml-0.5" />
+                        </div>
+                      </div>
+                      <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded">
+                        {vid.duration}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
                           {vid.category}
                         </span>
-                      </td>
+                        <span className="text-[10px] text-slate-400 font-semibold">{vid.date}</span>
+                      </div>
+                      <h4
+                        onClick={() => setPlayingVideo(vid)}
+                        className="font-extrabold text-slate-900 text-xs line-clamp-2 cursor-pointer hover:text-[#eb1c24]"
+                      >
+                        {vid.title}
+                      </h4>
+                    </div>
 
-                      <td className="py-3.5 px-3 font-mono text-slate-600 font-bold">
-                        {vid.duration}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <div className="space-y-0.5">
-                          <span className="font-black text-slate-900 block">{vid.views}</span>
-                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
-                            <TrendingUp size={10} /> {vid.viewsTrend}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        {vid.isLive ? (
-                          <span className="px-2.5 py-1 rounded-full bg-rose-50 text-[#eb1c24] border border-red-200 text-[10px] font-black flex items-center gap-1 w-fit animate-pulse">
-                            <Radio size={10} /> LIVE
-                          </span>
-                        ) : (
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            vid.status === 'Published'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : vid.status === 'Scheduled'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : 'bg-purple-50 text-purple-700 border border-purple-200'
-                          }`}>
-                            {vid.status}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-slate-500 text-[11px]">
-                        <div>{vid.date}</div>
-                        <div className="text-[10px] text-slate-400 font-semibold">{vid.time}</div>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => showToast(`Editing video "${vid.title}"`)}
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="Edit Video"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => showToast(`Analytics for "${vid.title}"`)}
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="View Analytics"
-                          >
-                            <BarChart2 size={14} />
-                          </button>
-                          <button
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="More Options"
-                          >
-                            <MoreVertical size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Table Pagination Footer */}
-            <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500 bg-slate-50/50">
-              <span>Showing 1 to {filteredVideos.length} of 126 videos</span>
-
-              <div className="flex items-center gap-1.5">
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer">
-                  <ChevronLeft size={16} />
-                </button>
-                <button className="w-8 h-8 rounded-lg bg-purple-600 text-white font-bold flex items-center justify-center shadow-2xs">
-                  1
-                </button>
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-                  2
-                </button>
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-                  3
-                </button>
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-                  4
-                </button>
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-                  5
-                </button>
-                <span className="px-1 text-slate-400 font-bold">...</span>
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer">
-                  16
-                </button>
-                <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer">
-                  <ChevronRight size={16} />
-                </button>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
+                      <span className="font-bold text-slate-500 text-[11px]">{vid.views} views</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/videos/edit/${vid.id}`)}
+                          className="p-1 text-slate-400 hover:text-slate-800"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVideo(vid.id, vid.title)}
+                          className="p-1 text-slate-400 hover:text-red-600"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
 
-              <select className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none cursor-pointer">
-                <option value="10">10 / page</option>
-                <option value="20">20 / page</option>
-                <option value="50">50 / page</option>
-              </select>
-            </div>
+            {/* Dynamic Table Pagination Footer */}
+            {filteredVideos.length > 0 && (
+              <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500 bg-slate-50/50">
+                <span>Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} videos</span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                    <button
+                      key={pg}
+                      onClick={() => setCurrentPage(pg)}
+                      className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition-all cursor-pointer ${
+                        currentPage === pg ? 'bg-slate-900 text-white shadow-2xs' : 'border border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {pg}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none cursor-pointer"
+                >
+                  <option value={10}>10 / page</option>
+                  <option value={20}>20 / page</option>
+                  <option value={50}>50 / page</option>
+                </select>
+              </div>
+            )}
 
           </div>
         </div>
 
-        {/* Right Side: Video Analytics & Top Performing Videos (~25% - lg:col-span-3) */}
+        {/* Right Side: Dynamic Video Analytics & Dynamic Top Videos Sidebar (lg:col-span-3) */}
         <div className="lg:col-span-3 space-y-4">
 
-          {/* 1. Video Analytics Stat Grid Card */}
-          <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-extrabold text-xs text-slate-900">Video Analytics</h3>
-              <select className="bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 px-2 py-1 outline-none cursor-pointer">
-                <option>This Month</option>
-                <option>All Time</option>
-              </select>
-            </div>
+          {/* 1. Dynamic Video Analytics Stat Grid Card */}
+          <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
+            <h3 className="font-extrabold text-xs text-slate-900">Video Analytics</h3>
 
             <div className="grid grid-cols-2 gap-2.5 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
                 <span className="text-[10px] font-bold text-slate-400">Total Videos</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="font-black text-slate-900 text-sm">126</span>
-                  <span className="text-[9px] font-bold text-emerald-600">↑14%</span>
+                  <span className="font-black text-slate-900 text-sm">{videos.length}</span>
+                  <span className="text-[9px] font-bold text-emerald-600">Live</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">Total Views</span>
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 font-outfit">Total Views</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="font-black text-slate-900 text-sm">2.4M</span>
-                  <span className="text-[9px] font-bold text-emerald-600">↑21%</span>
+                  <span className="font-black text-slate-900 text-sm font-outfit">{formattedTotalViews}</span>
+                  <span className="text-[9px] font-bold text-emerald-600 font-outfit">↑100%</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">Watch Time</span>
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 font-outfit">Published</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="font-black text-slate-900 text-sm">18,420h</span>
-                  <span className="text-[9px] font-bold text-emerald-600">↑18%</span>
+                  <span className="font-black text-slate-900 text-sm font-outfit">
+                    {videos.filter(v => v.status === 'Published').length}
+                  </span>
+                  <span className="text-[9px] font-bold text-emerald-600 font-outfit">Ready</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">Subscribers</span>
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 font-outfit">Playlists</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="font-black text-slate-900 text-sm">+2,548</span>
-                  <span className="text-[9px] font-bold text-emerald-600">↑16%</span>
+                  <span className="font-black text-slate-900 text-sm font-outfit">{playlistsList.length}</span>
+                  <span className="text-[9px] font-bold text-emerald-600 font-outfit">Active</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 2. Top Performing Videos Ranking Card */}
-          <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+          {/* 2. Dynamic Top Performing Videos Ranking Card */}
+          <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
             <h3 className="font-extrabold text-xs text-slate-900">Top Performing Videos</h3>
 
             <div className="space-y-2 text-xs font-bangla">
-              {[
-                { rank: 1, title: 'লোকসভা নির্বাচন ২০২৪ LIVE', views: '125,400 views', img: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=150&q=80' },
-                { rank: 2, title: 'নতুন সেতু চালু: বদলে যাবে দক্ষিণবঙ্গ', views: '82,300 views', img: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=150&q=80' },
-                { rank: 3, title: 'বাংলায় প্রবল বর্ষণ: সতর্কতা', views: '68,500 views', img: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=150&q=80' },
-                { rank: 4, title: 'ভারত বনাম বাংলাদেশ - হাইলাইটস', views: '56,200 views', img: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=150&q=80' },
-                { rank: 5, title: 'বিশেষ সাক্ষাৎকার - শিক্ষা ভবিষ্যৎ', views: '42,100 views', img: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=150&q=80' },
-              ].map((item) => (
-                <div key={item.rank} className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
-                  <span className="font-mono text-xs font-bold text-slate-400 w-3">{item.rank}</span>
-                  <img src={item.img} alt={item.title} className="w-12 h-8 rounded-lg object-cover shrink-0 border border-slate-200" />
-                  <div className="space-y-0.5 truncate">
-                    <h5 className="font-bold text-slate-800 text-xs truncate leading-tight">{item.title}</h5>
-                    <p className="text-[10px] text-slate-400 font-semibold">{item.views}</p>
+              {topPerformingVideos.length > 0 ? (
+                topPerformingVideos.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setPlayingVideo(item)}
+                    className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                  >
+                    <span className="font-mono text-xs font-bold text-slate-400 w-3">{idx + 1}</span>
+                    <img src={item.thumbnail} alt={item.title} className="w-12 h-8 rounded-lg object-cover shrink-0 border border-slate-200" />
+                    <div className="space-y-0.5 truncate">
+                      <h5 className="font-bold text-slate-800 text-xs truncate leading-tight group-hover:text-[#eb1c24]">{item.title}</h5>
+                      <p className="text-[10px] text-slate-400 font-semibold">{item.views} views</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 font-medium py-2 text-center">No video analytics available</p>
+              )}
             </div>
-
-            <button
-              onClick={() => showToast('Video Analytics page opened!')}
-              className="w-full py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-extrabold rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer mt-1"
-            >
-              <span>View All Analytics</span>
-              <ArrowRight size={13} />
-            </button>
           </div>
 
-          {/* 3. Video Categories Count List Card */}
-          <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+          {/* 3. Dynamic Video Categories Count List Card */}
+          <div className="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
             <h3 className="font-extrabold text-xs text-slate-900">Video Categories</h3>
 
             <div className="space-y-1.5 text-xs font-semibold text-slate-700">
-              {[
-                { name: 'Politics', count: 28, icon: Landmark, color: 'text-purple-600' },
-                { name: 'State', count: 24, icon: Building, color: 'text-cyan-600' },
-                { name: 'Sports', count: 18, icon: Trophy, color: 'text-emerald-600' },
-                { name: 'Environment', count: 12, icon: Leaf, color: 'text-teal-600' },
-                { name: 'Education', count: 10, icon: GraduationCap, color: 'text-purple-600' },
-                { name: 'Business', count: 8, icon: Briefcase, color: 'text-amber-600' },
-                { name: 'Health', count: 6, icon: HeartPulse, color: 'text-rose-600' },
-                { name: 'Lifestyle', count: 6, icon: Palette, color: 'text-pink-600' },
-                { name: 'Others', count: 14, icon: MessageSquare, color: 'text-slate-500' },
-              ].map((c, i) => {
-                const CIcon = c.icon;
-                return (
-                  <div key={i} className="flex items-center justify-between p-1 rounded-lg hover:bg-slate-50 transition-colors">
+              {Object.keys(categoryCounts).length > 0 ? (
+                Object.entries(categoryCounts).map(([catName, count], i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedCategory(catName);
+                      setCurrentPage(1);
+                    }}
+                    className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
                     <div className="flex items-center gap-2">
-                      <CIcon size={14} className={c.color} />
-                      <span>{c.name}</span>
+                      <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                      <span className="capitalize">{catName}</span>
                     </div>
-                    <span className="font-bold text-slate-400 font-mono text-[11px]">{c.count}</span>
+                    <span className="font-bold text-slate-400 font-mono text-[11px]">{count}</span>
                   </div>
-                );
-              })}
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 font-medium py-2 text-center">No categories recorded</p>
+              )}
             </div>
-          </div>
-
-          {/* 4. Quick Actions Card */}
-          <div className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2 font-bold text-xs text-slate-700">
-            <h3 className="font-extrabold text-xs text-slate-900 mb-1">Quick Actions</h3>
-
-            <button onClick={() => setShowUploadModal(true)} className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer">
-              <Upload size={15} className="text-purple-600" />
-              <span>Upload Video</span>
-            </button>
-            <button onClick={() => showToast('Playlist creation modal opened!')} className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer">
-              <Layers size={15} className="text-blue-600" />
-              <span>Create Playlist</span>
-            </button>
-            <button onClick={() => showToast('Syncing with YouTube Channel...')} className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer">
-              <Tv size={15} className="text-red-600" />
-              <span>YouTube Sync</span>
-            </button>
-            <button onClick={() => showToast('Video settings panel opened!')} className="w-full flex items-center gap-2 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer">
-              <Sliders size={15} className="text-slate-600" />
-              <span>Video Settings</span>
-            </button>
           </div>
 
         </div>
 
       </div>
 
-      {/* Upload Video Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-black text-sm text-slate-900">Upload New Video</h3>
-              <button onClick={() => setShowUploadModal(false)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X size={18} />
+      {/* Video Player Preview Modal */}
+      {playingVideo && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 text-white rounded-3xl max-w-2xl w-full p-5 space-y-4 shadow-2xl border border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="font-black text-sm text-white font-bangla">{playingVideo.title}</h3>
+                <span className="text-[11px] text-slate-400 font-medium">{playingVideo.category} • {playingVideo.views} views</span>
+              </div>
+              <button onClick={() => setPlayingVideo(null)} className="p-1.5 text-slate-400 hover:text-white rounded-full bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer">
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleUploadVideo} className="space-y-4 text-xs font-semibold">
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Video Title <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ভিডিওর শিরোনাম প্রবেশ করুন..."
-                  value={videoTitle}
-                  onChange={(e) => setVideoTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-bangla outline-none focus:border-[#eb1c24]"
+            {/* Video Player Iframe / Player */}
+            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-xl">
+              {playingVideo.youtubeId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${playingVideo.youtubeId}?autoplay=1`}
+                  title={playingVideo.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0"
                 />
-              </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 font-bold text-xs p-6 text-center space-y-2">
+                  <Video size={32} className="text-slate-600" />
+                  <p>ইউটিউব আইডি পাওয়া যায়নি</p>
+                </div>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Category</label>
-                <select
-                  value={videoCategory}
-                  onChange={(e) => setVideoCategory(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="Politics">Politics</option>
-                  <option value="State">State</option>
-                  <option value="Sports">Sports</option>
-                  <option value="Environment">Environment</option>
-                  <option value="Education">Education</option>
-                  <option value="Business">Business</option>
-                  <option value="Health">Health</option>
-                </select>
+            <div className="flex items-center justify-between pt-1 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-full bg-red-600/20 text-red-400 border border-red-800/60 font-bold text-[10px]">
+                  {playingVideo.status}
+                </span>
+                <span className="text-slate-400 font-mono">{playingVideo.duration}</span>
               </div>
-
-              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-2 bg-slate-50 cursor-pointer hover:border-purple-300">
-                <Upload size={24} className="mx-auto text-purple-600" />
-                <p className="text-xs font-bold text-slate-700">Drag and drop video file here</p>
-                <span className="text-[10px] text-slate-400 font-semibold block">MP4, MOV, WEBM up to 2GB</span>
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadModal(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#eb1c24] hover:bg-red-700 text-white font-black rounded-xl shadow-md cursor-pointer"
-                >
-                  Upload Now
-                </button>
-              </div>
-            </form>
+              <button
+                onClick={() => {
+                  const editId = playingVideo.id;
+                  setPlayingVideo(null);
+                  navigate(`/videos/edit/${editId}`);
+                }}
+                className="px-4 py-1.5 bg-[#eb1c24] hover:bg-red-700 text-white font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+              >
+                <Pencil size={13} />
+                <span>Edit Video</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

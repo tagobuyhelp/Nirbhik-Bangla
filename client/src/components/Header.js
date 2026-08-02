@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_BASE_URL } from '@/utils/config';
 import BreakingNewsTicker from '@/components/BreakingNewsTicker';
 import {
   ArrowUp,
@@ -108,7 +109,7 @@ export default function Header() {
   const [categories, setCategories] = useState(() => getDesktopNavItems(locale));
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/v1/public/categories')
+    fetch(`${API_BASE_URL}/public/categories`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {

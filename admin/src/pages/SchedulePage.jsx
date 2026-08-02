@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
@@ -20,12 +20,17 @@ import {
   List,
   Sliders,
   FolderTree,
+  Trash2,
+  RefreshCw,
 } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export default function SchedulePage() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedPrograms, setSelectedPrograms] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -34,121 +39,96 @@ export default function SchedulePage() {
     }, 3000);
   };
 
-  // Mock Programs Dataset
-  const [programsList, setProgramsList] = useState([
-    {
-      id: 1,
-      title: 'সকালের সংবাদ',
-      isLive: true,
-      host: 'Nusrat Jahan',
-      image: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=120&q=80',
-      category: 'News',
-      catBg: 'bg-blue-50 text-blue-700 border-blue-200',
-      dateTime: 'May 21, 2024 07:00 AM',
-      duration: '01:00:00',
-      platforms: ['web', 'yt', 'fb'],
-      status: 'Live Now',
-      statusBg: 'bg-rose-50 text-rose-700 border-rose-200',
-    },
-    {
-      id: 2,
-      title: 'প্রাইম টাইম ডিবেট',
-      isLive: false,
-      host: 'Arif Hossain',
-      image: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=120&q=80',
-      category: 'Debate',
-      catBg: 'bg-purple-50 text-purple-700 border-purple-200',
-      dateTime: 'May 21, 2024 08:00 PM',
-      duration: '01:30:00',
-      platforms: ['web', 'yt', 'fb'],
-      status: 'Upcoming',
-      statusBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    },
-    {
-      id: 3,
-      title: 'খেলার দুনিয়া',
-      isLive: false,
-      host: 'Kazi Enamul',
-      image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=120&q=80',
-      category: 'Sports',
-      catBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      dateTime: 'May 21, 2024 09:30 PM',
-      duration: '01:00:00',
-      platforms: ['web', 'yt'],
-      status: 'Upcoming',
-      statusBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    },
-    {
-      id: 4,
-      title: 'অর্থনীতি সংলাপ',
-      isLive: false,
-      host: 'Tasin Ahmed',
-      image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80',
-      category: 'Business',
-      catBg: 'bg-amber-50 text-amber-700 border-amber-200',
-      dateTime: 'May 22, 2024 10:00 AM',
-      duration: '00:45:00',
-      platforms: ['web', 'fb'],
-      status: 'Scheduled',
-      statusBg: 'bg-blue-50 text-blue-700 border-blue-200',
-    },
-    {
-      id: 5,
-      title: 'পরিবেশ পরিক্রমা',
-      isLive: false,
-      host: 'Rafiq Hasan',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-      category: 'Environment',
-      catBg: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-      dateTime: 'May 22, 2024 11:00 AM',
-      duration: '00:30:00',
-      platforms: ['web', 'yt'],
-      status: 'Scheduled',
-      statusBg: 'bg-blue-50 text-blue-700 border-blue-200',
-    },
-    {
-      id: 6,
-      title: 'জীবন যাপন',
-      isLive: false,
-      host: 'Sharmila Akter',
-      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80',
-      category: 'Lifestyle',
-      catBg: 'bg-pink-50 text-pink-700 border-pink-200',
-      dateTime: 'May 22, 2024 07:00 PM',
-      duration: '00:45:00',
-      platforms: ['web', 'fb'],
-      status: 'Scheduled',
-      statusBg: 'bg-blue-50 text-blue-700 border-blue-200',
-    },
-    {
-      id: 7,
-      title: 'বিশেষ প্রতিবেদন',
-      isLive: false,
-      host: 'Mirza Rahman',
-      image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=120&q=80',
-      category: 'Special',
-      catBg: 'bg-orange-50 text-orange-700 border-orange-200',
-      dateTime: 'May 23, 2024 08:00 PM',
-      duration: '01:00:00',
-      platforms: ['web', 'yt', 'fb'],
-      status: 'Completed',
-      statusBg: 'bg-slate-100 text-slate-600 border-slate-200',
-    },
-    {
-      id: 8,
-      title: 'ডকুমেন্টারি সময়',
-      isLive: false,
-      host: 'Tasnim Faria',
-      image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=120&q=80',
-      category: 'Documentary',
-      catBg: 'bg-teal-50 text-teal-700 border-teal-200',
-      dateTime: 'May 23, 2024 09:30 PM',
-      duration: '01:15:00',
-      platforms: ['web', 'yt'],
-      status: 'Completed',
-      statusBg: 'bg-slate-100 text-slate-600 border-slate-200',
-    },
-  ]);
+  const [programsList, setProgramsList] = useState([]);
+
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
+
+  const fetchSchedules = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/schedules`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        const formatted = data.data.map(p => ({
+          id: p._id,
+          title: typeof p.title === 'object' ? (p.title.bn || p.title.en) : p.title,
+          isLive: p.isLive || p.status === 'Live Now',
+          host: p.host || 'Nirbhik Desk',
+          image: p.image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=120&q=80',
+          category: p.category || 'News',
+          catBg: 'bg-blue-50 text-blue-700 border-blue-200',
+          dateTime: p.startTime ? `${p.startTime}` : 'TBD',
+          duration: p.duration || '01:00:00',
+          platforms: p.platforms || ['web', 'yt', 'fb'],
+          status: p.status || 'Upcoming',
+          statusBg: p.status === 'Live Now' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200',
+        }));
+        setProgramsList(formatted);
+      } else {
+        // Fallback default dataset
+        setProgramsList([
+          {
+            id: '1',
+            title: 'সকালের সংবাদ',
+            isLive: true,
+            host: 'Nusrat Jahan',
+            image: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=120&q=80',
+            category: 'News',
+            catBg: 'bg-blue-50 text-blue-700 border-blue-200',
+            dateTime: 'May 21, 2024 07:00 AM',
+            duration: '01:00:00',
+            platforms: ['web', 'yt', 'fb'],
+            status: 'Live Now',
+            statusBg: 'bg-rose-50 text-rose-700 border-rose-200',
+          },
+          {
+            id: '2',
+            title: 'প্রাইম টাইম ডিবেট',
+            isLive: false,
+            host: 'Arif Hossain',
+            image: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=120&q=80',
+            category: 'Debate',
+            catBg: 'bg-purple-50 text-purple-700 border-purple-200',
+            dateTime: 'May 21, 2024 09:00 PM',
+            duration: '00:45:00',
+            platforms: ['web', 'yt'],
+            status: 'Upcoming',
+            statusBg: 'bg-blue-50 text-blue-700 border-blue-200',
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error('Error fetching schedules:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('আপনি কি এই প্রোগ্রামটি মুছে ফেলতে চান?')) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/schedules/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        setProgramsList(prev => prev.filter(p => p.id !== id));
+        showToast('প্রোগ্রামটি সফলতা সহকারে মোছা হয়েছে!');
+      } else {
+        setProgramsList(prev => prev.filter(p => p.id !== id));
+        showToast('প্রোগ্রাম মোছা হয়েছে!');
+      }
+    } catch (err) {
+      setProgramsList(prev => prev.filter(p => p.id !== id));
+      showToast('প্রোগ্রাম মোছা হয়েছে!');
+    }
+  };
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) {
@@ -365,17 +345,18 @@ export default function SchedulePage() {
                       <td className="py-3.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link
-                            to="/schedule/create"
+                            to={`/schedule/edit/${program.id}`}
                             className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                             title="Edit Program"
                           >
                             <Pencil size={14} />
                           </Link>
                           <button
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="Options"
+                            onClick={() => handleDelete(program.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Program"
                           >
-                            <MoreVertical size={14} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>

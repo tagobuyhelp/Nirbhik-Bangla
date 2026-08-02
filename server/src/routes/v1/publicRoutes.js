@@ -3,7 +3,43 @@ const router = express.Router();
 const Article = require('../../models/Article');
 const Category = require('../../models/Category');
 const LiveStream = require('../../models/LiveStream');
+const Video = require('../../models/Video');
+const Playlist = require('../../models/Playlist');
 const sendResponse = require('../../utils/responseHandler');
+
+// GET /api/v1/public/playlists
+router.get('/playlists', async (req, res, next) => {
+  try {
+    const playlists = await Playlist.find({ isActive: true }).sort({ createdAt: -1 });
+    return sendResponse(res, 200, 'Playlists fetched successfully', playlists);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/v1/public/videos
+router.get('/videos', async (req, res, next) => {
+  try {
+    const { category, search, limit = 20 } = req.query;
+    const query = { status: 'Published' };
+
+    if (category && category !== 'all') {
+      query.category = new RegExp(category, 'i');
+    }
+    if (search) {
+      query.$or = [
+        { 'title.bn': new RegExp(search, 'i') },
+        { 'title.en': new RegExp(search, 'i') },
+        { 'title.hi': new RegExp(search, 'i') }
+      ];
+    }
+
+    const videos = await Video.find(query).sort({ createdAt: -1 }).limit(parseInt(limit));
+    return sendResponse(res, 200, 'Public videos fetched successfully', videos);
+  } catch (error) {
+    next(error);
+  }
+});
 const { getActiveAds, trackAdClick, trackAdImpression } = require('../../controllers/adController');
 
 // Default initial categories if DB is empty

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_BASE_URL } from '@/utils/config';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -22,7 +23,7 @@ function SearchResultsContent() {
     }
 
     setLoading(true);
-    fetch(`http://localhost:5000/api/v1/public/news?search=${encodeURIComponent(query.trim())}&lang=${locale}`)
+    fetch(`${API_BASE_URL}/public/news?search=${encodeURIComponent(query.trim())}&lang=${locale}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {

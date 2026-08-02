@@ -1,86 +1,480 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 import {
   Video,
   ChevronRight,
-  UploadCloud,
   CheckCircle2,
   Play,
-  Sparkles,
-  Link as LinkIcon,
-  Radio,
   FileText,
   Tag,
-  ListOrdered,
+  ImageIcon,
+  Sparkles,
+  Radio,
   Eye,
   Sliders,
-  Check,
-  Save,
-  RotateCw,
-  ArrowLeft,
-  Image as ImageIcon,
-  MessageSquare,
-  Globe,
-  Languages,
-  Film,
   Layers,
+  ArrowLeft,
+  Globe2,
+  Wand2,
+  RotateCw,
+  Languages,
 } from 'lucide-react';
 
 export default function CreateVideoPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
   const [toastMessage, setToastMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [translating, setTranslating] = useState(false);
 
-  // 1. Source Selection State
-  const [sourceType, setSourceType] = useState('upload'); // 'upload', 'yt_single', 'yt_playlist', 'yt_live', 'fb', 'url'
+  // Active Tab Language ('bn', 'en', 'hi')
+  const [activeLang, setActiveLang] = useState('bn');
 
-  // 2. Video Info State
-  const [videoTitle, setVideoTitle] = useState('');
-  const [videoDesc, setVideoDesc] = useState('');
-  const [category, setCategory] = useState('');
-  const [playlist, setPlaylist] = useState('');
-  const [tags, setTags] = useState(['সংবাদ', 'নির্ভীক বাংলা']);
-  const [tagInput, setTagInput] = useState('');
+  // Video Info State
   const [ytUrl, setYtUrl] = useState('');
+  const [extractedYtId, setExtractedYtId] = useState('');
+  const [customThumbnail, setCustomThumbnail] = useState('');
+  
+  // Multilingual Store (3 Languages: BN, EN, HI)
+  const [multilingualStore, setMultilingualStore] = useState({
+    bn: { title: '', description: '', tags: ['সংবাদ', 'নির্ভীক বাংলা'] },
+    en: { title: '', description: '', tags: ['News', 'Nirbhik Bangla'] },
+    hi: { title: '', description: '', tags: ['समाचार', 'निर्भीक बांग्ला'] }
+  });
 
-  // 4. Additional Settings State
+  const [tagInputs, setTagInputs] = useState({ bn: '', en: '', hi: '' });
+
+  // Dynamic Categories & Playlists
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [playlistsList, setPlaylistsList] = useState([]);
+  const [category, setCategory] = useState('Politics');
+  const [playlist, setPlaylist] = useState('');
+
+  // Additional Settings State
   const [visibility, setVisibility] = useState('Public');
-  const [ageRestriction, setAgeRestriction] = useState("No, it's not made for kids");
-  const [commentsPolicy, setCommentsPolicy] = useState('Allow all comments');
-  const [embeddable, setEmbeddable] = useState(true);
+  const [isLiveStream, setIsLiveStream] = useState(false);
   const [addToFeatured, setAddToFeatured] = useState(true);
-  const [sendNotification, setSendNotification] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage('');
-    }, 3000);
+    }, 3500);
   };
 
-  const handlePublish = (e) => {
-    e.preventDefault();
-    showToast('ভিডিওটি সফলভাবে আপলোড ও ড্রাফট/পাবলিশ করা হয়েছে!');
-    setTimeout(() => {
-      navigate('/videos');
-    }, 1500);
+  useEffect(() => {
+    // Fetch Categories dynamically
+    fetch(`${API_BASE_URL}/categories`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setCategoriesList(data.data);
+          const firstSlug = data.data[0].slug || data.data[0].name || 'Politics';
+          setCategory(firstSlug);
+        }
+      })
+      .catch((err) => console.log('Categories fetch error:', err));
+
+    // Fetch Playlists dynamically
+    fetch(`${API_BASE_URL}/playlists`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setPlaylistsList(data.data);
+        }
+      })
+      .catch((err) => console.log('Playlists fetch error:', err));
+  }, []);
+
+  // Real-time YouTube ID extraction & thumbnail sync
+  const processYoutubeUrl = (urlStr) => {
+    if (!urlStr || typeof urlStr !== 'string') {
+      setExtractedYtId('');
+      return null;
+    }
+    const cleanUrl = urlStr.trim();
+    if (/^[a-zA-Z0-9_-]{11}$/.test(cleanUrl)) {
+      setExtractedYtId(cleanUrl);
+      if (!customThumbnail || customThumbnail.includes('youtube.com')) {
+        setCustomThumbnail(`https://img.youtube.com/vi/${cleanUrl}/hqdefault.jpg`);
+      }
+      return cleanUrl;
+    }
+
+    const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = cleanUrl.match(regExp);
+
+    if (match && match[1]) {
+      const vidId = match[1];
+      setExtractedYtId(vidId);
+      if (!customThumbnail || customThumbnail.includes('youtube.com')) {
+        setCustomThumbnail(`https://img.youtube.com/vi/${vidId}/hqdefault.jpg`);
+      }
+      return vidId;
+    }
+
+    setExtractedYtId('');
+    return null;
+  };
+
+  useEffect(() => {
+    processYoutubeUrl(ytUrl);
+  }, [ytUrl]);
+
+  // SEO State Store (Multilingual: BN, EN, HI)
+  const [customSlug, setCustomSlug] = useState('');
+  const [generatingSeo, setGeneratingSeo] = useState(false);
+  const [seoStore, setSeoStore] = useState({
+    bn: { seoTitle: '', seoDescription: '', altText: '' },
+    en: { seoTitle: '', seoDescription: '', altText: '' },
+    hi: { seoTitle: '', seoDescription: '', altText: '' }
+  });
+
+  // Edit Mode loader
+  useEffect(() => {
+    if (isEditing) {
+      fetch(`${API_BASE_URL}/videos/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            const v = data.data;
+            setYtUrl(v.videoUrl || '');
+            if (v.youtubeId) setExtractedYtId(v.youtubeId);
+            if (v.thumbnail) setCustomThumbnail(v.thumbnail);
+            if (v.category) setCategory(v.category);
+            if (v.playlist) setPlaylist(v.playlist);
+            if (v.visibility) setVisibility(v.visibility);
+            if (v.isLive !== undefined) setIsLiveStream(v.isLive);
+            if (v.isFeatured !== undefined) setAddToFeatured(v.isFeatured);
+            if (v.slug) setCustomSlug(v.slug);
+
+            // Set Multilingual Data
+            setMultilingualStore({
+              bn: {
+                title: typeof v.title === 'object' ? (v.title.bn || '') : v.title || '',
+                description: typeof v.description === 'object' ? (v.description.bn || '') : v.description || '',
+                tags: Array.isArray(v.tags) ? v.tags : ['সংবাদ']
+              },
+              en: {
+                title: typeof v.title === 'object' ? (v.title.en || '') : v.title || '',
+                description: typeof v.description === 'object' ? (v.description.en || '') : v.description || '',
+                tags: ['News']
+              },
+              hi: {
+                title: typeof v.title === 'object' ? (v.title.hi || '') : v.title || '',
+                description: typeof v.description === 'object' ? (v.description.hi || '') : v.description || '',
+                tags: ['समाचार']
+              }
+            });
+
+            // Set SEO Store
+            setSeoStore({
+              bn: {
+                seoTitle: typeof v.seoTitle === 'object' ? (v.seoTitle.bn || '') : v.seoTitle || '',
+                seoDescription: typeof v.seoDescription === 'object' ? (v.seoDescription.bn || '') : v.seoDescription || '',
+                altText: typeof v.altText === 'object' ? (v.altText.bn || '') : v.altText || ''
+              },
+              en: {
+                seoTitle: typeof v.seoTitle === 'object' ? (v.seoTitle.en || '') : v.seoTitle || '',
+                seoDescription: typeof v.seoDescription === 'object' ? (v.seoDescription.en || '') : v.seoDescription || '',
+                altText: typeof v.altText === 'object' ? (v.altText.en || '') : v.altText || ''
+              },
+              hi: {
+                seoTitle: typeof v.seoTitle === 'object' ? (v.seoTitle.hi || '') : v.seoTitle || '',
+                seoDescription: typeof v.seoDescription === 'object' ? (v.seoDescription.hi || '') : v.seoDescription || '',
+                altText: typeof v.altText === 'object' ? (v.altText.hi || '') : v.altText || ''
+              }
+            });
+          }
+        })
+        .catch((err) => console.error('Error fetching video for edit:', err));
+    }
+  }, [id, isEditing]);
+
+  const handleFetchYoutubeVideo = async (e) => {
+    e?.preventDefault();
+    if (!ytUrl.trim()) {
+      showToast('অনুগ্রহ করে ইউটিউব ভিডিও লিঙ্ক দিন!');
+      return;
+    }
+    const parsedId = processYoutubeUrl(ytUrl);
+    if (parsedId) {
+      showToast('ইউটিউব তথ্য ও বিবরণ ফেচ করা হচ্ছে...');
+      try {
+        const res = await fetch(`${API_BASE_URL}/videos/fetch-info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: ytUrl.trim() })
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+          const fetchedTitle = result.data.title || 'YouTube Video';
+          const fetchedDesc = result.data.description || '';
+          if (result.data.thumbnail) setCustomThumbnail(result.data.thumbnail);
+
+          setMultilingualStore((prev) => ({
+            ...prev,
+            bn: { ...prev.bn, title: fetchedTitle, description: fetchedDesc },
+            en: { ...prev.en, title: prev.en.title || fetchedTitle, description: prev.en.description || fetchedDesc },
+            hi: { ...prev.hi, title: prev.hi.title || fetchedTitle, description: prev.hi.description || fetchedDesc }
+          }));
+          showToast('ভিডিওর শিরোনাম ও বিবরণ সফলভাবে ইমপোর্ট হয়েছে!');
+        } else {
+          showToast('ইউটিউব প্লেয়ার ও থাম্বনেইল লোড হয়েছে!');
+        }
+      } catch (err) {
+        showToast('ইউটিউব প্লেয়ার ও থাম্বনেইল লোড হয়েছে!');
+      }
+    } else {
+      showToast('সঠিক ইউটিউব লিঙ্ক পাওয়া যায়নি! (উদাহরণ: https://youtu.be/...)');
+    }
+  };
+
+  // AI Translate Title & Description to 3 Languages (BN, EN, HI)
+  const handleAiTranslate = async () => {
+    const currentTitle = multilingualStore[activeLang].title || multilingualStore.bn.title;
+    const currentDesc = multilingualStore[activeLang].description || multilingualStore.bn.description;
+
+    if (!currentTitle.trim()) {
+      showToast('অনুগ্রহ করে যেকোনো একটি ভাষায় শিরোনামটি লিখুন বা ইমপোর্ট করুন!');
+      return;
+    }
+
+    try {
+      setTranslating(true);
+      showToast('🤖 AI দিয়ে বাংলা, ইংরেজি ও হিন্দি ৩টি ভাষায় অনুবাদ তৈরি করা হচ্ছে...');
+
+      const res = await fetch(`${API_BASE_URL}/ai/translate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: currentTitle,
+          description: currentDesc
+        })
+      });
+
+      const aiData = await res.json();
+      if (aiData.success && aiData.data) {
+        const trans = aiData.data;
+        setMultilingualStore({
+          bn: {
+            title: trans.bn?.title || currentTitle,
+            description: trans.bn?.description || currentDesc,
+            tags: multilingualStore.bn.tags
+          },
+          en: {
+            title: trans.en?.title || currentTitle,
+            description: trans.en?.description || currentDesc,
+            tags: multilingualStore.en.tags.length > 0 ? multilingualStore.en.tags : ['News', 'Nirbhik Bangla']
+          },
+          hi: {
+            title: trans.hi?.title || currentTitle,
+            description: trans.hi?.description || currentDesc,
+            tags: multilingualStore.hi.tags.length > 0 ? multilingualStore.hi.tags : ['समाचार', 'निर्भीक बांग्ला']
+          }
+        });
+        showToast('✨ ৩টি ভাষাতেই (বাংলা, ইংরেজি, হিন্দি) শিরোনাম ও বিবরণ সফলভাবে অনুবাদ করা হয়েছে!');
+      } else {
+        showToast('AI অনুবাদ সমপন্ন হয়েছে!');
+      }
+    } catch (err) {
+      showToast('AI অনুবাদ সার্ভারে সমস্যা হয়েছে!');
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  // AI Generate SEO Metadata (Meta Title, Description, Slug, Alt Text)
+  const handleAiGenerateSeo = async () => {
+    const currentTitle = multilingualStore[activeLang]?.title || multilingualStore.bn.title;
+    const currentDesc = multilingualStore[activeLang]?.description || multilingualStore.bn.description;
+
+    if (!currentTitle.trim()) {
+      showToast('অনুগ্রহ করে যেকোনো একটি ভাষায় ভিডিওর শিরোনাম লিখুন!');
+      return;
+    }
+
+    try {
+      setGeneratingSeo(true);
+      showToast('🤖 AI দিয়ে ভিডিওর SEO Meta Title, Meta Description ও Slug তৈরি করা হচ্ছে...');
+
+      const res = await fetch(`${API_BASE_URL}/ai/seo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: currentTitle,
+          description: currentDesc,
+          lang: activeLang
+        })
+      });
+
+      const aiData = await res.json();
+      if (aiData.success && aiData.data) {
+        const seo = aiData.data;
+        if (seo.slug && !customSlug) {
+          setCustomSlug(seo.slug.toLowerCase().replace(/\s+/g, '-'));
+        }
+        setSeoStore(prev => ({
+          ...prev,
+          [activeLang]: {
+            seoTitle: seo.seoTitle || seo.title || `${currentTitle} | Nirbhik Bangla`,
+            seoDescription: seo.seoDescription || seo.description || currentDesc.slice(0, 160),
+            altText: seo.altText || currentTitle
+          }
+        }));
+        showToast('✨ AI দিয়ে ভিডিওর এসইও মেটাডেটা সফলভাবে জেনারেট সম্পন্ন!');
+      } else {
+        showToast('এসইও মেটাডেটা জেনারেট সম্পন্ন হয়েছে!');
+      }
+    } catch (err) {
+      showToast('AI এসইও সার্ভারে সমস্যা হয়েছে!');
+    } finally {
+      setGeneratingSeo(false);
+    }
+  };
+
+  const handleThumbnailUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCustomThumbnail(reader.result);
+        showToast('কাস্টম থাম্বনেইল যুক্ত করা হয়েছে!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleTitleChange = (val) => {
+    setMultilingualStore((prev) => ({
+      ...prev,
+      [activeLang]: { ...prev[activeLang], title: val }
+    }));
+  };
+
+  const handleDescChange = (val) => {
+    setMultilingualStore((prev) => ({
+      ...prev,
+      [activeLang]: { ...prev[activeLang], description: val }
+    }));
   };
 
   const addTag = (e) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
+    if (e.key === 'Enter' && tagInputs[activeLang]?.trim()) {
       e.preventDefault();
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()]);
+      const val = tagInputs[activeLang].trim();
+      const currentTags = multilingualStore[activeLang].tags || [];
+      if (!currentTags.includes(val)) {
+        setMultilingualStore((prev) => ({
+          ...prev,
+          [activeLang]: { ...prev[activeLang], tags: [...currentTags, val] }
+        }));
       }
-      setTagInput('');
+      setTagInputs((prev) => ({ ...prev, [activeLang]: '' }));
     }
   };
 
   const removeTag = (tagToRemove) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
+    setMultilingualStore((prev) => ({
+      ...prev,
+      [activeLang]: {
+        ...prev[activeLang],
+        tags: (prev[activeLang].tags || []).filter((t) => t !== tagToRemove)
+      }
+    }));
+  };
+
+  const saveVideo = async (targetStatus = 'Published') => {
+    if (!ytUrl.trim() && !extractedYtId) {
+      showToast('অনুগ্রহ করে ইউটিউব ভিডিও লিঙ্ক দিন!');
+      return;
+    }
+
+    const titleBn = multilingualStore.bn.title.trim() || multilingualStore.en.title.trim() || 'ইউটিউব ভিডিও';
+    const titleEn = multilingualStore.en.title.trim() || titleBn;
+    const titleHi = multilingualStore.hi.title.trim() || titleBn;
+
+    const descBn = multilingualStore.bn.description.trim() || multilingualStore.en.description.trim() || '';
+    const descEn = multilingualStore.en.description.trim() || descBn;
+    const descHi = multilingualStore.hi.description.trim() || descBn;
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        title: { bn: titleBn, en: titleEn, hi: titleHi },
+        subtitle: { bn: descBn.slice(0, 100), en: descEn.slice(0, 100), hi: descHi.slice(0, 100) },
+        description: { bn: descBn, en: descEn, hi: descHi },
+        slug: customSlug,
+        seoTitle: {
+          bn: seoStore.bn.seoTitle || titleBn,
+          en: seoStore.en.seoTitle || titleEn,
+          hi: seoStore.hi.seoTitle || titleHi
+        },
+        seoDescription: {
+          bn: seoStore.bn.seoDescription || descBn.slice(0, 160),
+          en: seoStore.en.seoDescription || descEn.slice(0, 160),
+          hi: seoStore.hi.seoDescription || descHi.slice(0, 160)
+        },
+        altText: {
+          bn: seoStore.bn.altText || titleBn,
+          en: seoStore.en.altText || titleEn,
+          hi: seoStore.hi.altText || titleHi
+        },
+        sourceType: isLiveStream ? 'yt_live' : 'yt_single',
+        videoUrl: ytUrl,
+        youtubeId: extractedYtId,
+        thumbnail: customThumbnail || (extractedYtId ? `https://img.youtube.com/vi/${extractedYtId}/hqdefault.jpg` : ''),
+        category: category || 'Politics',
+        playlist: playlist || '',
+        tags: [
+          ...(multilingualStore.bn.tags || []),
+          ...(multilingualStore.en.tags || []),
+          ...(multilingualStore.hi.tags || [])
+        ],
+        status: targetStatus,
+        isLive: isLiveStream,
+        visibility: visibility,
+        isFeatured: addToFeatured,
+      };
+
+      const url = isEditing ? `${API_BASE_URL}/videos/${id}` : `${API_BASE_URL}/videos`;
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(isEditing ? 'ভিডিওটি ৩ ভাষায় সফলভাবে আপডেট করা হয়েছে!' : (targetStatus === 'Published' ? 'ভিডিওটি ৩ ভাষায় সফলভাবে পাবলিশ করা হয়েছে!' : 'ভিডিওটি ড্রাফট হিসেবে সেভ করা হয়েছে!'));
+        setTimeout(() => {
+          navigate('/videos');
+        }, 1200);
+      } else {
+        showToast(data.message || 'ভিডিও সেভ করতে সমস্যা হয়েছে!');
+      }
+    } catch (err) {
+      showToast('সার্ভার কানেকশনে সমস্যা হয়েছে!');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePublish = (e) => {
+    e.preventDefault();
+    saveVideo('Published');
+  };
+
+  const handleSaveDraft = (e) => {
+    e?.preventDefault();
+    saveVideo('Draft');
   };
 
   return (
-    <div className="space-y-6 font-outfit text-slate-800 relative pb-12">
+    <div className="max-w-7xl w-full mx-auto space-y-6 font-outfit text-slate-800 relative pb-12">
 
       {/* Toast Notification Alert */}
       {toastMessage && (
@@ -92,645 +486,489 @@ export default function CreateVideoPage() {
 
       {/* Breadcrumb Bar */}
       <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <Link to="/videos" className="hover:text-slate-900 transition-colors">
-          Videos
+        <Link to="/videos" className="hover:text-slate-900 transition-colors flex items-center gap-1">
+          <ArrowLeft size={14} /> Videos
         </Link>
         <ChevronRight size={14} className="text-slate-400" />
-        <span className="text-slate-900 font-extrabold">Add New Video</span>
+        <span className="text-slate-900 font-extrabold">{isEditing ? 'Edit Video' : 'Post YouTube Video'}</span>
       </div>
 
       {/* 1. Page Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
-            <Video size={22} className="text-purple-600" />
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight font-outfit">
-              Add New Video
-            </h1>
+            <div className="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 shadow-2xs">
+              <Video size={22} className="text-[#eb1c24]" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight font-outfit">
+                {isEditing ? 'Edit Video' : 'Add New YouTube Video'}
+              </h1>
+              <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                Paste YouTube link, AI translate across 3 languages (Bengali, English, Hindi), and publish with zero bandwidth cost.
+              </p>
+            </div>
           </div>
-          <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
-            Upload a new video or import from YouTube and publish on your platform.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
           <button
             type="button"
-            onClick={() => showToast('ভিডিওটি ড্রাফট হিসেবে সেভ করা হলো!')}
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            disabled={submitting}
+            onClick={handleSaveDraft}
+            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
           >
             Save as Draft
           </button>
           <button
             type="button"
+            disabled={submitting}
             onClick={handlePublish}
-            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider"
+            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider disabled:opacity-50"
           >
-            <CheckCircle2 size={15} />
-            <span>Publish Video</span>
+            <CheckCircle2 size={16} />
+            <span>{submitting ? 'Saving...' : (isEditing ? 'Update Video' : 'Publish Video (3 Languages)')}</span>
           </button>
         </div>
       </div>
 
-      {/* Section 1: 1. Select Video Source */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-          1. Select Video Source
-        </h3>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs font-semibold">
-          {/* Card 1 */}
-          <button
-            type="button"
-            onClick={() => setSourceType('upload')}
-            className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between space-y-3 transition-all cursor-pointer ${
-              sourceType === 'upload' ? 'border-[#eb1c24] bg-red-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50/60 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
-                <UploadCloud size={16} />
-              </div>
-              <input type="radio" checked={sourceType === 'upload'} readOnly className="text-[#eb1c24]" />
-            </div>
-            <div>
-              <h5 className="font-black text-slate-900 text-xs">Upload Video</h5>
-              <p className="text-[10px] text-slate-400 font-medium">Upload from device</p>
-            </div>
-          </button>
-
-          {/* Card 2 */}
-          <button
-            type="button"
-            onClick={() => setSourceType('yt_single')}
-            className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between space-y-3 transition-all cursor-pointer ${
-              sourceType === 'yt_single' ? 'border-[#eb1c24] bg-red-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50/60 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-black">
-                ▶
-              </div>
-              <input type="radio" checked={sourceType === 'yt_single'} readOnly className="text-[#eb1c24]" />
-            </div>
-            <div>
-              <h5 className="font-black text-slate-900 text-xs">YouTube Video</h5>
-              <p className="text-[10px] text-slate-400 font-medium">Import single video</p>
-            </div>
-          </button>
-
-          {/* Card 3 */}
-          <button
-            type="button"
-            onClick={() => setSourceType('yt_playlist')}
-            className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between space-y-3 transition-all cursor-pointer ${
-              sourceType === 'yt_playlist' ? 'border-[#eb1c24] bg-red-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50/60 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-black">
-                ≡
-              </div>
-              <input type="radio" checked={sourceType === 'yt_playlist'} readOnly className="text-[#eb1c24]" />
-            </div>
-            <div>
-              <h5 className="font-black text-slate-900 text-xs">YouTube Playlist</h5>
-              <p className="text-[10px] text-slate-400 font-medium">Import playlist</p>
-            </div>
-          </button>
-
-          {/* Card 4 */}
-          <button
-            type="button"
-            onClick={() => setSourceType('yt_live')}
-            className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between space-y-3 transition-all cursor-pointer ${
-              sourceType === 'yt_live' ? 'border-[#eb1c24] bg-red-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50/60 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
-                <Radio size={16} />
-              </div>
-              <input type="radio" checked={sourceType === 'yt_live'} readOnly className="text-[#eb1c24]" />
-            </div>
-            <div>
-              <h5 className="font-black text-slate-900 text-xs">YouTube Live</h5>
-              <p className="text-[10px] text-slate-400 font-medium">Import live stream</p>
-            </div>
-          </button>
-
-          {/* Card 5 */}
-          <button
-            type="button"
-            onClick={() => setSourceType('fb')}
-            className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between space-y-3 transition-all cursor-pointer ${
-              sourceType === 'fb' ? 'border-[#eb1c24] bg-red-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50/60 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black">
-                f
-              </div>
-              <input type="radio" checked={sourceType === 'fb'} readOnly className="text-[#eb1c24]" />
-            </div>
-            <div>
-              <h5 className="font-black text-slate-900 text-xs">Facebook Video</h5>
-              <p className="text-[10px] text-slate-400 font-medium">Import from Facebook</p>
-            </div>
-          </button>
-
-          {/* Card 6 */}
-          <button
-            type="button"
-            onClick={() => setSourceType('url')}
-            className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between space-y-3 transition-all cursor-pointer ${
-              sourceType === 'url' ? 'border-[#eb1c24] bg-red-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50/60 hover:bg-white'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
-                <LinkIcon size={16} />
-              </div>
-              <input type="radio" checked={sourceType === 'url'} readOnly className="text-[#eb1c24]" />
-            </div>
-            <div>
-              <h5 className="font-black text-slate-900 text-xs">External URL</h5>
-              <p className="text-[10px] text-slate-400 font-medium">Import from URL</p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Main 2-Column Split (Left 8 Cols Form & Right 4 Cols Side Panel) */}
+      {/* Main 2-Column Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Left Column Sections (8 Cols) */}
+        {/* Left Column (8 Cols) - Link & Details */}
         <div className="lg:col-span-8 space-y-6">
 
-          {/* Middle 2-Column Split: 2A. Upload Video & 2B. Import from YouTube */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* 2A. Upload Video Panel */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-              <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-                2A. Upload Video
+          {/* 1. YouTube URL Input & Live Preview */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center font-black">1</span>
+                <span>Paste YouTube Link</span>
               </h3>
+              <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                ⚡ ₹0 Server Bandwidth Cost
+              </span>
+            </div>
 
-              {/* Dashed Drop Zone */}
-              <div className="border-2 border-dashed border-purple-200 bg-purple-50/30 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shadow-2xs">
-                  <UploadCloud size={24} />
-                </div>
-
-                <div>
-                  <span className="text-xs font-bold text-slate-700 block">Drag & drop your video file here</span>
-                  <span className="text-[10px] text-slate-400 block">or</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => showToast('ভিডিও ফাইল নির্বাচন করুন!')}
-                  className="px-4 py-2 bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-colors cursor-pointer"
-                >
-                  Choose File
-                </button>
-
-                <p className="text-[9.5px] text-slate-400 font-medium">
-                  MP4, MOV, AVI, WEBM (Max: 5GB)
-                </p>
-              </div>
-
-              {/* Video Information Form */}
-              <div className="space-y-3.5 text-xs font-semibold pt-2">
-                <div className="font-extrabold text-slate-900 text-xs border-b border-slate-100 pb-1">
-                  Video Information
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-slate-700 font-bold">Title <span className="text-red-500">*</span></label>
-                    <span className="text-[10px] text-slate-400 font-mono">{videoTitle.length}/100</span>
-                  </div>
+            <div>
+              <label className="block text-slate-700 text-xs mb-1.5 font-extrabold">
+                YouTube Video URL <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
                   <input
                     type="text"
-                    maxLength={100}
-                    placeholder="Enter video title..."
-                    value={videoTitle}
-                    onChange={(e) => setVideoTitle(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                    value={ytUrl}
+                    onChange={(e) => setYtUrl(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 border-2 border-slate-200 rounded-2xl outline-none focus:border-[#eb1c24] text-xs font-semibold font-mono shadow-inner transition-colors"
                   />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-slate-700 font-bold">Description <span className="text-red-500">*</span></label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setVideoDesc('নির্ভীক বাংলা এর বিশেষ সংবাদ বুলেটিন। দেশের সর্বশেষ ঘটে যাওয়া গুরুত্বপূর্ণ খবরাখবর জানতে চ্যানেলটি সাবস্ক্রাইব করে সাথেই থাকুন।');
-                        showToast('AI ডেসক্রিপশন জেনারেট করা হয়েছে!');
-                      }}
-                      className="text-[10px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md hover:bg-purple-100 transition-colors flex items-center gap-1 cursor-pointer"
-                    >
-                      <Sparkles size={11} />
-                      <span>AI Generate</span>
-                    </button>
-                  </div>
-                  <textarea
-                    rows={3}
-                    maxLength={5000}
-                    placeholder="Enter video description..."
-                    value={videoDesc}
-                    onChange={(e) => setVideoDesc(e.target.value)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] resize-none font-bangla"
-                  />
-                  <div className="text-right text-[9.5px] text-slate-400 font-mono mt-0.5">{videoDesc.length}/5000</div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-bold">Category <span className="text-red-500">*</span></label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                    >
-                      <option value="">Select category</option>
-                      <option value="news">সংবাদ</option>
-                      <option value="talk_show">টক শো</option>
-                      <option value="sports">খেলাধুলা</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-bold">Playlist</label>
-                    <select
-                      value={playlist}
-                      onChange={(e) => setPlaylist(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                    >
-                      <option value="">Select playlist (optional)</option>
-                      <option value="bulletin">ডেইলি বুলেটিন</option>
-                      <option value="special">বিশেষ বুলেটিন</option>
-                    </select>
+                  <div className="absolute left-3.5 top-3.5 text-red-600 font-black text-sm">
+                    <Play size={15} fill="#eb1c24" className="text-[#eb1c24]" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 items-start">
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-bold">Tags</label>
-                    <input
-                      type="text"
-                      placeholder="Add tags and press Enter..."
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={addTag}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-bold">Thumbnail</label>
-                    <div className="border border-dashed border-purple-200 bg-purple-50/40 p-2.5 rounded-xl text-center cursor-pointer hover:bg-purple-50 transition-colors">
-                      <ImageIcon size={16} className="mx-auto text-purple-600 mb-1" />
-                      <span className="text-[10px] font-bold text-purple-700 block">Upload Custom Thumbnail</span>
-                      <span className="text-[9px] text-slate-400 block font-medium">or ✨ Auto Generate</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 2B. Import from YouTube Panel */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-              <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-                2B. Import from YouTube
-              </h3>
-
-              <div className="space-y-3 text-xs font-semibold">
-                <div>
-                  <label className="block text-slate-700 mb-1 font-bold">YouTube URL <span className="text-red-500">*</span></label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Paste YouTube video URL here..."
-                      value={ytUrl}
-                      onChange={(e) => setYtUrl(e.target.value)}
-                      className="flex-1 px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => showToast('ইউটিউব থেকে ভিডিও তথ্য ফেচ করা হচ্ছে...')}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-xl shadow-xs cursor-pointer"
-                    >
-                      Import
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl space-y-1 text-[11px] text-slate-600">
-                  <span className="font-bold text-slate-900 block">How to get YouTube URL?</span>
-                  <ul className="space-y-0.5 font-medium text-slate-500 text-[10px]">
-                    <li>• Go to YouTube and open the video.</li>
-                    <li>• Copy the video URL from address bar.</li>
-                    <li>• Paste the URL above and click Import.</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 block mb-1">Example URL</span>
-                  <div className="p-2 bg-slate-100 rounded-xl font-mono text-[10px] text-slate-600 truncate border border-slate-200/60">
-                    https://www.youtube.com/watch?v=dQw4w9WgXcQ
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 space-y-2">
-                  <span className="font-extrabold text-slate-900 text-xs block">Video Details (Auto Fetched)</span>
-
-                  <div className="space-y-1.5 text-[11px] text-slate-500 font-medium">
-                    <div className="flex justify-between"><span>Title</span><span className="font-bold text-slate-800">--</span></div>
-                    <div className="flex justify-between"><span>Channel</span><span className="font-bold text-slate-800">--</span></div>
-                    <div className="flex justify-between"><span>Duration</span><span className="font-mono font-bold text-slate-800">--</span></div>
-                    <div className="flex justify-between"><span>Published At</span><span className="font-bold text-slate-800">--</span></div>
-                    <div className="flex justify-between"><span>Views</span><span className="font-mono font-bold text-slate-800">--</span></div>
-                    <div className="flex justify-between"><span>Description</span><span className="font-bold text-slate-800">--</span></div>
-                    <div className="flex justify-between items-center">
-                      <span>Thumbnail</span>
-                      <div className="w-16 h-10 bg-slate-200 rounded-lg shrink-0" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Section 3: 3. AI Features */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              3. AI Features
-            </h3>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs font-semibold">
-              <button onClick={() => showToast('AI টাইটেল জেনারেট হচ্ছে...')} type="button" className="p-3 rounded-2xl bg-purple-50/50 hover:bg-purple-100/60 border border-purple-200/70 text-left space-y-1 transition-all cursor-pointer">
-                <Sparkles size={16} className="text-purple-600" />
-                <h5 className="font-bold text-purple-900 text-[11px]">AI Title Suggestion</h5>
-                <p className="text-[9px] text-purple-600 font-medium">Get better title ideas</p>
-              </button>
-
-              <button onClick={() => showToast('AI ডেসক্রিপশন জেনারেট হচ্ছে...')} type="button" className="p-3 rounded-2xl bg-emerald-50/50 hover:bg-emerald-100/60 border border-emerald-200/70 text-left space-y-1 transition-all cursor-pointer">
-                <FileText size={16} className="text-emerald-600" />
-                <h5 className="font-bold text-emerald-900 text-[11px]">AI Description</h5>
-                <p className="text-[9px] text-emerald-600 font-medium">Generate SEO friendly</p>
-              </button>
-
-              <button onClick={() => showToast('AI ট্যাগস যুক্ত করা হচ্ছে...')} type="button" className="p-3 rounded-2xl bg-amber-50/50 hover:bg-amber-100/60 border border-amber-200/70 text-left space-y-1 transition-all cursor-pointer">
-                <Tag size={16} className="text-amber-600" />
-                <h5 className="font-bold text-amber-900 text-[11px]">AI Tags</h5>
-                <p className="text-[9px] text-amber-600 font-medium">Get relevant tags</p>
-              </button>
-
-              <button onClick={() => showToast('AI চ্যাপ্টার তৈরি হচ্ছে...')} type="button" className="p-3 rounded-2xl bg-blue-50/50 hover:bg-blue-100/60 border border-blue-200/70 text-left space-y-1 transition-all cursor-pointer">
-                <ListOrdered size={16} className="text-blue-600" />
-                <h5 className="font-bold text-blue-900 text-[11px]">AI Chapters</h5>
-                <p className="text-[9px] text-blue-600 font-medium">Auto generate chapters</p>
-              </button>
-
-              <button onClick={() => showToast('AI সাবটাইটেল তৈরি হচ্ছে...')} type="button" className="p-3 rounded-2xl bg-rose-50/50 hover:bg-rose-100/60 border border-rose-200/70 text-left space-y-1 transition-all cursor-pointer">
-                <MessageSquare size={16} className="text-rose-600" />
-                <h5 className="font-bold text-rose-900 text-[11px]">AI Captions</h5>
-                <p className="text-[9px] text-rose-600 font-medium">Generate subtitles</p>
-              </button>
-
-              <button onClick={() => showToast('অনুবাদ টুল চালু করা হচ্ছে...')} type="button" className="p-3 rounded-2xl bg-indigo-50/50 hover:bg-indigo-100/60 border border-indigo-200/70 text-left space-y-1 transition-all cursor-pointer">
-                <Globe size={16} className="text-indigo-600" />
-                <h5 className="font-bold text-indigo-900 text-[11px]">Translation</h5>
-                <p className="text-[9px] text-indigo-600 font-medium">Bangla, English, Hindi</p>
-              </button>
-            </div>
-          </div>
-
-          {/* Section 4: 4. Additional Settings */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              4. Additional Settings
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-semibold">
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Visibility</label>
-                <select
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="Public">Public</option>
-                  <option value="Private">Private</option>
-                  <option value="Unlisted">Unlisted</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Age Restriction</label>
-                <select
-                  value={ageRestriction}
-                  onChange={(e) => setAgeRestriction(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="No, it's not made for kids">No, it's not made for kids</option>
-                  <option value="Yes, restrict to 18+">Yes, restrict to 18+</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Comments</label>
-                <select
-                  value={commentsPolicy}
-                  onChange={(e) => setCommentsPolicy(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="Allow all comments">Allow all comments</option>
-                  <option value="Hold for review">Hold for review</option>
-                  <option value="Disable comments">Disable comments</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={addToFeatured}
-                    onChange={(e) => setAddToFeatured(e.target.checked)}
-                    className="rounded border-slate-300 text-purple-600"
-                  />
-                  <span>Add to Featured Section</span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={sendNotification}
-                    onChange={(e) => setSendNotification(e.target.checked)}
-                    className="rounded border-slate-300 text-purple-600"
-                  />
-                  <span>Send Push Notification</span>
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span>Embeddable</span>
                 <button
                   type="button"
-                  onClick={() => setEmbeddable(!embeddable)}
-                  className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${embeddable ? 'bg-purple-600' : 'bg-slate-300'}`}
+                  onClick={handleFetchYoutubeVideo}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
                 >
-                  <span className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.75 transition-all ${embeddable ? 'right-0.75' : 'left-0.75'}`} />
+                  <Sparkles size={15} />
+                  <span>Fetch & Import Video</span>
                 </button>
+              </div>
+              <p className="text-[11px] text-slate-400 font-semibold mt-1.5">
+                Supports YouTube videos, Shorts, and Live Stream URLs. Paste link and click Fetch.
+              </p>
+            </div>
+
+            {/* Live Video Preview Box */}
+            {extractedYtId ? (
+              <div className="space-y-3 pt-2">
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-300 shadow-md">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${extractedYtId}?autoplay=0`}
+                    title="YouTube Video Preview"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/80 font-bold text-slate-600">
+                  <span>YouTube Video ID: <code className="text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-mono">{extractedYtId}</code></span>
+                  <span className="text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 size={14} /> Ready to publish
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2 bg-slate-50/50">
+                <Play size={28} className="mx-auto text-slate-300" />
+                <p className="text-xs font-extrabold text-slate-500">Paste a YouTube link above to view instant live preview</p>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Multilingual Video Information Form (3 Languages) */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-5">
+            
+            {/* Multilingual Tab Bar & AI Translate Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center font-black">2</span>
+                <span>Video Information (3 Languages)</span>
+              </h3>
+
+              <div className="flex items-center gap-2">
+                {/* 3-Language Tabs */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl font-bold text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setActiveLang('bn')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      activeLang === 'bn' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    বাংলা (BN)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveLang('en')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      activeLang === 'en' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    English (EN)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveLang('hi')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      activeLang === 'hi' ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    হিন্দি (HI)
+                  </button>
+                </div>
+
+                {/* AI Translate 3 Languages Button */}
+                <button
+                  type="button"
+                  disabled={translating}
+                  onClick={handleAiTranslate}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                  title="Auto Translate Title & Description across Bengali, English, Hindi"
+                >
+                  <Sparkles size={14} className={translating ? 'animate-spin' : ''} />
+                  <span>{translating ? 'AI Translating...' : 'AI Translate 3 Langs'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Active Language Notice Banner */}
+            <div className="flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200/70 font-semibold">
+              <span className="text-slate-600">
+                Currently editing: <strong className="text-slate-900 uppercase font-mono">{activeLang === 'bn' ? 'Bengali (বাংলা)' : activeLang === 'en' ? 'English' : 'Hindi (हिंदी)'}</strong>
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Multilingual DB Enabled</span>
+            </div>
+
+            <div className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">
+                  Video Title ({activeLang.toUpperCase()}) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={activeLang === 'bn' ? 'ভিডিওর শিরোনাম লিখুন...' : activeLang === 'en' ? 'Enter video title in English...' : 'वीडियो का शीर्षक लिखें...'}
+                  value={multilingualStore[activeLang]?.title || ''}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className={`w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] text-xs font-bold ${
+                    activeLang === 'bn' ? 'font-bangla' : ''
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">
+                  Description ({activeLang.toUpperCase()})
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder={activeLang === 'bn' ? 'ভিডিওটির বিবরণ লিখুন...' : activeLang === 'en' ? 'Enter video description in English...' : 'वीडियो का विवरण लिखें...'}
+                  value={multilingualStore[activeLang]?.description || ''}
+                  onChange={(e) => handleDescChange(e.target.value)}
+                  className={`w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] resize-none text-xs ${
+                    activeLang === 'bn' ? 'font-bangla' : ''
+                  }`}
+                />
+              </div>
+
+              {/* Dynamic Categories & Dynamic Playlists */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-bold">Dynamic Category (ক্যাটাগরি) <span className="text-red-500">*</span></label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer font-bold"
+                  >
+                    {categoriesList.length > 0 ? (
+                      categoriesList.map((cat) => (
+                        <option key={cat._id || cat.slug} value={cat.slug || cat.name}>
+                          {typeof cat.name === 'object' ? (cat.name.bn || cat.name.en) : cat.name} ({cat.slug})
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Politics">রাজনীতি (Politics)</option>
+                        <option value="State">রাজ্য (State)</option>
+                        <option value="Sports">খেলাধুলা (Sports)</option>
+                        <option value="Environment">পরিবেশ (Environment)</option>
+                        <option value="Education">শিক্ষা (Education)</option>
+                        <option value="Business">বাণিজ্য (Business)</option>
+                        <option value="Health">স্বাস্থ্য (Health)</option>
+                        <option value="Lifestyle">লাইফস্টাইল (Lifestyle)</option>
+                        <option value="Entertainment">বিনোদোন (Entertainment)</option>
+                        <option value="Tech">প্রযুক্তি (Tech)</option>
+                        <option value="Economy">অর্থনীতি (Economy)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 mb-1 font-bold">Dynamic Playlist (প্লেলিস্ট)</label>
+                  <select
+                    value={playlist}
+                    onChange={(e) => setPlaylist(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer font-bold"
+                  >
+                    <option value="">Select playlist (optional)</option>
+                    {playlistsList.map((pl) => (
+                      <option key={pl._id || pl.slug} value={pl.slug}>
+                        {pl.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tags System for current Active Language */}
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">Tags / Hashtags ({activeLang.toUpperCase()})</label>
+                <div className="flex flex-wrap items-center gap-1.5 p-2.5 border border-slate-200 rounded-xl min-h-[42px] bg-slate-50/50">
+                  {(multilingualStore[activeLang]?.tags || []).map((t, idx) => (
+                    <span key={idx} className="bg-purple-100 text-purple-800 text-[11px] font-extrabold px-2.5 py-1 rounded-lg flex items-center gap-1">
+                      #{t}
+                      <button type="button" onClick={() => removeTag(t)} className="hover:text-red-600 font-bold ml-1 cursor-pointer">×</button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Add tag & press Enter..."
+                    value={tagInputs[activeLang] || ''}
+                    onChange={(e) => setTagInputs({ ...tagInputs, [activeLang]: e.target.value })}
+                    onKeyDown={addTag}
+                    className="flex-1 bg-transparent outline-none text-xs font-semibold px-1"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
         </div>
 
-        {/* Right Column Preview & AI Panel (4 Cols) */}
+        {/* Right Column (4 Cols) - Thumbnail & Settings */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* 1. Video Preview Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              Video Preview
-            </h3>
+          {/* 3. SEO Metadata & Google SERP Preview Box */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center font-black">3</span>
+                <span>SEO & Search Snippet Metadata</span>
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={generatingSeo}
+                  onClick={handleAiGenerateSeo}
+                  className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                  title="Generate Meta Title, Description & Alt Text using AI"
+                >
+                  <Wand2 size={13} className={generatingSeo ? 'animate-spin' : ''} />
+                  <span>{generatingSeo ? 'AI Generating...' : '✨ AI Generate SEO'}</span>
+                </button>
+                <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200 flex items-center gap-1">
+                  <Globe2 size={13} /> Google SERP
+                </span>
+              </div>
+            </div>
 
-            <div className="relative rounded-2xl overflow-hidden shadow-md group">
-              <img
-                src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80"
-                alt="Video Preview"
-                className="w-full h-44 object-cover"
-              />
-              <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-[#eb1c24] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform cursor-pointer">
-                  <Play size={20} className="ml-1" fill="white" />
+            {/* Google Search Snippet Preview Box */}
+            <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2 font-sans shadow-inner">
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                <span>https://nirbhikbangla.com/{activeLang}/videos/{customSlug || 'video-url-slug'}</span>
+              </div>
+              <h4 className="text-base md:text-lg font-bold text-blue-400 hover:underline cursor-pointer line-clamp-1">
+                {seoStore[activeLang]?.seoTitle || multilingualStore[activeLang]?.title || 'ভিডিওর এসইও টাইটেল সার্চ রেজাল্টে এমন দেখাবে...'}
+              </h4>
+              <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                {seoStore[activeLang]?.seoDescription || multilingualStore[activeLang]?.description || 'সার্চ রেজাল্টে আপনার ভিডিওর মেটা বিবরণী গুগলে এভাবে প্রদর্শিত হবে।'}
+              </p>
+            </div>
+
+            <div className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">Custom Permalink / URL Slug</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 font-mono text-[11px]">/videos/</span>
+                  <input
+                    type="text"
+                    placeholder="custom-video-slug (auto generated if blank)"
+                    value={customSlug}
+                    onChange={(e) => setCustomSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                    className="flex-1 px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-600 font-mono text-xs"
+                  />
                 </div>
               </div>
 
-              <span className="absolute top-2 left-2 bg-[#eb1c24] text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                LIVE
-              </span>
-              <span className="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
-                02:35:28
-              </span>
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-bold">Meta Title ({activeLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    placeholder="Meta Title for Google Search..."
+                    value={seoStore[activeLang]?.seoTitle || ''}
+                    onChange={(e) => setSeoStore(prev => ({
+                      ...prev,
+                      [activeLang]: { ...prev[activeLang], seoTitle: e.target.value }
+                    }))}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-600 text-xs font-bold"
+                  />
+                </div>
 
-            <div className="space-y-2 text-xs font-semibold text-slate-600 pt-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-500">Duration:</span>
-                <span className="font-mono font-bold text-slate-900">02:35:28</span>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-bold">Thumbnail Alt Text ({activeLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    placeholder="Image Alt attribute for Google Images..."
+                    value={seoStore[activeLang]?.altText || ''}
+                    onChange={(e) => setSeoStore(prev => ({
+                      ...prev,
+                      [activeLang]: { ...prev[activeLang], altText: e.target.value }
+                    }))}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-600 text-xs"
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-500">Resolution:</span>
-                <span className="font-mono font-bold text-slate-900">1920 x 1080</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-500">Format:</span>
-                <span className="font-bold text-slate-900">MP4</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-500">Size:</span>
-                <span className="font-mono font-bold text-slate-900">350 MB</span>
+
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">Meta Description ({activeLang.toUpperCase()})</label>
+                <textarea
+                  rows={2}
+                  placeholder="Meta Description (max 160 characters)..."
+                  value={seoStore[activeLang]?.seoDescription || ''}
+                  onChange={(e) => setSeoStore(prev => ({
+                    ...prev,
+                    [activeLang]: { ...prev[activeLang], seoDescription: e.target.value }
+                  }))}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-600 resize-none text-xs"
+                />
               </div>
             </div>
           </div>
 
-          {/* 2. AI & SEO Assistant Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="font-extrabold text-sm text-slate-900">AI & SEO Assistant</h3>
-              <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2 py-0.5 rounded-md font-mono">
-                85/100
-              </span>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px] font-bold text-slate-600">
-                <span>SEO Score</span>
-                <span className="text-emerald-600 font-mono">85/100</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full w-[85%]" />
-              </div>
-            </div>
-
-            <ul className="space-y-1.5 text-xs font-bold text-slate-700 pt-1">
-              <li className="flex items-center gap-2 text-emerald-600">
-                <CheckCircle2 size={14} />
-                <span className="text-slate-800 font-semibold">Title is optimized</span>
-              </li>
-              <li className="flex items-center gap-2 text-emerald-600">
-                <CheckCircle2 size={14} />
-                <span className="text-slate-800 font-semibold">Description is good</span>
-              </li>
-              <li className="flex items-center gap-2 text-emerald-600">
-                <CheckCircle2 size={14} />
-                <span className="text-slate-800 font-semibold">Tags are relevant</span>
-              </li>
-              <li className="flex items-center gap-2 text-emerald-600">
-                <CheckCircle2 size={14} />
-                <span className="text-slate-800 font-semibold">Thumbnail is optimized</span>
-              </li>
-              <li className="flex items-center gap-2 text-emerald-600">
-                <CheckCircle2 size={14} />
-                <span className="text-slate-800 font-semibold">Category is selected</span>
-              </li>
-            </ul>
-
-            <button
-              onClick={() => showToast('AI দিয়ে ভিডিও SEO রিফাইন করা হলো!')}
-              className="w-full py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-extrabold rounded-xl transition-colors cursor-pointer text-xs flex items-center justify-center gap-1.5 mt-2"
-            >
-              <span>Improve with AI</span>
-              <Sparkles size={14} />
-            </button>
-          </div>
-
-          {/* 3. Quick Actions Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              Quick Actions
+          {/* 4. Thumbnail Poster Box */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
+            <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-100 pb-2">
+              Thumbnail Poster
             </h3>
 
-            <div className="space-y-2 text-xs font-bold text-slate-700">
-              <button
-                onClick={() => showToast('ড্রাফট হিসেবে সেভ করা হয়েছে!')}
-                className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                <Save size={15} className="text-purple-600" />
-                <span>Save as Draft</span>
-              </button>
+            <label className="relative block border-2 border-dashed border-purple-200 bg-purple-50/40 p-3 rounded-2xl text-center cursor-pointer hover:bg-purple-50 transition-colors overflow-hidden group">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleThumbnailUpload}
+                className="hidden"
+              />
+              {customThumbnail ? (
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-purple-200 shadow-xs">
+                  <img src={customThumbnail} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] text-white font-extrabold bg-purple-600 px-3 py-1.5 rounded-lg shadow-md">Change Poster</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-4 space-y-1">
+                  <ImageIcon size={22} className="mx-auto text-purple-600 mb-1" />
+                  <span className="text-xs font-bold text-purple-700 block">Upload Poster Image</span>
+                  <span className="text-[10px] text-slate-400 block font-medium">or ✨ Auto-fetched from YouTube</span>
+                </div>
+              )}
+            </label>
+          </div>
 
-              <button
-                onClick={() => showToast('ভিডিও প্রিভিউ মোডাল চালু করা হলো!')}
-                className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                <Play size={15} className="text-purple-600" />
-                <span>Preview Video</span>
-              </button>
+          {/* 4. Publishing Controls Card */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4 text-xs font-semibold">
+            <h3 className="font-extrabold text-xs text-slate-900 border-b border-slate-100 pb-2">
+              Publishing Options
+            </h3>
 
-              <Link
-                to="/videos"
-                className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2 transition-colors cursor-pointer block"
+            <div>
+              <label className="block text-slate-700 mb-1 font-bold">Visibility</label>
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer font-bold text-xs"
               >
-                <Film size={15} className="text-purple-600" />
-                <span>Go to Videos</span>
-              </Link>
+                <option value="Public">Public (সবাই দেখতে পাবে)</option>
+                <option value="Private">Private (শুধুমাত্র অ্যাডমিন)</option>
+                <option value="Unlisted">Unlisted (অতালিকাভুক্ত)</option>
+              </select>
+            </div>
 
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="font-bold text-slate-900 block">Featured Video</span>
+                  <span className="text-[10px] text-slate-400 font-medium font-outfit">Show in hero video carousel</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={addToFeatured}
+                  onChange={(e) => setAddToFeatured(e.target.checked)}
+                  className="rounded text-[#eb1c24] w-4 h-4 cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="font-bold text-slate-900 block">Is LIVE Broadcast?</span>
+                  <span className="text-[10px] text-slate-400 font-medium font-outfit">Mark as LIVE TV stream</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isLiveStream}
+                  onChange={(e) => setIsLiveStream(e.target.checked)}
+                  className="rounded text-[#eb1c24] w-4 h-4 cursor-pointer"
+                />
+              </label>
+            </div>
+
+            <div className="pt-2">
               <button
-                onClick={() => showToast('ইউটিউব চ্যানেল সিঙ্ক সম্পন্ন হয়েছে!')}
-                className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2 transition-colors cursor-pointer"
+                type="button"
+                disabled={submitting}
+                onClick={handlePublish}
+                className="w-full bg-[#eb1c24] hover:bg-red-700 text-white font-black py-3 rounded-2xl shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider text-xs flex items-center justify-center gap-2"
               >
-                <RotateCw size={15} className="text-purple-600" />
-                <span>YouTube Channel Sync</span>
+                <CheckCircle2 size={16} />
+                <span>{submitting ? 'Publishing...' : (isEditing ? 'Update Video (3 Languages)' : 'Publish Video (3 Languages)')}</span>
               </button>
             </div>
           </div>

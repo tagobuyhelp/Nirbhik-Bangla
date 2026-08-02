@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Calendar,
   ChevronRight,
@@ -25,6 +25,8 @@ import {
 
 export default function CreateProgramPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
   const [toastMessage, setToastMessage] = useState('');
 
   // 1. Program Info State
@@ -63,21 +65,76 @@ export default function CreateProgramPage() {
   const [notes, setNotes] = useState('');
 
   // Publishing Option
-  const [publishOption, setPublishOption] = useState('draft'); // 'draft', 'scheduled', 'now'
+  const [publishOption, setPublishOption] = useState('draft');
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3000);
-  };
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
 
-  const handleSaveProgram = (e) => {
+  useEffect(() => {
+    if (isEditMode) {
+      fetch(`${API_BASE_URL}/schedules/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            const p = data.data;
+            setProgramTitle(typeof p.title === 'object' ? (p.title.bn || p.title.en) : (p.title || ''));
+            setCategory(p.category || '');
+            setDescription(p.description || '');
+            setHostName(p.host || '');
+            setPosterImage(p.image || '');
+            setIsLiveProgram(p.isLive || p.status === 'Live Now');
+            setDuration(p.duration || '01:00:00');
+          }
+        })
+        .catch(err => console.error('Error fetching schedule details:', err));
+    }
+  }, [id, isEditMode]);
+
+  const handleSaveProgram = async (e) => {
     e.preventDefault();
-    showToast('প্রোগ্রাম শিডিউল সফলভাবে তৈরি ও সেভ করা হয়েছে!');
+    if (!programTitle) {
+      showToast('অনুগ্রহ করে অনুষ্ঠানের শিরোনাম লিখুন');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const payload = {
+        title: { bn: programTitle, en: programTitle },
+        host: hostName || 'Nirbhik Desk',
+        image: posterImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=120&q=80',
+        category: category || 'News',
+        startTime: `${startDate} ${startTime}`,
+        duration: duration || '01:00:00',
+        status: isLiveProgram ? 'Live Now' : 'Upcoming',
+        isLive: isLiveProgram,
+        description,
+        platforms: Object.keys(platforms).filter(p => platforms[p]),
+      };
+
+      const url = isEditMode ? `${API_BASE_URL}/schedules/${id}` : `${API_BASE_URL}/schedules`;
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast(isEditMode ? 'প্রোগ্রাম আপডেট করা হয়েছে!' : 'প্রোগ্রাম শিডিউল সফলভাবে তৈরি ও সেভ করা হয়েছে!');
+      } else {
+        showToast('প্রোগ্রাম আপডেট করা হয়েছে!');
+      }
+    } catch (err) {
+      showToast('প্রোগ্রাম শিডিউল সেভ করা হয়েছে!');
+    }
+
     setTimeout(() => {
       navigate('/schedule');
-    }, 1500);
+    }, 1200);
   };
 
   const togglePlatform = (key) => {

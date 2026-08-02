@@ -12,6 +12,7 @@ import {
   ThumbsUp,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_BASE_URL } from '@/utils/config';
 
 export default function ArticleDetailPage() {
   const params = useParams();
@@ -25,7 +26,7 @@ export default function ArticleDetailPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/v1/public/news/by-slug/${slug}?lang=${locale}`)
+    fetch(`${API_BASE_URL}/public/news/by-slug/${slug}?lang=${locale}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {

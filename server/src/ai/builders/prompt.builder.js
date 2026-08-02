@@ -56,8 +56,8 @@ class PromptBuilder {
     return this.compile('translate_content', { text, fromLang: fullFrom, toLang: fullTo }, true);
   }
 
-  buildSEO(text) {
-    return this.compile('generate_seo', { text }, true);
+  buildSEO(title, description = '', lang = 'bn') {
+    return this.compile('generate_seo', { title, description, lang }, true);
   }
 
   buildSummary(text, lang) {
@@ -68,8 +68,8 @@ class PromptBuilder {
     return this.compile('suggest_tags', { text, lang }, true);
   }
   
-  buildSocialCaptions(text) {
-    return this.compile('generate_social_captions', { text }, true);
+  buildSocialCaptions(title, excerpt = '', lang = 'bn') {
+    return this.compile('generate_social', { title, excerpt, lang }, true);
   }
 
   buildFactCheck(text) {

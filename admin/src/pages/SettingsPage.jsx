@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Globe,
   Sliders,
@@ -20,6 +21,9 @@ import {
   Video,
   DollarSign,
   Activity,
+  Share2,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -491,14 +495,25 @@ export default function SettingsPage() {
 
       </div>
 
-      {/* Section 5: 5. Integrations */}
+      {/* Section 5: 5. Integrations & Social Connector */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-          <Globe size={18} className="text-purple-600" />
-          <div>
-            <h3 className="font-extrabold text-sm text-slate-900">5. Integrations</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Manage third-party integrations and APIs.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Globe size={18} className="text-purple-600" />
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900">5. Integrations & Social Connector</h3>
+              <p className="text-[11px] text-slate-400 font-medium">Manage social media accounts, APIs, and auto-publishing rules.</p>
+            </div>
           </div>
+
+          <Link
+            to="/social-connector"
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
+          >
+            <Share2 size={14} />
+            <span>Open Social Connector Hub</span>
+            <ArrowRight size={14} />
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/utils/config';
 import {
   ChevronRight,
   ChevronDown,
@@ -391,7 +392,7 @@ export default function CategoryClientView() {
   // Fetch Category News Dynamically from Backend API
   useEffect(() => {
     setLoading(true);
-    let url = `http://localhost:5000/api/v1/public/news?lang=${locale}`;
+    let url = `${API_BASE_URL}/public/news?lang=${locale}`;
     if (slug !== 'all' && slug !== 'latest') {
       if (slug === 'breaking') {
         url += '&isBreaking=true';
@@ -418,7 +419,7 @@ export default function CategoryClientView() {
       .finally(() => setLoading(false));
 
     // Fetch Latest News Dynamically for "সর্বশেষ খবর" Section
-    fetch(`http://localhost:5000/api/v1/public/news?lang=${locale}&limit=9`)
+    fetch(`${API_BASE_URL}/public/news?lang=${locale}&limit=9`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -432,7 +433,7 @@ export default function CategoryClientView() {
       });
 
     // Fetch Top Stories for Sidebar Dynamically
-    fetch(`http://localhost:5000/api/v1/public/news?isTrending=true&limit=5&lang=${locale}`)
+    fetch(`${API_BASE_URL}/public/news?isTrending=true&limit=5&lang=${locale}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -519,7 +520,7 @@ export default function CategoryClientView() {
   const handleSubscribe = (e) => {
     e.preventDefault();
     if (emailInput.trim()) {
-      fetch('http://localhost:5000/api/v1/public/subscribe', {
+      fetch(`${API_BASE_URL}/public/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailInput.trim() }),

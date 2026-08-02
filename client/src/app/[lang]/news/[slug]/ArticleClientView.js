@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/utils/config';
 import {
   ArrowRight,
   Bookmark,
@@ -121,7 +122,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
   const [hasLiked, setHasLiked] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/v1/public/news/by-slug/${slug}?lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news/by-slug/${slug}?lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -132,7 +133,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
 
           // Fetch related news by category
           if (data.data.categorySlug) {
-            fetch(`http://localhost:5000/api/v1/public/news?category=${data.data.categorySlug}&lang=${lang}&limit=6`)
+            fetch(`${API_BASE_URL}/public/news?category=${data.data.categorySlug}&lang=${lang}&limit=6`)
               .then((res) => res.json())
               .then((relData) => {
                 if (relData.success && Array.isArray(relData.data)) {
@@ -146,7 +147,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
       .catch((err) => console.log('Using fallback article data:', err));
 
     // Fetch sidebar latest news
-    fetch(`http://localhost:5000/api/v1/public/news?lang=${lang}&limit=10`)
+    fetch(`${API_BASE_URL}/public/news?lang=${lang}&limit=10`)
       .then((res) => res.json())
       .then((latestData) => {
         if (latestData.success && Array.isArray(latestData.data)) {
