@@ -6,7 +6,20 @@ const sendResponse = require('../utils/responseHandler');
 // @access  Public
 exports.getLiveStreams = async (req, res, next) => {
   try {
-    const liveStreams = await LiveStream.find().sort({ createdAt: -1 });
+    let liveStreams = await LiveStream.find().sort({ createdAt: -1 });
+    if (liveStreams.length === 0) {
+      const defaultStream = await LiveStream.create({
+        title: { bn: 'নির্ভীক বাংলা ২৪x৭ লাইভ নিউজ', en: 'Nirbhik Bangla 24x7 Live News' },
+        description: { bn: 'সরাসরি খবরের আপডেট দেখতে থাকুন নির্ভীক বাংলায়।', en: 'Watch 24x7 live news updates on Nirbhik Bangla.' },
+        streamUrl: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+        streamType: 'YouTube',
+        isLive: true,
+        isActive: true,
+        isDefault: true,
+        thumbnail: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80'
+      });
+      liveStreams = [defaultStream];
+    }
     return sendResponse(res, 200, 'Live streams fetched successfully', liveStreams);
   } catch (error) {
     next(error);

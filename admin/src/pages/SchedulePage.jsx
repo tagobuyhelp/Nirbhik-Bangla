@@ -173,7 +173,7 @@ export default function SchedulePage() {
               Program Schedule
             </h1>
             <span className="bg-purple-100 text-purple-700 text-xs font-black px-2.5 py-0.5 rounded-full">
-              24
+              {programsList.length}
             </span>
           </div>
           <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
@@ -212,11 +212,11 @@ export default function SchedulePage() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto scrollbar-none">
             {[
-              { id: 'all', label: 'All Programs', count: 24 },
-              { id: 'upcoming', label: 'Upcoming', count: 12 },
-              { id: 'live', label: 'Live Today', count: 3 },
-              { id: 'completed', label: 'Completed', count: 8 },
-              { id: 'cancelled', label: 'Cancelled', count: 1 },
+              { id: 'all', label: 'All Programs', count: programsList.length },
+              { id: 'upcoming', label: 'Upcoming', count: programsList.filter(p => p.status === 'Upcoming').length },
+              { id: 'live', label: 'Live Today', count: programsList.filter(p => p.isLive || p.status === 'Live Now').length },
+              { id: 'completed', label: 'Completed', count: programsList.filter(p => p.status === 'Completed').length },
+              { id: 'cancelled', label: 'Cancelled', count: programsList.filter(p => p.status === 'Cancelled').length },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -238,7 +238,7 @@ export default function SchedulePage() {
           <div className="flex items-center gap-2 w-full md:w-auto">
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700">
               <Calendar size={14} className="text-slate-500" />
-              <span>May 20 – May 26, 2024</span>
+              <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(Date.now() + 6*24*60*60*1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               <div className="flex items-center gap-1 ml-2">
                 <button className="p-0.5 hover:bg-slate-200 rounded cursor-pointer"><ChevronLeft size={14} /></button>
                 <button className="p-0.5 hover:bg-slate-200 rounded cursor-pointer"><ChevronRight size={14} /></button>
@@ -418,46 +418,56 @@ export default function SchedulePage() {
 
             <div className="flex items-center justify-between text-xs font-black text-slate-800 px-1">
               <button className="p-1 hover:bg-slate-100 rounded cursor-pointer"><ChevronLeft size={14} /></button>
-              <span>May 20 – May 26, 2024</span>
+              <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(Date.now() + 6*24*60*60*1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               <button className="p-1 hover:bg-slate-100 rounded cursor-pointer"><ChevronRight size={14} /></button>
             </div>
 
             {/* Days Grid */}
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-500 pt-1">
-              <div>Mon<span className="block text-slate-900 mt-1">20</span></div>
-              <div className="text-purple-700 font-black">Tue<span className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center mx-auto mt-1 shadow-xs">21</span></div>
-              <div>Wed<span className="block text-slate-900 mt-1">22</span></div>
-              <div>Thu<span className="block text-slate-900 mt-1">23</span></div>
-              <div>Fri<span className="block text-slate-900 mt-1">24</span></div>
-              <div>Sat<span className="block text-slate-900 mt-1">25</span></div>
-              <div>Sun<span className="block text-slate-900 mt-1">26</span></div>
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayName, i) => {
+                const todayNum = new Date().getDate();
+                const isToday = i === 1; // Highlight active day
+                return (
+                  <div key={dayName} className={isToday ? 'text-purple-700 font-black' : ''}>
+                    {dayName}
+                    <span className={`block mt-1 ${isToday ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center mx-auto shadow-xs font-mono font-bold' : 'text-slate-900 font-mono'}`}>
+                      {todayNum + i}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Timeline Schedule Items */}
             <div className="space-y-2 pt-2 border-t border-slate-100 text-xs font-semibold">
-              <div className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-200/80 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-mono font-bold text-rose-600 block">07:00 AM</span>
-                  <h5 className="font-bangla font-black text-slate-900 text-xs">সকালের সংবাদ</h5>
+              {programsList.slice(0, 4).map((prog) => (
+                <div
+                  key={prog.id}
+                  className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                    prog.isLive
+                      ? 'bg-rose-50/70 border-rose-200/80'
+                      : 'bg-slate-50/80 border-slate-200/80'
+                  }`}
+                >
+                  <div>
+                    <span className={`text-[10px] font-mono font-bold block ${prog.isLive ? 'text-rose-600' : 'text-slate-500'}`}>
+                      {prog.dateTime || '07:00 AM'}
+                    </span>
+                    <h5 className="font-bangla font-black text-slate-900 text-xs truncate max-w-[140px]">
+                      {prog.title}
+                    </h5>
+                  </div>
+                  <span
+                    className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
+                      prog.isLive
+                        ? 'bg-[#eb1c24] text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {prog.status}
+                  </span>
                 </div>
-                <span className="bg-[#eb1c24] text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase">Live Now</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-mono font-bold text-emerald-600 block">08:00 PM</span>
-                  <h5 className="font-bangla font-black text-slate-900 text-xs">প্রাইম টাইম ডিবেট</h5>
-                </div>
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded">Upcoming</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-mono font-bold text-emerald-600 block">09:30 PM</span>
-                  <h5 className="font-bangla font-black text-slate-900 text-xs">খেলার দুনিয়া</h5>
-                </div>
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded">Upcoming</span>
-              </div>
+              ))}
             </div>
 
             <button
@@ -481,7 +491,7 @@ export default function SchedulePage() {
                   <Tv size={14} className="text-purple-600" />
                   <span>Total Programs</span>
                 </div>
-                <span className="font-mono font-black text-slate-900">6</span>
+                <span className="font-mono font-black text-slate-900">{programsList.length}</span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-50">
@@ -489,7 +499,9 @@ export default function SchedulePage() {
                   <Radio size={14} className="text-rose-600" />
                   <span>Live Now</span>
                 </div>
-                <span className="font-mono font-black text-rose-600">1</span>
+                <span className="font-mono font-black text-rose-600">
+                  {programsList.filter(p => p.isLive || p.status === 'Live Now').length}
+                </span>
               </div>
 
               <div className="flex items-center justify-between py-1 border-b border-slate-50">
@@ -497,7 +509,9 @@ export default function SchedulePage() {
                   <Clock size={14} className="text-emerald-600" />
                   <span>Upcoming</span>
                 </div>
-                <span className="font-mono font-black text-emerald-600">3</span>
+                <span className="font-mono font-black text-emerald-600">
+                  {programsList.filter(p => p.status === 'Upcoming').length}
+                </span>
               </div>
 
               <div className="flex items-center justify-between py-1">
@@ -505,7 +519,9 @@ export default function SchedulePage() {
                   <CheckCircle2 size={14} className="text-slate-400" />
                   <span>Completed</span>
                 </div>
-                <span className="font-mono font-black text-slate-900">2</span>
+                <span className="font-mono font-black text-slate-900">
+                  {programsList.filter(p => p.status === 'Completed').length}
+                </span>
               </div>
             </div>
           </div>

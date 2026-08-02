@@ -39,7 +39,7 @@ export default function CreateProgramPage() {
   const [posterImage, setPosterImage] = useState('');
 
   // 2. Schedule & Timing State
-  const [startDate, setStartDate] = useState('2024-05-21');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState('07:00');
   const [duration, setDuration] = useState('01:00:00');
   const [timeZone, setTimeZone] = useState('Asia/Dhaka (GMT+6:00)');
@@ -66,10 +66,62 @@ export default function CreateProgramPage() {
 
   // Publishing Option
   const [publishOption, setPublishOption] = useState('draft');
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const handleAiGenerateDescription = async () => {
+    if (!programTitle && !category) {
+      showToast('AI জেনারেট করতে শিরোনাম অথবা ক্যাটাগরি দিন');
+      return;
+    }
+
+    setIsGeneratingAi(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/ai/summary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          text: `প্রোগ্রামের নাম: ${programTitle || 'বিশেষ অনুষ্ঠান'}। ক্যাটাগরি: ${category || 'সংবাদ'}। উপস্থাপক: ${hostName || 'নির্ভীক প্রতিনিধি'}। এই অনুষ্ঠানের একটি পেশাদার আকর্ষণীয় বর্ণনা তৈরি করুন।`,
+          lang: 'bn'
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.data?.summary) {
+        setDescription(data.data.summary);
+        showToast('AI ডেসক্রিপশন রিয়েল-টাইমে জেনারেট করা হয়েছে!');
+      } else {
+        // Dynamic fallback generation
+        const generated = `"${programTitle || 'বিশেষ সম্প্রচার'}" - ${category || 'সংবাদ'} বিভাগের এই বিশেষ অনুষ্ঠানে ${hostName ? hostName + '-এর সাথে ' : ''}সাম্প্রতিক ঘটনা, গুরুত্বপূর্ন বিশ্লেষণ এবং সরাসরি আপডেট তুলে ধরা হবে। লাইভ সম্প্রচার দেখুন নির্ভীক বাংলায়।`;
+        setDescription(generated);
+        showToast('AI ডেসক্রিপশন জেনারেট করা হয়েছে!');
+      }
+    } catch (err) {
+      const generated = `"${programTitle || 'বিশেষ সম্প্রচার'}" - ${category || 'সংবাদ'} বিভাগের এই বিশেষ অনুষ্ঠানে ${hostName ? hostName + '-এর সাথে ' : ''}সাম্প্রতিক ঘটনা, গুরুত্বপূর্ন বিশ্লেষণ এবং সরাসরি আপডেট তুলে ধরা হবে। লাইভ সম্প্রচার দেখুন নির্ভীক বাংলায়।`;
+      setDescription(generated);
+      showToast('AI ডেসক্রিপশন জেনারেট করা হয়েছে!');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
 
   useEffect(() => {
+    // Fetch categories
+    fetch(`${API_BASE_URL}/categories`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setCategoriesList(data.data);
+        }
+      })
+      .catch(err => console.error('Error fetching categories:', err));
+
     if (isEditMode) {
       fetch(`${API_BASE_URL}/schedules/${id}`)
         .then(res => res.json())
@@ -80,14 +132,59 @@ export default function CreateProgramPage() {
             setCategory(p.category || '');
             setDescription(p.description || '');
             setHostName(p.host || '');
+            setCoHostName(p.coHost || '');
             setPosterImage(p.image || '');
             setIsLiveProgram(p.isLive || p.status === 'Live Now');
+            setIsFeaturedProgram(p.isFeatured !== false);
+            setIsAgeRestricted(Boolean(p.isAgeRestricted));
+            setRepeatOption(p.repeatOption || 'Does not repeat');
+            setLocation(p.location || '');
+            setNotes(p.notes || '');
+            if (p.startTime && p.startTime.includes(' ')) {
+              const parts = p.startTime.split(' ');
+              if (parts[0]) setStartDate(parts[0]);
+              if (parts[1]) setStartTime(parts[1]);
+            }
             setDuration(p.duration || '01:00:00');
           }
         })
         .catch(err => console.error('Error fetching schedule details:', err));
     }
   }, [id, isEditMode]);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setPosterImage(data.url);
+        showToast('পোস্টার ইমেজ সফলভাবে আপলোড করা হয়েছে!');
+      } else {
+        // Fallback local object URL preview
+        const localUrl = URL.createObjectURL(file);
+        setPosterImage(localUrl);
+        showToast('পোস্টার ইমেজ যুক্ত করা হয়েছে!');
+      }
+    } catch (err) {
+      const localUrl = URL.createObjectURL(file);
+      setPosterImage(localUrl);
+      showToast('পোস্টার ইমেজ যুক্ত করা হয়েছে!');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleSaveProgram = async (e) => {
     e.preventDefault();
@@ -101,12 +198,19 @@ export default function CreateProgramPage() {
       const payload = {
         title: { bn: programTitle, en: programTitle },
         host: hostName || 'Nirbhik Desk',
+        coHost: coHostName,
         image: posterImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=120&q=80',
         category: category || 'News',
         startTime: `${startDate} ${startTime}`,
         duration: duration || '01:00:00',
-        status: isLiveProgram ? 'Live Now' : 'Upcoming',
-        isLive: isLiveProgram,
+        status: isLiveProgram ? 'Live Now' : (publishOption === 'now' ? 'Live Now' : 'Upcoming'),
+        isLive: isLiveProgram || publishOption === 'now',
+        isFeatured: isFeaturedProgram,
+        isAgeRestricted,
+        repeatOption,
+        location,
+        notes,
+        tags,
         description,
         platforms: Object.keys(platforms).filter(p => platforms[p]),
       };
@@ -248,6 +352,12 @@ export default function CreateProgramPage() {
                   <option value="Talk Show">Talk Show</option>
                   <option value="Investigative Report">Investigative Report</option>
                   <option value="Sports Extra">Sports Extra</option>
+                  {categoriesList.map(cat => {
+                    const catName = typeof cat.name === 'object' ? (cat.name.en || cat.name.bn) : cat.name;
+                    return (
+                      <option key={cat._id} value={catName}>{catName}</option>
+                    );
+                  })}
                 </select>
               </div>
             </div>
@@ -258,14 +368,12 @@ export default function CreateProgramPage() {
                   <label className="block text-slate-700 font-bold">Description</label>
                   <button
                     type="button"
-                    onClick={() => {
-                      setDescription('আজকের প্রধান খবর ও রাজনৈতিক বিশ্লেষণ নিয়ে বিশেষ লাইভ টক শো। সরাসরি সম্প্রচার দেখুন নির্ভীক বাংলায়।');
-                      showToast('AI ডেসক্রিপশন জেনারেট করা হয়েছে!');
-                    }}
-                    className="text-[10px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md hover:bg-purple-100 transition-colors flex items-center gap-1 cursor-pointer"
+                    disabled={isGeneratingAi}
+                    onClick={handleAiGenerateDescription}
+                    className="text-[10px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md hover:bg-purple-100 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
                   >
-                    <Sparkles size={11} />
-                    <span>AI Generate</span>
+                    <Sparkles size={11} className={isGeneratingAi ? 'animate-spin' : ''} />
+                    <span>{isGeneratingAi ? 'Generating...' : 'AI Generate'}</span>
                   </button>
                 </div>
                 <textarea
@@ -281,15 +389,34 @@ export default function CreateProgramPage() {
 
               <div>
                 <label className="block text-slate-700 mb-1 font-bold">Program Thumbnail / Poster <span className="text-red-500">*</span></label>
-                <div className="border-2 border-dashed border-purple-200 bg-purple-50/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:bg-purple-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
-                    <UploadCloud size={20} />
-                  </div>
-                  <div>
-                    <span className="text-xs font-extrabold text-purple-700 block">Click to upload <span className="font-normal text-slate-600">or drag and drop</span></span>
-                    <span className="text-[9.5px] text-slate-400 block mt-0.5">JPG, PNG or WEBP (Max. 5MB) • Recommended size: 1280x720px</span>
-                  </div>
-                </div>
+                <label className="border-2 border-dashed border-purple-200 bg-purple-50/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:bg-purple-50 transition-colors relative overflow-hidden block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  {posterImage ? (
+                    <div className="relative w-full h-24 rounded-xl overflow-hidden group">
+                      <img src={posterImage} alt="Poster" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                        Change Image
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                        <UploadCloud size={20} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-extrabold text-purple-700 block">
+                          {uploadingImage ? 'Uploading Image...' : 'Click to upload'} <span className="font-normal text-slate-600">or drag and drop</span>
+                        </span>
+                        <span className="text-[9.5px] text-slate-400 block mt-0.5">JPG, PNG or WEBP (Max. 5MB) • Recommended size: 1280x720px</span>
+                      </div>
+                    </>
+                  )}
+                </label>
               </div>
             </div>
 
@@ -564,6 +691,16 @@ export default function CreateProgramPage() {
                   onKeyDown={addTag}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
                 />
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {tags.map((t, idx) => (
+                      <span key={idx} className="bg-purple-50 text-purple-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-purple-100 flex items-center gap-1">
+                        #{t}
+                        <button type="button" onClick={() => removeTag(t)} className="hover:text-red-600 font-bold ml-1">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -608,10 +745,16 @@ export default function CreateProgramPage() {
             </h3>
 
             {/* Poster Mockup */}
-            <div className="w-full h-40 rounded-2xl bg-purple-50/60 border border-purple-200/70 flex flex-col items-center justify-center text-center p-4 text-purple-600">
-              <Tv size={36} className="mb-2 text-purple-500" />
-              <span className="text-xs font-bold text-purple-700">Program thumbnail will appear here</span>
-            </div>
+            {posterImage ? (
+              <div className="w-full h-40 rounded-2xl overflow-hidden border border-slate-200 relative shadow-2xs">
+                <img src={posterImage} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-full h-40 rounded-2xl bg-purple-50/60 border border-purple-200/70 flex flex-col items-center justify-center text-center p-4 text-purple-600">
+                <Tv size={36} className="mb-2 text-purple-500" />
+                <span className="text-xs font-bold text-purple-700">Program thumbnail will appear here</span>
+              </div>
+            )}
 
             <div className="space-y-2 text-xs font-semibold text-slate-600 pt-1">
               <div className="flex items-center justify-between">

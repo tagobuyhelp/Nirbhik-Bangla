@@ -4,6 +4,8 @@ const videoController = require('../../controllers/videoController');
 
 router.get('/', videoController.getVideos);
 router.post('/', videoController.createVideo);
+router.get('/live-recordings', videoController.getLiveRecordings);
+router.get('/highlights', videoController.getHighlights);
 router.post('/fetch-info', videoController.fetchYoutubeDetails);
 router.post('/bulk-delete', videoController.bulkDeleteVideos);
 router.get('/:id', videoController.getVideoById);

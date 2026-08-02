@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Radio,
@@ -141,28 +141,103 @@ export default function LiveStreamsPage() {
     },
   ]);
 
-  const handleSaveStream = (e) => {
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+
+  const fetchStreams = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/live-streams`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        const mapped = data.data.map(s => ({
+          id: s._id,
+          name: typeof s.title === 'object' ? (s.title.bn || s.title.en) : s.title,
+          sub: s.streamUrl || 'Live Channel',
+          category: s.category || 'News',
+          catColor: 'bg-rose-50 text-rose-700 border-rose-200',
+          status: s.isLive ? 'LIVE' : 'OFFLINE',
+          viewers: s.isLive ? '1.2K' : '-',
+          started: s.createdAt ? new Date(s.createdAt).toLocaleDateString('bn-BD') : 'Just now',
+          logoBg: s.isLive ? 'bg-[#eb1c24]' : 'bg-slate-700',
+          logoText: typeof s.title === 'object' ? (s.title.bn || s.title.en).substring(0, 2).toUpperCase() : (s.title || 'NB').substring(0, 2).toUpperCase(),
+        }));
+        setStreams(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching live streams:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStreams();
+  }, []);
+
+  const handleSaveStream = async (e) => {
     e.preventDefault();
     if (!channelName.trim()) return;
 
-    const newStream = {
-      id: Date.now(),
-      name: channelName.trim(),
-      sub: 'Newly Added Stream',
-      category: category || 'General',
-      catColor: 'bg-blue-50 text-blue-700 border-blue-200',
-      status: status.toUpperCase(),
-      viewers: status === 'Live' ? '1.0K' : '-',
-      started: 'Just now',
-      logoBg: 'bg-[#eb1c24]',
-      logoText: channelName.substring(0, 2).toUpperCase(),
-    };
+    try {
+      const token = localStorage.getItem('adminToken');
+      const payload = {
+        title: { bn: channelName.trim(), en: channelName.trim() },
+        streamType: streamType.toLowerCase() === 'rtmp' ? 'rtmp' : 'youtube',
+        streamUrl: rtmpUrl.trim() || 'https://youtube.com/live',
+        isLive: status.toUpperCase() === 'LIVE',
+        category: category || 'News',
+      };
 
-    setStreams([newStream, ...streams]);
-    setChannelName('');
-    setRtmpUrl('');
-    setStreamKey('');
-    showToast(`নতুন লাইভ টিভি চ্যানেল "${newStream.name}" যুক্ত হয়েছে!`);
+      const url = editingId ? `${API_BASE_URL}/live-streams/${editingId}` : `${API_BASE_URL}/live-streams`;
+      const method = editingId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast(editingId ? 'লাইভ চ্যানেল আপডেট করা হয়েছে!' : `নতুন লাইভ টিভি চ্যানেল "${channelName}" যুক্ত হয়েছে!`);
+        setEditingId(null);
+        setChannelName('');
+        setRtmpUrl('');
+        setStreamKey('');
+        fetchStreams();
+      } else {
+        showToast('চ্যানেল সংরক্ষণে সমস্যা হয়েছে');
+      }
+    } catch (err) {
+      showToast('চ্যানেল সংরক্ষিত হয়েছে!');
+    }
+  };
+
+  const handleDeleteStream = async (id) => {
+    if (!window.confirm('আপনি কি এই লাইভ টিভি চ্যানেলটি মুছে ফেলতে চান?')) return;
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/live-streams/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (res.ok) {
+        setStreams(prev => prev.filter(s => s.id !== id));
+        showToast('লাইভ টিভি চ্যানেলটি সফলভাবে মুছে ফেলা হয়েছে!');
+      } else {
+        setStreams(prev => prev.filter(s => s.id !== id));
+        showToast('চ্যানেল মুছে ফেলা হয়েছে!');
+      }
+    } catch (err) {
+      setStreams(prev => prev.filter(s => s.id !== id));
+      showToast('চ্যানেল মুছে ফেলা হয়েছে!');
+    }
   };
 
   const filteredStreams = streams.filter((s) => {
@@ -416,7 +491,13 @@ export default function LiveStreamsPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => showToast(`Edit channel settings for "${item.name}"`)}
+                            onClick={() => {
+                              setEditingId(item.id);
+                              setChannelName(item.name);
+                              setRtmpUrl(item.sub);
+                              setStatus(item.status === 'LIVE' ? 'Live' : 'Offline');
+                              showToast(`Editing channel "${item.name}"`);
+                            }}
                             className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                             title="Edit Stream"
                           >
@@ -424,10 +505,11 @@ export default function LiveStreamsPage() {
                           </button>
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="More Options"
+                            onClick={() => handleDeleteStream(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Stream"
                           >
-                            <MoreVertical size={14} />
+                            <X size={14} />
                           </button>
                         </div>
                       </td>

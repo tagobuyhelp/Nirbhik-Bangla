@@ -99,6 +99,18 @@ const BROADCAST_VIDEOS = [
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
+const getEmbedUrl = (url) => {
+  if (url && url.includes('youtube.com/embed/')) return url;
+  if (url) {
+    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=0`;
+    }
+  }
+  // Working 24/7 Live Stream Fallback
+  return 'https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0';
+};
+
 export default function LiveClientView() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -106,8 +118,11 @@ export default function LiveClientView() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeShowIndex, setActiveShowIndex] = useState(0);
   const [schedules, setSchedules] = useState(INITIAL_SCHEDULE);
+  const [liveStreamInfo, setLiveStreamInfo] = useState(null);
+  const [recentRecordings, setRecentRecordings] = useState([]);
 
   useEffect(() => {
+    // Fetch live schedules
     fetch(`${API_BASE_URL}/schedules`)
       .then(res => res.json())
       .then(data => {
@@ -122,6 +137,27 @@ export default function LiveClientView() {
         }
       })
       .catch(err => console.error('Error loading live schedule:', err));
+
+    // Fetch active live stream URL & metadata
+    fetch(`${API_BASE_URL}/live-streams`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          const activeStream = data.data.find(stream => stream.isLive) || data.data[0] || null;
+          setLiveStreamInfo(activeStream);
+        }
+      })
+      .catch(err => console.error('Error fetching live stream:', err));
+
+    // Fetch recent live recordings
+    fetch(`${API_BASE_URL}/videos/live-recordings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setRecentRecordings(data.data);
+        }
+      })
+      .catch(err => console.error('Error fetching recordings:', err));
   }, []);
 
   const currentProgram = schedules[activeShowIndex] || INITIAL_SCHEDULE[0];
@@ -162,56 +198,66 @@ export default function LiveClientView() {
             {/* 1. Main Video Player Box */}
             <div className="relative w-full aspect-video rounded-xl md:rounded-2xl overflow-hidden bg-black shadow-xl border border-slate-950/20 group">
 
-              {/* Player Canvas Graphic / Poster Backdrop */}
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center select-none"
-                style={{
-                  background: 'radial-gradient(circle at center, #7f1d1d 0%, #450a0a 35%, #090d16 85%, #000000 100%)',
-                }}
-              >
-                {/* Tech Ring Background Animations */}
-                <div className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full border border-red-500/20 animate-pulse pointer-events-none" />
-                <div className="absolute w-[220px] h-[220px] md:w-[360px] md:h-[360px] rounded-full border border-red-600/30 pointer-events-none" />
+              {/* Active Live Video Stream Embed or Poster Backdrop */}
+              {isPlaying && getEmbedUrl(liveStreamInfo?.streamUrl) ? (
+                <iframe
+                  src={getEmbedUrl(liveStreamInfo?.streamUrl)}
+                  title={typeof liveStreamInfo?.title === 'object' ? (liveStreamInfo.title.bn || liveStreamInfo.title.en) : (liveStreamInfo?.title || 'Nirbhik Bangla Live TV')}
+                  className="w-full h-full border-0 absolute inset-0 z-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center select-none"
+                  style={{
+                    background: 'radial-gradient(circle at center, #7f1d1d 0%, #450a0a 35%, #090d16 85%, #000000 100%)',
+                  }}
+                >
+                  {/* Tech Ring Background Animations */}
+                  <div className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full border border-red-500/20 animate-pulse pointer-events-none" />
+                  <div className="absolute w-[220px] h-[220px] md:w-[360px] md:h-[360px] rounded-full border border-red-600/30 pointer-events-none" />
 
-                {/* Central Poster Branding */}
-                <div className="relative z-10 flex flex-col items-center text-center px-4">
-                  {/* NIRBHIK BANGLA Header Logo */}
-                  <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2">
-                    <span className="text-white font-black text-xl md:text-3xl tracking-widest uppercase">
-                      NIRBHIK
-                    </span>
-                    <span className="text-white font-black text-xl md:text-3xl tracking-widest uppercase">
-                      BANGLA
-                    </span>
-                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#d70b18] flex items-center justify-center p-1 md:p-1.5 shadow-lg">
-                      <svg viewBox="0 0 24 24" fill="white" className="w-full h-full">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                      </svg>
+                  {/* Central Poster Branding */}
+                  <div className="relative z-10 flex flex-col items-center text-center px-4">
+                    {/* NIRBHIK BANGLA Header Logo */}
+                    <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2">
+                      <span className="text-white font-black text-xl md:text-3xl tracking-widest uppercase">
+                        NIRBHIK
+                      </span>
+                      <span className="text-white font-black text-xl md:text-3xl tracking-widest uppercase">
+                        BANGLA
+                      </span>
+                      <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#d70b18] flex items-center justify-center p-1 md:p-1.5 shadow-lg">
+                        <svg viewBox="0 0 24 24" fill="white" className="w-full h-full">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* LIVE TV Button graphic */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="bg-[#d70b18] text-white text-xs md:text-lg font-black px-2.5 py-0.5 md:px-3.5 md:py-1 rounded-md uppercase tracking-wider shadow-md">
+                        LIVE
+                      </span>
+                      <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-[#d70b18] hover:bg-[#b90813] text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+                        aria-label="Play Live TV"
+                      >
+                        {isPlaying ? (
+                          <Pause size={20} className="fill-white md:w-6 md:h-6" />
+                        ) : (
+                          <Play size={20} className="fill-white ml-0.5 md:w-6 md:h-6" />
+                        )}
+                      </button>
+                      <span className="text-white text-base md:text-2xl font-black tracking-widest uppercase">
+                        TV
+                      </span>
                     </div>
                   </div>
-
-                  {/* LIVE TV Button graphic */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="bg-[#d70b18] text-white text-xs md:text-lg font-black px-2.5 py-0.5 md:px-3.5 md:py-1 rounded-md uppercase tracking-wider shadow-md">
-                      LIVE
-                    </span>
-                    <button
-                      onClick={() => setIsPlaying(!isPlaying)}
-                      className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-[#d70b18] hover:bg-[#b90813] text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-                      aria-label="Play Live TV"
-                    >
-                      {isPlaying ? (
-                        <Pause size={20} className="fill-white md:w-6 md:h-6" />
-                      ) : (
-                        <Play size={20} className="fill-white ml-0.5 md:w-6 md:h-6" />
-                      )}
-                    </button>
-                    <span className="text-white text-base md:text-2xl font-black tracking-widest uppercase">
-                      TV
-                    </span>
-                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Player Top Left Badges Overlay */}
               <div className="absolute top-3 left-3 md:top-4 md:left-4 z-20 flex items-center gap-2">
@@ -225,8 +271,15 @@ export default function LiveClientView() {
                 </div>
               </div>
 
-              {/* Player Top Right Fullscreen Expand Icon (Mobile screenshot exact match) */}
-              <div className="absolute top-3 right-3 z-20">
+              {/* Player Top Right Channel Watermark Logo & Controls */}
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                <div className="bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20 shadow-md">
+                  <img
+                    src="/images/logos/Nirbhik-Bangla-Logo-No-Bg.png"
+                    alt="Nirbhik Bangla Logo"
+                    className="h-6 md:h-8 w-auto object-contain filter drop-shadow-md"
+                  />
+                </div>
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className="p-1.5 rounded-md bg-black/40 backdrop-blur-xs text-white border border-white/20 hover:bg-black/60 transition-colors cursor-pointer"
@@ -537,9 +590,10 @@ export default function LiveClientView() {
 
               {/* Videos Container: Responsive Horizontal 4-Card Row on Mobile (< lg) / Vertical List on Desktop (>= lg) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-1 gap-2.5 md:gap-3">
-                {BROADCAST_VIDEOS.map((video) => (
-                  <div
-                    key={video.id}
+                {(recentRecordings.length > 0 ? recentRecordings : BROADCAST_VIDEOS).map((video) => (
+                  <Link
+                    href={`/video/${video.slug || video._id || video.id}`}
+                    key={video._id || video.id}
                     className="flex flex-col lg:flex-row gap-2 md:gap-3 bg-white p-2 md:p-2.5 rounded-xl border border-slate-200/80 shadow-2xs hover:shadow-md transition-all cursor-pointer group"
                   >
                     {/* Thumbnail Box */}
@@ -549,6 +603,10 @@ export default function LiveClientView() {
                         background: 'linear-gradient(135deg, #450a0a 0%, #1e1b4b 50%, #090d16 100%)',
                       }}
                     >
+                      {video.thumbnail && (
+                        <img src={video.thumbnail} alt="thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                      )}
+
                       {/* Live Badge on top-left of thumbnail */}
                       {video.isLive && (
                         <span className="absolute top-1 left-1 bg-[#d70b18] text-white text-[8px] md:text-[9px] font-black px-1.5 py-0.5 rounded uppercase z-10">
@@ -558,29 +616,29 @@ export default function LiveClientView() {
 
                       {/* Time Tag on top-right of thumbnail */}
                       <span className="absolute top-1 right-1 bg-black/75 backdrop-blur-xs text-white text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded z-10">
-                        {video.time}
+                        {video.duration || video.time || '00:00'}
                       </span>
 
                       {/* Viewers Count INSIDE thumbnail bottom-left (Mobile screenshot match) */}
                       <div className="absolute bottom-1 left-1 bg-black/75 backdrop-blur-xs text-white/95 text-[8px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 z-10">
                         <Eye size={10} className="text-white/80" />
-                        <span>{video.viewers}</span>
+                        <span>{video.views || video.viewers || 0}</span>
                       </div>
 
-                      <Play size={18} className="text-white/80 group-hover:scale-110 transition-transform fill-white/20 z-0" />
+                      <Play size={18} className="text-white/80 group-hover:scale-110 transition-transform fill-white/20 z-0 relative" />
                     </div>
 
                     {/* Video Info (Below thumbnail on mobile / Beside thumbnail on desktop) */}
                     <div className="flex flex-col justify-between flex-1 px-1 lg:px-0">
                       <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#d70b18] transition-colors mt-1 lg:mt-0">
-                        {video.title}
+                        {typeof video.title === 'object' ? (video.title.bn || video.title.en) : video.title}
                       </h4>
                       <p className="hidden lg:flex text-[11px] font-medium text-slate-500 mt-1 items-center gap-1">
                         <Eye size={12} className="text-slate-400" />
-                        <span>{video.viewers}</span>
+                        <span>{video.views || video.viewers || 0}</span>
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

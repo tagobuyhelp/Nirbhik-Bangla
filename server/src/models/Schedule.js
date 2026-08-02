@@ -18,7 +18,13 @@ const ScheduleSchema = new mongoose.Schema({
     enum: ['Live Now', 'Upcoming', 'Completed', 'Cancelled'],
     default: 'Upcoming'
   },
-  isLive: { type: Boolean, default: false },
+  coHost: { type: String, default: '' },
+  tags: { type: [String], default: [] },
+  isFeatured: { type: Boolean, default: true },
+  isAgeRestricted: { type: Boolean, default: false },
+  repeatOption: { type: String, default: 'Does not repeat' },
+  location: { type: String, default: '' },
+  notes: { type: String, default: '' },
   platforms: {
     type: [String],
     default: ['web', 'yt', 'fb']

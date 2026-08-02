@@ -52,10 +52,17 @@ exports.getDashboardMetrics = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
+    // Get total video views
+    const videoViewsAggregation = await require('../models/Video').aggregate([
+      { $group: { _id: null, totalViews: { $sum: '$views' } } }
+    ]);
+    const totalVideoViews = videoViewsAggregation.length > 0 ? videoViewsAggregation[0].totalViews : 0;
+
     return sendResponse(res, 200, 'Dashboard metrics fetched', {
       totalArticles,
       totalReporters,
       totalViews,
+      totalVideoViews,
       totalStreams,
       adStats,
       categoryStats,

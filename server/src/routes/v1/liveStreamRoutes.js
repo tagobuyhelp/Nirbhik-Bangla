@@ -9,6 +9,7 @@ const {
 } = require('../../controllers/liveStreamController');
 const { protect, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../constants/roles');
+const { getLiveChats, createLiveChat } = require('../../controllers/liveChatController');
 
 router.route('/')
   .get(getLiveStreams)
@@ -18,5 +19,9 @@ router.route('/:id')
   .get(getLiveStream)
   .put(protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGING_EDITOR), updateLiveStream)
   .delete(protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGING_EDITOR), deleteLiveStream);
+
+router.route('/:id/chat')
+  .get(getLiveChats)
+  .post(createLiveChat);
 
 module.exports = router;

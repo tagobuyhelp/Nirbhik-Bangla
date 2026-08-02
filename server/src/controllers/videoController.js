@@ -113,6 +113,32 @@ const seedDefaultVideos = async () => {
   }
 };
 
+// GET /api/v1/videos/live-recordings
+exports.getLiveRecordings = async (req, res) => {
+  try {
+    // Fake logic for demo: return videos that have 'Live' or 'Recording' in tags or title, or just recent ones.
+    const videos = await Video.find({ $or: [{ tags: { $in: ['Live', 'Recording'] } }, { isLive: false }] })
+      .sort({ createdAt: -1 })
+      .limit(5);
+    res.json({ success: true, count: videos.length, data: videos });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
+};
+
+// GET /api/v1/videos/highlights
+exports.getHighlights = async (req, res) => {
+  try {
+    // Fake logic for demo: return videos that have 'Highlight' in tags or just featured ones
+    const videos = await Video.find({ isFeatured: true })
+      .sort({ views: -1 })
+      .limit(5);
+    res.json({ success: true, count: videos.length, data: videos });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
+};
+
 // GET /api/v1/videos
 exports.getVideos = async (req, res) => {
   try {
