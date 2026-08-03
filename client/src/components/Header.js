@@ -102,11 +102,35 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [liveSuggestions, setLiveSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { locale, switchLanguage } = useLanguage();
   const [categories, setCategories] = useState(() => getDesktopNavItems(locale));
+
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setLiveSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      fetch(`${API_BASE_URL}/public/news?search=${encodeURIComponent(searchQuery.trim())}&lang=${locale}&limit=5`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            setLiveSuggestions(data.data.slice(0, 5));
+            setShowSuggestions(true);
+          }
+        })
+        .catch(() => setLiveSuggestions([]));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, locale]);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/public/categories`)
@@ -129,9 +153,10 @@ export default function Header() {
   }, [locale]);
 
   const handleSearch = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setShowSuggestions(false);
       setSearchOpen(false);
     }
   };
@@ -227,26 +252,78 @@ export default function Header() {
               />
             </Link>
 
-            {/* Search Bar */}
-            <form
-              onSubmit={handleSearch}
-              className="flex flex-1 max-w-[500px] h-[42px] items-center rounded-full border border-slate-200 bg-slate-50 focus-within:border-[#d70b18] focus-within:ring-2 focus-within:ring-red-100 overflow-hidden transition-all duration-200"
-            >
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchPlaceholder}
-                className="flex-1 px-4 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400 font-medium"
-              />
-              <button
-                type="submit"
-                className="w-11 h-full flex items-center justify-center text-slate-500 hover:text-[#d70b18] transition-colors border-l border-slate-200"
-                aria-label="Search"
+            {/* Search Bar with Instant Autocomplete */}
+            <div className="relative flex-1 max-w-[500px]">
+              <form
+                onSubmit={handleSearch}
+                className="flex h-[42px] items-center rounded-full border border-slate-200 bg-slate-50 focus-within:border-[#d70b18] focus-within:ring-2 focus-within:ring-red-100 overflow-hidden transition-all duration-200"
               >
-                <Search size={16} />
-              </button>
-            </form>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)}
+                  placeholder={searchPlaceholder}
+                  className="flex-1 px-4 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400 font-medium"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
+                    className="p-1 text-slate-400 hover:text-slate-600 mr-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="w-11 h-full flex items-center justify-center text-slate-500 hover:text-[#d70b18] transition-colors border-l border-slate-200"
+                  aria-label="Search"
+                >
+                  <Search size={16} />
+                </button>
+              </form>
+
+              {/* Instant Autocomplete Suggestions Popup */}
+              {showSuggestions && liveSuggestions.length > 0 && (
+                <div className="absolute top-12 left-0 right-0 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden py-2 space-y-1">
+                  <div className="px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span>Live Suggestions</span>
+                    <button onClick={() => setShowSuggestions(false)} className="text-slate-400 hover:text-slate-600">
+                      <X size={12} />
+                    </button>
+                  </div>
+                  {liveSuggestions.map((item) => (
+                    <Link
+                      key={item.id || item._id}
+                      href={`/${locale}/news/${item.slug}`}
+                      onClick={() => setShowSuggestions(false)}
+                      className="flex items-center gap-3 px-3 py-2 hover:bg-red-50/60 transition-colors group"
+                    >
+                      <img
+                        src={item.featuredImageUrl || '/placeholder-news.jpg'}
+                        alt={item.title}
+                        className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] font-black text-[#eb1c24] uppercase block">
+                          {item.categoryName || 'News'}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#eb1c24] truncate">
+                          {item.title}
+                        </h4>
+                      </div>
+                    </Link>
+                  ))}
+                  <button
+                    onClick={handleSearch}
+                    className="w-full text-center py-2 text-xs font-extrabold text-[#eb1c24] bg-slate-50 hover:bg-red-50 border-t border-slate-100 transition-colors"
+                  >
+                    View All Results for "{searchQuery}" →
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Live TV CTA */}
             <Link

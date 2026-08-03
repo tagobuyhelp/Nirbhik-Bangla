@@ -38,12 +38,15 @@ export const viewport = {
   themeColor: '#090d16',
 };
 
+import PushNotificationPrompt from '@/components/PushNotificationPrompt';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="bn" suppressHydrationWarning className={`${hindSiliguri.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-white text-slate-900 antialiased flex flex-col">
         <ClientProviders>
           {children}
+          <PushNotificationPrompt />
         </ClientProviders>
       </body>
     </html>

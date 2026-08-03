@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import bn from '@/locales/bn';
 import hi from '@/locales/hi';
 import en from '@/locales/en';
@@ -13,15 +14,26 @@ const LanguageContext = createContext();
 export function LanguageProvider({ children }) {
   const [locale, setLocale] = useState('bn');
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem(LANG_KEY);
-    if (saved && translations[saved]) {
-      setLocale(saved);
-      document.documentElement.lang = saved;
+    // Detect locale from URL pathname first if available
+    const segments = pathname ? pathname.split('/') : [];
+    const urlLang = segments[1];
+    if (urlLang && translations[urlLang]) {
+      setLocale(urlLang);
+      localStorage.setItem(LANG_KEY, urlLang);
+      document.documentElement.lang = urlLang;
+    } else {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved && translations[saved]) {
+        setLocale(saved);
+        document.documentElement.lang = saved;
+      }
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (mounted) {
@@ -34,8 +46,20 @@ export function LanguageProvider({ children }) {
       setLocale(lang);
       localStorage.setItem(LANG_KEY, lang);
       document.documentElement.lang = lang;
+
+      // Update URL if starting with a locale prefix
+      if (pathname) {
+        const segments = pathname.split('/');
+        if (segments[1] && translations[segments[1]]) {
+          segments[1] = lang;
+          const newPath = segments.join('/') || `/${lang}`;
+          router.push(newPath);
+        } else if (pathname === '/') {
+          router.push(`/${lang}`);
+        }
+      }
     }
-  }, []);
+  }, [pathname, router]);
 
   const t = useCallback((key) => {
     // key format: "nav.home" or "home.hero_title"
@@ -55,7 +79,7 @@ export function LanguageProvider({ children }) {
   }, [locale]);
 
   return (
-    <LanguageContext.Provider value={{ locale, switchLanguage, t, localized }}>
+    <LanguageContext.Provider value={{ locale, switchLanguage, setLanguage: switchLanguage, setLocale: switchLanguage, t, localized }}>
       {children}
     </LanguageContext.Provider>
   );

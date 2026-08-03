@@ -129,7 +129,20 @@ exports.updateLiveSessionStatus = async (req, res, next) => {
     }
     
     if (ioInstance) {
-      if (status === 'live') ioInstance.emit('live_started', session);
+      if (status === 'live') {
+        ioInstance.emit('live_started', session);
+        // Auto Push Notification Trigger for Live TV
+        const pushService = require('../services/pushNotificationService');
+        pushService.sendBroadcast({
+          title: session.title || { bn: '🔴 সরাসরি সম্প্রচার চালু হয়েছে!', en: '🔴 Live Broadcast Started!' },
+          body: { bn: 'নির্ভীক বাংলায় এখনই লাইভ সম্প্রচার দেখুন।', en: 'Watch live broadcast on Nirbhik Bangla now.' },
+          icon: '/favicon.ico',
+          image: session.thumbnail || session.coverImage || '',
+          url: '/live',
+          target: 'live',
+          createdBy: req.user ? req.user._id : undefined
+        }).catch(err => console.error('[PUSH AUTO LIVE FAIL]', err.message));
+      }
       else if (status === 'ended' || status === 'archived') ioInstance.emit('stream_ended', session);
       else ioInstance.emit('live_updated', session);
     }

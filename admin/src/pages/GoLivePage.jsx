@@ -566,34 +566,49 @@ export default function GoLivePage() {
               </div>
             </div>
 
-            {/* Action Buttons Row (Exact match to screenshot) */}
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+            {/* Action Buttons Row */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleSaveSession}
-                className="flex-1 bg-[#eb1c24] hover:bg-red-700 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20 cursor-pointer transition-all"
+                className="flex-1 min-w-[130px] bg-slate-900 hover:bg-black text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
               >
                 <Save size={14} />
                 <span>{currentSession ? 'Update Session' : 'Save as Scheduled'}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleUpdateStatus('paused')}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
-              >
-                <Pause size={14} />
-                <span>Pause Stream</span>
-              </button>
+              {(!currentSession || currentSession.status !== 'live') && (
+                <button
+                  type="button"
+                  onClick={() => handleUpdateStatus('live')}
+                  className="flex-1 min-w-[140px] bg-[#eb1c24] hover:bg-red-700 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20 animate-pulse cursor-pointer transition-all"
+                >
+                  <Play size={14} fill="white" />
+                  <span>{currentSession?.status === 'paused' || currentSession?.status === 'archived' || currentSession?.status === 'ended' ? 'Restart Live' : 'Go Live'}</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => handleUpdateStatus('archived')}
-                className="flex-1 bg-slate-900 hover:bg-black text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
-              >
-                <Square size={14} />
-                <span>End Broadcast (Archive)</span>
-              </button>
+              {currentSession?.status === 'live' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus('paused')}
+                    className="flex-1 min-w-[120px] bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                  >
+                    <Pause size={14} />
+                    <span>Pause Stream</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus('archived')}
+                    className="flex-1 min-w-[140px] bg-slate-800 hover:bg-slate-900 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+                  >
+                    <Square size={14} />
+                    <span>End (Archive)</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

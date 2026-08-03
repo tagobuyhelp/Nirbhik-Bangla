@@ -121,6 +121,78 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
   const [likesCount, setLikesCount] = useState(24);
   const [hasLiked, setHasLiked] = useState(false);
 
+  const [sideEmail, setSideEmail] = useState('');
+  const [sideSubscribed, setSideSubscribed] = useState(false);
+
+  const [commentName, setCommentName] = useState('');
+  const [commentText, setCommentText] = useState('');
+  const [commentsList, setCommentsList] = useState([
+    { name: 'অর্ণব সরকার', comment: 'খুবই গুরুত্বপূর্ণ খবর। নির্ভীক বাংলাকে ধন্যবাদ।', date: '১০ মিনিট আগে' },
+    { name: 'সুপ্রিয় মুখার্জি', comment: 'সত্য ও নির্ভীক নিরপেক্ষ সংবাদ প্রকাশের জন্য ধন্যবাদ।', date: '১ ঘণ্টা আগে' }
+  ]);
+  const [commentAdded, setCommentAdded] = useState(false);
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (commentName.trim() && commentText.trim()) {
+      const newObj = { name: commentName.trim(), comment: commentText.trim(), date: 'এইমাত্র' };
+      setCommentsList([newObj, ...commentsList]);
+      setCommentName('');
+      setCommentText('');
+      setCommentAdded(true);
+      setTimeout(() => setCommentAdded(false), 3000);
+
+      try {
+        await fetch(`${API_BASE_URL}/public/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            articleSlug: slug,
+            name: newObj.name,
+            comment: newObj.comment,
+          }),
+        });
+      } catch (err) {
+        console.error('Submit comment error:', err);
+      }
+    }
+  };
+
+  const handleSideSubscribe = async (e) => {
+    e.preventDefault();
+    if (sideEmail.trim()) {
+      setSideSubscribed(true);
+      try {
+        await fetch(`${API_BASE_URL}/public/newsletter/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: sideEmail.trim(), source: 'article_sidebar' }),
+        });
+      } catch (err) {
+        console.error('Sidebar subscribe error:', err);
+      }
+      setTimeout(() => {
+        setSideEmail('');
+        setSideSubscribed(false);
+      }, 4000);
+    }
+  };
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/public/comments?articleSlug=${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setCommentsList(data.data.map((c) => ({
+            name: c.name,
+            comment: c.comment,
+            date: new Date(c.createdAt).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'hi' ? 'hi-IN' : 'bn-BD')
+          })));
+        }
+      })
+      .catch((err) => console.log('Fetch comments error:', err));
+  }, [slug, lang]);
+
   useEffect(() => {
     fetch(`${API_BASE_URL}/public/news/by-slug/${slug}?lang=${lang}`)
       .then((res) => res.json())
@@ -398,6 +470,67 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
               </div>
             </div>
 
+            {/* Interactive Readers Comments Section */}
+            <div id="comments" className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm">
+                  <MessageCircle size={18} className="text-[#d70b18]" />
+                  <span>{lang === 'en' ? 'Reader Comments' : lang === 'hi' ? 'पाठक टिप्पणियाँ' : 'পাঠকদের মতামত ও মন্তব্য'} ({commentsList.length})</span>
+                </div>
+              </div>
+
+              {/* Comment Form */}
+              <form onSubmit={handleCommentSubmit} className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                {commentAdded && (
+                  <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
+                    <CheckCircle size={14} />
+                    <span>{lang === 'en' ? 'Your comment has been posted!' : lang === 'hi' ? 'आपकी टिप्पणी पोस्ट कर दी गई है!' : 'আপনার মন্তব্য প্রকাশ করা হয়েছে!'}</span>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">{lang === 'en' ? 'Your Name' : lang === 'hi' ? 'आपका नाम' : 'আপনার নাম'}</label>
+                  <input
+                    type="text"
+                    required
+                    value={commentName}
+                    onChange={(e) => setCommentName(e.target.value)}
+                    placeholder={lang === 'en' ? 'Enter your name...' : lang === 'hi' ? 'अपना नाम दर्ज करें...' : 'আপনার নাম লিখুন...'}
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:border-[#d70b18] bg-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">{lang === 'en' ? 'Your Comment / Opinion' : lang === 'hi' ? 'आपकी टिप्पणी' : 'আপনার মতামত'}</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder={lang === 'en' ? 'Write your opinion on this news...' : lang === 'hi' ? 'इस खबर पर अपनी राय लिखें...' : 'এই খবরের বিষয়ে আপনার বক্তব্য লিখুন...'}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:border-[#d70b18] bg-white resize-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-[#d70b18] hover:bg-red-700 text-white font-extrabold text-xs px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer"
+                >
+                  {lang === 'en' ? 'Post Comment' : lang === 'hi' ? 'टिप्पणी पोस्ट करें' : 'মন্তব্য প্রকাশ করুন'}
+                </button>
+              </form>
+
+              {/* Comments List */}
+              <div className="space-y-3 divide-y divide-slate-100 pt-1">
+                {commentsList.map((c, i) => (
+                  <div key={i} className="pt-2.5 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-extrabold text-slate-900">{c.name}</span>
+                      <span className="text-[10px] font-medium text-slate-400">{c.date}</span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-medium leading-relaxed">{c.comment}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Related News Section */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
@@ -533,16 +666,26 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
               <h2 className="text-sm font-extrabold text-slate-900">{lang === 'en' ? 'Subscribe to Newsletter' : lang === 'hi' ? 'न्यूज़लेटर की सदस्यता लें' : 'নিউজলেটার সাবস্ক্রাইব করুন'}</h2>
               <p className="mt-0.5 text-xs text-slate-500 font-medium">{lang === 'en' ? 'Subscribe to get the latest news delivered directly to your email.' : lang === 'hi' ? 'ईमेल में ताज़ा खबरें पाने के लिए सदस्यता लें' : 'সর্বশেষ খবর সরাসরি ইমেইলে পেতে সাবস্ক্রাইব করুন'}</p>
-              <form onSubmit={(e) => e.preventDefault()} className="mt-3 space-y-2">
-                <input
-                  type="email"
-                  placeholder={lang === 'en' ? 'Enter your email' : lang === 'hi' ? 'अपना ईमेल दर्ज करें' : 'আপনার ইমেইল দিন'}
-                  className="w-full rounded border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-[#d70b18] focus:bg-white"
-                />
-                <button type="submit" className="w-full rounded bg-[#d70b18] py-2 text-xs font-black uppercase text-white hover:bg-red-700 transition-colors shadow-xs">
-                  {lang === 'en' ? 'Subscribe' : lang === 'hi' ? 'सब्सक्राइब करें' : 'সাবস্ক্রাইব করুন'}
-                </button>
-              </form>
+              {sideSubscribed ? (
+                <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold text-center flex items-center justify-center gap-1.5">
+                  <CheckCircle size={15} />
+                  <span>{lang === 'en' ? 'Subscribed Successfully!' : lang === 'hi' ? 'सदस्यता सफलतापूर्वक ली गई!' : 'সাবস্ক্রাইব সম্পন্ন হয়েছে!'}</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSideSubscribe} className="mt-3 space-y-2">
+                  <input
+                    type="email"
+                    required
+                    value={sideEmail}
+                    onChange={(e) => setSideEmail(e.target.value)}
+                    placeholder={lang === 'en' ? 'Enter your email' : lang === 'hi' ? 'अपना ईमेल दर्ज करें' : 'আপনার ইমেইল দিন'}
+                    className="w-full rounded border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-[#d70b18] focus:bg-white"
+                  />
+                  <button type="submit" className="w-full rounded bg-[#d70b18] py-2 text-xs font-black uppercase text-white hover:bg-red-700 transition-colors shadow-xs cursor-pointer">
+                    {lang === 'en' ? 'Subscribe' : lang === 'hi' ? 'सब्सक्राइब करें' : 'সাবস্ক্রাইব করুন'}
+                  </button>
+                </form>
+              )}
             </div>
           </aside>
         </div>

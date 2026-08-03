@@ -263,13 +263,168 @@ router.get('/livestreams', async (req, res, next) => {
   }
 });
 
-// POST /api/v1/public/subscribe
-router.post('/subscribe', (req, res) => {
-  const { email } = req.body || {};
-  if (!email || !email.includes('@')) {
-    return sendResponse(res, 400, 'Valid email required');
+// POST /api/v1/public/subscribe & /newsletter/subscribe
+const NewsletterSubscriber = require('../../models/NewsletterSubscriber');
+const ContactMessage = require('../../models/ContactMessage');
+const Comment = require('../../models/Comment');
+
+router.post('/subscribe', async (req, res, next) => {
+  try {
+    const { email } = req.body || {};
+    if (!email || !email.includes('@')) {
+      return sendResponse(res, 400, 'Valid email required');
+    }
+    const subscriber = await NewsletterSubscriber.findOneAndUpdate(
+      { email: email.toLowerCase().trim() },
+      { email: email.toLowerCase().trim(), status: 'active', source: 'website' },
+      { upsert: true, new: true }
+    );
+    return sendResponse(res, 200, 'Subscribed successfully', subscriber);
+  } catch (error) {
+    next(error);
   }
-  return sendResponse(res, 200, 'Subscribed successfully', { email });
+});
+
+router.post('/newsletter/subscribe', async (req, res, next) => {
+  try {
+    const { email, source } = req.body || {};
+    if (!email || !email.includes('@')) {
+      return sendResponse(res, 400, 'Valid email required');
+    }
+    const subscriber = await NewsletterSubscriber.findOneAndUpdate(
+      { email: email.toLowerCase().trim() },
+      { email: email.toLowerCase().trim(), status: 'active', source: source || 'website' },
+      { upsert: true, new: true }
+    );
+    return sendResponse(res, 200, 'Subscribed to newsletter successfully', subscriber);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/public/contact
+router.post('/contact', async (req, res, next) => {
+  try {
+    const { name, email, phone, subject, message } = req.body || {};
+    if (!name || !email || !subject || !message) {
+      return sendResponse(res, 400, 'Name, email, subject, and message are required.');
+    }
+    const newMessage = await ContactMessage.create({
+      name,
+      email,
+      phone: phone || '',
+      subject,
+      message,
+    });
+    return sendResponse(res, 201, 'Contact message submitted successfully.', newMessage);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/v1/public/comments
+router.get('/comments', async (req, res, next) => {
+  try {
+    const { articleSlug } = req.query;
+    if (!articleSlug) {
+      return sendResponse(res, 400, 'articleSlug query param is required');
+    }
+    const comments = await Comment.find({ articleSlug, status: 'approved' }).sort({ createdAt: -1 });
+    return sendResponse(res, 200, 'Comments fetched successfully', comments);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/public/comments
+router.post('/comments', async (req, res, next) => {
+  try {
+    const { articleSlug, name, email, comment } = req.body || {};
+    if (!articleSlug || !name || !comment) {
+      return sendResponse(res, 400, 'articleSlug, name, and comment are required.');
+    }
+    const newComment = await Comment.create({
+      articleSlug,
+      name,
+      email: email || '',
+      comment,
+      status: 'approved',
+    });
+    return sendResponse(res, 201, 'Comment posted successfully', newComment);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin List Contact Messages
+router.get('/contact-messages', async (req, res, next) => {
+  try {
+    const messages = await ContactMessage.find().sort({ createdAt: -1 });
+    return sendResponse(res, 200, 'Contact messages fetched', messages);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin Delete Contact Message
+router.delete('/contact-messages/:id', async (req, res, next) => {
+  try {
+    await ContactMessage.findByIdAndDelete(req.params.id);
+    return sendResponse(res, 200, 'Contact message deleted');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin List Newsletter Subscribers
+router.get('/subscribers', async (req, res, next) => {
+  try {
+    const subscribers = await NewsletterSubscriber.find().sort({ createdAt: -1 });
+    return sendResponse(res, 200, 'Subscribers fetched', subscribers);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin Delete Newsletter Subscriber
+router.delete('/subscribers/:id', async (req, res, next) => {
+  try {
+    await NewsletterSubscriber.findByIdAndDelete(req.params.id);
+    return sendResponse(res, 200, 'Subscriber deleted');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin List All Comments
+router.get('/all-comments', async (req, res, next) => {
+  try {
+    const comments = await Comment.find().sort({ createdAt: -1 });
+    return sendResponse(res, 200, 'All comments fetched', comments);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin Update Comment Status
+router.patch('/comments/:id', async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const comment = await Comment.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    return sendResponse(res, 200, 'Comment updated', comment);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Admin Delete Comment
+router.delete('/comments/:id', async (req, res, next) => {
+  try {
+    await Comment.findByIdAndDelete(req.params.id);
+    return sendResponse(res, 200, 'Comment deleted');
+  } catch (error) {
+    next(error);
+  }
 });
 
 // GET /api/v1/public/ads

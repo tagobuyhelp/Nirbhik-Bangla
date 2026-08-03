@@ -24,6 +24,8 @@ import {
   PanelLeftClose,
   PanelLeft,
   Share2,
+  Bell,
+  Mail,
 } from 'lucide-react';
 
 export default function Sidebar({ isCollapsed, toggleSidebar }) {
@@ -90,7 +92,9 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
         { label: 'Add New Reporter', path: '/reporters/create' },
       ],
     },
-    { label: 'Comments', path: '/comments', icon: MessageCircle, badge: '24' },
+    { label: 'Inbox (Contact)', path: '/messages', icon: Mail, badge: 'NEW' },
+    { label: 'Subscribers', path: '/subscribers', icon: Users },
+    { label: 'Comments', path: '/comments', icon: MessageCircle },
     {
       id: 'ads',
       label: 'Ad Manager',
@@ -102,6 +106,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
       ],
     },
     { label: 'Ad Placements', path: '/ad-placements', icon: Target },
+    { label: 'Push Notifications', path: '/notifications', icon: Bell, badge: 'PUSH' },
     { label: 'Social Connector', path: '/social-connector', icon: Share2, badge: 'AI' },
     { label: 'Analytics', path: '/analytics', icon: PieChart },
     { label: 'Media Library', path: '/media', icon: ImageIcon },

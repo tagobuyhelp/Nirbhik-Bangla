@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../utils/api';
 import {
   MessageSquare,
   Sparkles,
@@ -37,111 +38,31 @@ export default function CommentsPage() {
     }, 3000);
   };
 
-  // Initial Comments Dataset (Exact match to reference UI image)
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      comment: 'খুবই গুরুত্বপূর্ণ তথ্য, ধন্যবাদ এমন সুন্দর প্রতিবেদনের জন্য।',
-      lang: 'View in Bengali',
-      author: 'Arif Hossain',
-      email: 'arif.hossain@gmail.com',
-      ip: '103.48.12.56',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      postTitle: 'ঢাকায় বিএনপির সমাবেশে নেতাকর্মীদের ঢল',
-      postThumb: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=120&q=80',
-      status: 'Approved',
-      date: 'May 21, 2024',
-      time: '10:30 AM',
-    },
-    {
-      id: 2,
-      comment: 'এই বিষয়টি নিয়ে আরও বিস্তারিত লিখবেন আশা করি।',
-      lang: 'View in Bengali',
-      author: 'Shamima Akter',
-      email: 'shamima.ak@gmail.com',
-      ip: '103.15.78.90',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80',
-      postTitle: 'রিজার্ভ সংকট কাটাতে নতুন পদক্ষেপ সরকারের',
-      postThumb: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80',
-      status: 'Pending',
-      date: 'May 21, 2024',
-      time: '09:45 AM',
-    },
-    {
-      id: 3,
-      comment: 'Very informative article. Thanks for sharing such important news.',
-      lang: 'View in English',
-      author: 'Mehedi Rahman',
-      email: 'mehedi.r@gmail.com',
-      ip: '223.33.11.22',
-      initials: 'MR',
-      initialsBg: 'bg-purple-100 text-purple-700',
-      postTitle: 'বিশ্ব বাজারে কমলো সোনার দাম',
-      postThumb: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=120&q=80',
-      status: 'Approved',
-      date: 'May 21, 2024',
-      time: '09:20 AM',
-    },
-    {
-      id: 4,
-      comment: 'অসাধারণ লেখা 👏👏',
-      lang: 'View in Bengali',
-      author: 'Sadia Anjum',
-      email: 'sadia.anjum@gmail.com',
-      ip: '182.34.56.78',
-      initials: 'SA',
-      initialsBg: 'bg-amber-100 text-amber-700',
-      postTitle: 'বাংলাদেশের জয়, সিরিজ নিজেদের করে নিল টাইগাররা',
-      postThumb: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=120&q=80',
-      status: 'Approved',
-      date: 'May 20, 2024',
-      time: '11:15 PM',
-    },
-    {
-      id: 5,
-      comment: 'এটা ভুয়া খবর, দয়া করে সঠিক তথ্য দিন।',
-      lang: 'View in Bengali',
-      author: 'Rasel Khan',
-      email: 'rasel.khan@gmail.com',
-      ip: '182.72.11.90',
-      initials: 'RK',
-      initialsBg: 'bg-rose-100 text-rose-700',
-      postTitle: 'ভারতে বাংলাদেশি পর্যটকদের উপর নিষেধাজ্ঞা',
-      postThumb: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=120&q=80',
-      status: 'Spam',
-      date: 'May 20, 2024',
-      time: '10:05 PM',
-    },
-    {
-      id: 6,
-      comment: 'খুব ভালো লাগলো পড়ে, আরও লিখুন 👌',
-      lang: 'View in Bengali',
-      author: 'Akib Mahmud',
-      email: 'akib.mahmud@gmail.com',
-      ip: '103.65.44.12',
-      initials: 'AM',
-      initialsBg: 'bg-emerald-100 text-emerald-700',
-      postTitle: 'নতুন শিক্ষাক্রমে যে পরিবর্তন আসছে',
-      postThumb: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=120&q=80',
-      status: 'Approved',
-      date: 'May 20, 2024',
-      time: '08:50 PM',
-    },
-    {
-      id: 7,
-      comment: 'Nice update! Waiting for more such news.',
-      lang: 'View in English',
-      author: 'Nusrat Jahan',
-      email: 'nusrat.jahan@gmail.com',
-      ip: '223.33.98.77',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80',
-      postTitle: 'বিদ্যুতের দাম বাড়ার ইঙ্গিত বিইআরসির',
-      postThumb: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=120&q=80',
-      status: 'Pending',
-      date: 'May 20, 2024',
-      time: '07:30 PM',
-    },
-  ]);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/public/all-comments`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setComments(
+            data.data.map((c) => ({
+              id: c._id,
+              comment: c.comment,
+              author: c.name,
+              email: c.email || 'N/A',
+              postTitle: c.articleSlug || 'Article',
+              status: c.status === 'approved' ? 'Approved' : c.status === 'pending' ? 'Pending' : 'Spam',
+              date: new Date(c.createdAt).toLocaleDateString(),
+              time: new Date(c.createdAt).toLocaleTimeString(),
+            }))
+          );
+        }
+      })
+      .catch((err) => console.error('Fetch comments error:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {

@@ -162,7 +162,7 @@ export default function LiveClientView() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 py-3 md:py-6 px-0 md:px-6 pb-20 md:pb-6 font-outfit">
-      <div className="max-w-[1360px] mx-auto">
+      <div className="max-w-[960px] mx-auto space-y-6">
         {/* Breadcrumb & Header with padding on mobile */}
         <div className="px-3 md:px-0">
           <nav className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mb-3">
@@ -181,59 +181,55 @@ export default function LiveClientView() {
           </div>
         </div>
 
-        {/* Desktop Side-by-Side Grid, Mobile Stack */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6">
-          <div className="lg:col-span-8 flex flex-col gap-4">
-            
-            {/* Video Player: Zero Margin & Padding + No Rounded Corners on Mobile */}
-            <div className="relative w-full aspect-video rounded-none md:rounded-2xl overflow-hidden bg-black shadow-xl md:border md:border-slate-950/20 group">
-              {renderDynamicPlayer()}
-            </div>
+        {/* Main Full Width Live Player Section */}
+        <div className="flex flex-col gap-4">
+          {/* Video Player Container */}
+          <div className="relative w-full aspect-video rounded-none md:rounded-2xl overflow-hidden bg-black shadow-xl md:border md:border-slate-950/20 group">
+            {renderDynamicPlayer()}
+          </div>
 
-            {/* Session Info with Padding on Mobile */}
-            <div className="px-3 md:px-0">
-              <div className="bg-white rounded-xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row justify-between items-start gap-3 md:gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Radio size={18} className="text-[#d70b18] shrink-0" />
-                    <h2 className="text-base md:text-xl font-extrabold text-slate-900">
-                      {liveSession ? localized(liveSession.title) : 'Nirbhik Bangla TV'}
-                    </h2>
-                    {liveSession?.status === 'live' && (
-                      <span className="bg-[#d70b18] text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">LIVE</span>
-                    )}
-                  </div>
-                  <p className="text-xs md:text-sm text-slate-600 leading-relaxed mt-2">
-                    {localized(liveSession?.description) || t('live.default_desc')}
-                  </p>
+          {/* Session Info with Padding on Mobile */}
+          <div className="px-3 md:px-0">
+            <div className="bg-white rounded-xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row justify-between items-start gap-3 md:gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Radio size={18} className="text-[#d70b18] shrink-0" />
+                  <h2 className="text-base md:text-xl font-extrabold text-slate-900">
+                    {liveSession ? localized(liveSession.title) : 'Nirbhik Bangla TV'}
+                  </h2>
+                  {liveSession?.status === 'live' && (
+                    <span className="bg-[#d70b18] text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">LIVE</span>
+                  )}
                 </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Sidebar / Recent Recordings */}
-          <div className="lg:col-span-4 flex flex-col gap-5 md:gap-6 px-3 md:px-0">
-            <div>
-              <h3 className="font-extrabold text-sm md:text-base text-slate-900 mb-3 px-1">{t('live.recent_videos')}</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-1 gap-2.5 md:gap-3">
-                {recentRecordings.map((video) => (
-                  <div key={video._id} className="flex flex-col lg:flex-row gap-2 md:gap-3 bg-white p-2 md:p-2.5 rounded-xl border border-slate-200/80 shadow-2xs cursor-pointer group">
-                    <div className="relative w-full lg:w-[120px] aspect-video rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-slate-900">
-                      {video.thumbnail && <img src={video.thumbnail} alt="thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />}
-                      <span className="absolute top-1 right-1 bg-black/75 backdrop-blur-xs text-white text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded z-10">{video.duration || 'Archive'}</span>
-                      <Play size={18} className="text-white/80 group-hover:scale-110 transition-transform z-0 relative" />
-                    </div>
-                    <div className="flex flex-col justify-between flex-1 px-1 lg:px-0">
-                      <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#d70b18] transition-colors mt-1 lg:mt-0">{localized(video.title)}</h4>
-                    </div>
-                  </div>
-                ))}
+                <p className="text-xs md:text-sm text-slate-600 leading-relaxed mt-2">
+                  {localized(liveSession?.description) || t('live.default_desc')}
+                </p>
               </div>
             </div>
           </div>
-
         </div>
+
+        {/* Recent Recordings Below */}
+        {recentRecordings.length > 0 && (
+          <div className="px-3 md:px-0 pt-4 border-t border-slate-200/80">
+            <h3 className="font-extrabold text-base md:text-lg text-slate-900 mb-4">{t('live.recent_videos')}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recentRecordings.map((video) => (
+                <div key={video._id} className="flex flex-col bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs cursor-pointer group hover:shadow-md transition-all">
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-slate-900 mb-2.5">
+                    {video.thumbnail && <img src={video.thumbnail} alt="thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />}
+                    <span className="absolute top-1.5 right-1.5 bg-black/75 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">{video.duration || 'Archive'}</span>
+                    <Play size={20} className="text-white/80 group-hover:scale-110 transition-transform z-0 relative" />
+                  </div>
+                  <div className="flex flex-col justify-between flex-1">
+                    <h4 className="text-xs md:text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#d70b18] transition-colors">{localized(video.title)}</h4>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

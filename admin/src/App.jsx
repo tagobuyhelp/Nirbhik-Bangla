@@ -20,9 +20,12 @@ import CreateAdPage from './pages/CreateAdPage';
 import CreatePlacementPage from './pages/CreatePlacementPage';
 import GoLivePage from './pages/GoLivePage';
 import CommentsPage from './pages/CommentsPage';
+import ContactMessagesPage from './pages/ContactMessagesPage';
+import SubscribersPage from './pages/SubscribersPage';
 import ReportersPage from './pages/ReportersPage';
 import CreateReporterPage from './pages/CreateReporterPage';
 import SettingsPage from './pages/SettingsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import SocialConnectorPage from './pages/SocialConnectorPage';
 import LoginPage from './pages/LoginPage';
 import GenericPage from './pages/GenericPage';
@@ -55,6 +58,8 @@ export default function App() {
           <Route path="media/upload" element={<UploadMediaPage />} />
           <Route path="pages" element={<GenericPage title="Pages" description="Manage static website pages." />} />
           <Route path="comments" element={<CommentsPage />} />
+          <Route path="messages" element={<ContactMessagesPage />} />
+          <Route path="subscribers" element={<SubscribersPage />} />
 
           {/* Live & Video Routes */}
           <Route path="live-tv" element={<GoLivePage />} />
@@ -79,6 +84,7 @@ export default function App() {
 
           {/* Analytics & Settings Routes */}
           <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="social-connector" element={<SocialConnectorPage />} />
           <Route path="seo-tools" element={<GenericPage title="SEO Tools" description="Manage sitemaps, meta descriptions, and keywords." />} />
           <Route path="settings" element={<SettingsPage />} />

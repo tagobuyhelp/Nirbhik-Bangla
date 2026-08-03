@@ -110,7 +110,8 @@ export default function MediaLibraryPage() {
   };
 
   const filteredMedia = mediaFiles.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const nameStr = item?.name || item?.originalName || item?.filename || item?.title || '';
+    const matchesSearch = nameStr.toLowerCase().includes((searchQuery || '').toLowerCase());
     if (selectedType === 'All') return matchesSearch;
     if (selectedType === 'Images') return matchesSearch && item.category === 'Images';
     if (selectedType === 'Videos') return matchesSearch && item.category === 'Videos';
