@@ -1,1058 +1,856 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import {
-  Radio,
-  Users,
-  BarChart3,
-  Clock,
-  FileText,
-  Play,
-  Square,
-  CheckCircle2,
-  Globe,
-  Plus,
-  Send,
-  MessageSquare,
-  Sparkles,
-  TrendingUp,
-  Download,
-  Calendar,
-  Activity,
-  ArrowRight,
-  Smile,
-  Shield,
-  ThumbsUp,
-  Share2,
-  UserCheck,
-  Video,
-  VideoOff,
-  Camera,
-  Mic,
-  MicOff,
-  Monitor,
-  Disc,
+  Radio, Video, VideoOff, Save, Play, Square, Pause, Calendar, Users, Edit, Clock, Settings, Search, X, CheckCircle2, Globe2,
+  Bell, ChevronDown, Check, SlidersHorizontal, Eye, BarChart2, MoreVertical, Tv
 } from 'lucide-react';
+import AIAssistantWidget from '../components/AIAssistantWidget';
+
+const ProviderIcons = {
+  youtube: ({ className }) => (
+    <svg viewBox="0 0 24 24" className={className} width="15" height="15" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  ),
+  facebook: ({ className }) => (
+    <svg viewBox="0 0 24 24" className={className} width="15" height="15" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  ),
+  restream: ({ className }) => (
+    <svg viewBox="0 0 24 24" className={className} width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 11a9 9 0 0 1 9 9" />
+      <path d="M4 4a16 16 0 0 1 16 16" />
+      <circle cx="5" cy="19" r="1" />
+    </svg>
+  ),
+  rtmp: ({ className }) => (
+    <svg viewBox="0 0 24 24" className={className} width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 20h.01" />
+      <path d="M7 20v-4" />
+      <path d="M12 20v-8" />
+      <path d="M17 20v-12" />
+      <path d="M22 20V4" />
+    </svg>
+  ),
+  embed: ({ className }) => (
+    <svg viewBox="0 0 24 24" className={className} width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </svg>
+  )
+};
 
 export default function GoLivePage() {
   const [toastMessage, setToastMessage] = useState('');
-  const [isLive, setIsLive] = useState(true);
-  const [chatMessage, setChatMessage] = useState('');
-  const [liveStreamInfo, setLiveStreamInfo] = useState(null);
-  const [liveSchedules, setLiveSchedules] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [currentSession, setCurrentSession] = useState(null);
 
-  // In-Browser Native Studio WebRTC States
-  const [isStudioCamActive, setIsStudioCamActive] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [isMicMuted, setIsMicMuted] = useState(false);
+  // Table Filter State
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordedChunksRef = useRef([]);
-  const timerIntervalRef = useRef(null);
+  // Active Title Language Tab ('bn', 'en', 'hi')
+  const [activeTitleLang, setActiveTitleLang] = useState('bn');
+
+  // Form State with 3-language Title Support (BN, EN, HI)
+  const [formData, setFormData] = useState({
+    titleBn: '',
+    titleEn: '',
+    titleHi: '',
+    slug: '',
+    descriptionBn: '',
+    category: 'News',
+    sourceType: 'youtube',
+    youtubeVideoId: '',
+    youtubeUrl: '',
+    facebookUrl: '',
+    restreamStreamId: '',
+    rtmpUrl: '',
+    embedUrl: ''
+  });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
 
-  const [stats, setStats] = useState(null);
-  const [poll, setPoll] = useState(null);
-  const [liveRecordings, setLiveRecordings] = useState([]);
-  const [highlights, setHighlights] = useState([]);
-  const [chatList, setChatList] = useState([]);
-
-  useEffect(() => {
-    // Fetch live stream info and chat if active
-    fetch(`${API_BASE_URL}/live-streams`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.data)) {
-          const activeStream = data.data.find(stream => stream.isLive) || data.data[0] || null;
-          setLiveStreamInfo(activeStream);
-          if (activeStream && typeof activeStream.isLive === 'boolean') {
-            setIsLive(activeStream.isLive);
-            // Fetch chat for this stream
-            fetch(`${API_BASE_URL}/live-streams/${activeStream._id}/chat`)
-              .then(res => res.json())
-              .then(chatData => {
-                if (chatData.success) setChatList(chatData.data);
-              })
-              .catch(err => console.error('Error fetching chat:', err));
-          } else {
-            setIsLive(false);
-          }
-        }
-      })
-      .catch(err => console.error('Error fetching live streams:', err));
-
-    // Fetch schedules
-    fetch(`${API_BASE_URL}/schedules`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.data)) {
-          setLiveSchedules(data.data);
-        }
-      })
-      .catch(err => console.error('Error fetching schedules:', err));
-
-    // Fetch Dashboard Stats (Requires Token)
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetch(`${API_BASE_URL}/analytics/dashboard`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setStats(data.data);
-      })
-      .catch(err => console.error('Error fetching stats:', err));
-    }
-
-    // Fetch Poll
-    fetch(`${API_BASE_URL}/polls/active`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setPoll(data.data);
-      })
-      .catch(err => console.error('Error fetching poll:', err));
-
-    // Fetch Live Recordings
-    fetch(`${API_BASE_URL}/videos/live-recordings`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setLiveRecordings(data.data);
-      })
-      .catch(err => console.error('Error fetching recordings:', err));
-
-    // Fetch Highlights
-    fetch(`${API_BASE_URL}/videos/highlights`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setHighlights(data.data);
-      })
-      .catch(err => console.error('Error fetching highlights:', err));
-  }, []);
-
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3000);
+    setTimeout(() => setToastMessage(''), 3000);
   };
 
-  const handleSendChat = async (e) => {
-    e.preventDefault();
-    if (!chatMessage.trim() || !liveStreamInfo?._id) return;
-    
+  const fetchSessions = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/live-streams/${liveStreamInfo._id}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderName: 'Super Admin', text: chatMessage.trim() })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setChatList([data.data, ...chatList]);
-        setChatMessage('');
-      }
-    } catch (err) {
-      console.error('Failed to post chat', err);
-    }
-  };
-
-  const handleGoLiveToggle = async () => {
-    if (!liveStreamInfo?._id) {
-      showToast('No active stream configuration found!');
-      return;
-    }
-    const newStatus = !isLive;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/live-streams/${liveStreamInfo._id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ isActive: newStatus, isLive: newStatus })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setIsLive(newStatus);
-        showToast(newStatus ? 'ব্রডকাস্ট শুরু হয়েছে (LIVE)!' : 'ব্রডকাস্ট বন্ধ করা হয়েছে (OFFLINE)');
+      const resCurrent = await fetch(`${API_BASE_URL}/live/current`);
+      const dataCurrent = await resCurrent.json();
+      if (dataCurrent.success && dataCurrent.data) {
+        setCurrentSession(dataCurrent.data);
+        populateForm(dataCurrent.data);
       } else {
-        showToast('Error updating status');
+        setCurrentSession(null);
+      }
+
+      const resAll = await fetch(`${API_BASE_URL}/live/sessions?limit=50`);
+      const dataAll = await resAll.json();
+      if (dataAll.success && Array.isArray(dataAll.data)) {
+        setSessions(dataAll.data);
       }
     } catch (err) {
-      showToast('Failed to update live status');
+      console.error('Error fetching sessions:', err);
     }
   };
 
-  // WebRTC Native Studio Camera Controller
-  const toggleStudioCam = async () => {
-    if (isStudioCamActive) {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      setIsStudioCamActive(false);
-      showToast('স্টুডিও ক্যামেরা অফ করা হয়েছে');
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: true,
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        setIsStudioCamActive(true);
-        showToast('স্টুডিও ক্যামেরা ও মাইক্রোফোন অন হয়েছে!');
-      } catch (err) {
-        console.error('Camera Access Error:', err);
-        showToast('ক্যামেরা বা মাইক্রোফোন এক্সেস পাওয়া যায়নি!');
-      }
-    }
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const populateForm = (session) => {
+    setFormData({
+      titleBn: session.title?.bn || '',
+      titleEn: session.title?.en || '',
+      titleHi: session.title?.hi || '',
+      slug: session.slug || '',
+      descriptionBn: session.description?.bn || '',
+      category: session.category || 'News',
+      sourceType: session.sourceType || 'youtube',
+      youtubeVideoId: session.youtubeVideoId || '',
+      youtubeUrl: session.youtubeUrl || '',
+      facebookUrl: session.facebookUrl || '',
+      restreamStreamId: session.restreamStreamId || '',
+      rtmpUrl: session.rtmpUrl || '',
+      embedUrl: session.embedUrl || ''
+    });
   };
 
-  const toggleMic = () => {
-    if (streamRef.current) {
-      const audioTracks = streamRef.current.getAudioTracks();
-      if (audioTracks.length > 0) {
-        audioTracks[0].enabled = isMicMuted;
-        setIsMicMuted(!isMicMuted);
-        showToast(!isMicMuted ? 'মাইক্রোফোন মিউট করা হলো' : 'মাইক্রোফোন আনমিউট করা হলো');
-      }
-    }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const startStudioRecording = () => {
-    if (!streamRef.current) {
-      showToast('আগে স্টুডিও ক্যামেরা অন করুন!');
-      return;
-    }
-
+  const handleSaveSession = async () => {
     try {
-      recordedChunksRef.current = [];
-      const options = { mimeType: 'video/webm;codecs=vp9,opus' };
-      const recorder = new MediaRecorder(
-        streamRef.current,
-        MediaRecorder.isTypeSupported(options.mimeType) ? options : undefined
-      );
-
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const payload = {
+        title: {
+          bn: formData.titleBn,
+          en: formData.titleEn || formData.titleBn,
+          hi: formData.titleHi || formData.titleBn
+        },
+        slug: formData.slug || `live-${Date.now()}`,
+        description: { bn: formData.descriptionBn, en: '', hi: '' },
+        category: formData.category,
+        sourceType: formData.sourceType,
+        youtubeVideoId: formData.youtubeVideoId,
+        youtubeUrl: formData.youtubeUrl,
+        facebookUrl: formData.facebookUrl,
+        restreamStreamId: formData.restreamStreamId,
+        rtmpUrl: formData.rtmpUrl,
+        embedUrl: formData.embedUrl,
+        status: currentSession?.status || 'scheduled'
       };
 
-      recorder.start(1000); // chunk every 1 sec
-      mediaRecorderRef.current = recorder;
-      setIsRecording(true);
-      setRecordingSeconds(0);
+      let url = `${API_BASE_URL}/live/session`;
+      let method = 'POST';
 
-      timerIntervalRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => prev + 1);
-      }, 1000);
+      if (currentSession && currentSession._id) {
+        url = `${API_BASE_URL}/live/session/${currentSession._id}`;
+        method = 'PUT';
+      }
 
-      showToast('🔴 স্টুডিও রেকর্ডিং শুরু হয়েছে!');
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(currentSession ? 'সেশন আপডেট করা হয়েছে!' : 'নতুন লাইভ সেশন সংরক্ষণ করা হয়েছে!');
+        fetchSessions();
+      } else {
+        showToast(data.message || 'সেশন আপডেট করতে ব্যর্থ হয়েছে');
+      }
     } catch (err) {
-      console.error('Recording error:', err);
-      showToast('রেকর্ডিং শুরু করা যায়নি');
+      showToast('সেশন সংরক্ষণে সমস্যা হয়েছে');
     }
   };
 
-  const stopStudioRecordingAndSave = async () => {
-    if (!mediaRecorderRef.current || !isRecording) return;
-
-    mediaRecorderRef.current.stop();
-    setIsRecording(false);
-    clearInterval(timerIntervalRef.current);
-
-    showToast('রেকর্ডিং প্রসেস হচ্ছে ও সেভ করা হচ্ছে...');
-
-    setTimeout(async () => {
-      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      
-      // Auto register to recordings via API
-      try {
-        const formData = new FormData();
-        const durationFormatted = `${Math.floor(recordingSeconds / 60)}:${recordingSeconds % 60 < 10 ? '0' : ''}${recordingSeconds % 60}`;
-        
-        // Save as Video
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE_URL}/videos`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            title: { bn: `Studio Recording ${new Date().toLocaleTimeString()}`, en: `Studio Recording ${new Date().toLocaleTimeString()}` },
-            sourceType: 'local_upload',
-            duration: durationFormatted,
-            status: 'Published',
-            category: 'Studio Live',
-            tags: ['Live', 'Recording', 'Studio'],
-            views: 0
-          })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          showToast('✅ স্টুডিও রেকর্ডিং সেভ করে Recent Recordings-এ যুক্ত করা হয়েছে!');
-          // Refresh recordings
-          fetch(`${API_BASE_URL}/videos/live-recordings`)
-            .then(res => res.json())
-            .then(recData => { if (recData.success) setLiveRecordings(recData.data); });
-        }
-      } catch (err) {
-        console.error('Failed to save studio recording:', err);
-        showToast('রেকর্ডিং সেভ করতে ব্যর্থ হয়েছে');
+  const handleUpdateStatus = async (newStatus) => {
+    if (!currentSession) return;
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/live/session/${currentSession._id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Status updated to ${newStatus}`);
+        fetchSessions();
       }
-    }, 1200);
+    } catch (err) {
+      showToast('Error updating status');
+    }
   };
 
-  const formatRecordingTime = (totalSeconds) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  const handleNewSession = () => {
+    setCurrentSession(null);
+    setFormData({
+      titleBn: '', titleEn: '', titleHi: '', slug: '', descriptionBn: '', category: 'News',
+      sourceType: 'youtube', youtubeVideoId: '', youtubeUrl: '', facebookUrl: '',
+      restreamStreamId: '', rtmpUrl: '', embedUrl: ''
+    });
   };
+
+  const handleDeleteSession = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this live session?')) return;
+    try {
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/live/session/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s._id !== id));
+        if (currentSession?._id === id) {
+          handleNewSession();
+        }
+        showToast('Live Session deleted successfully!');
+      } else {
+        showToast('Failed to delete session.');
+      }
+    } catch (err) {
+      showToast('Error deleting session.');
+    }
+  };
+
+  const getEmbedUrl = (session) => {
+    if (!session) return null;
+    switch (session.sourceType) {
+      case 'youtube':
+        if (session.youtubeVideoId) return `https://www.youtube.com/embed/${session.youtubeVideoId}?autoplay=1`;
+        if (session.youtubeUrl) {
+          const ytMatch = session.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|live\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+          if (ytMatch && ytMatch[1]) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+        }
+        return null;
+      case 'facebook':
+        return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(session.facebookUrl)}&show_text=false&autoplay=1`;
+      case 'embed':
+        return session.embedUrl;
+      default:
+        return null;
+    }
+  };
+
+  const filteredSessions = sessions.filter((s) => {
+    const title = (s.title?.bn || s.title?.en || s.title?.hi || '').toLowerCase();
+    const matchesSearch = title.includes(searchQuery.toLowerCase());
+
+    if (activeTab === 'all') return matchesSearch;
+    if (activeTab === 'live') return matchesSearch && s.status === 'live';
+    if (activeTab === 'scheduled') return matchesSearch && s.status === 'scheduled';
+    if (activeTab === 'archived') return matchesSearch && (s.status === 'ended' || s.status === 'archived');
+    return matchesSearch;
+  });
 
   return (
-    <div className="space-y-6 font-outfit text-slate-800 relative pb-12">
-
-      {/* Toast Notification Alert */}
+    <div className="space-y-6 font-outfit text-slate-800 pb-12 relative">
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-3 border border-slate-700">
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2">
           <CheckCircle2 size={16} className="text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* 1. Header & Primary Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+      {/* Top Header Bar (Exact match to screenshot) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Radio size={24} className={isLive ? "text-rose-600 animate-pulse" : "text-slate-400"} />
-            <span>Live TV Dashboard</span>
-          </h1>
-          <p className="text-slate-500 text-xs font-semibold mt-1">Manage live broadcasts, engage with audience, and monitor stream health</p>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Broadcast Management</h1>
+          <p className="text-xs font-semibold text-slate-500 mt-0.5">
+            Manage Live Sessions and Multilingual Titles (BN, EN, HI)
+          </p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Link
-            to="/live-streams"
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-          >
-            <Video size={14} className="text-slate-500" />
-            <span>All Streams</span>
-          </Link>
 
-          <Link
-            to="/schedule/create"
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-          >
-            <Calendar size={14} className="text-slate-500" />
-            <span>Schedule Live</span>
-          </Link>
-
-          <button
-            onClick={handleGoLiveToggle}
-            className={`${isLive ? 'bg-slate-800 hover:bg-slate-900' : 'bg-[#eb1c24] hover:bg-red-700'} text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md ${isLive ? 'shadow-slate-500/20' : 'shadow-red-500/20'} transition-all cursor-pointer uppercase tracking-wider`}
-          >
-            {isLive ? <VideoOff size={15} /> : <Radio size={15} />}
-            <span>{isLive ? 'End Stream' : 'Go Live Now'}</span>
+        <div className="flex items-center gap-4">
+          <button onClick={handleNewSession} className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md shadow-red-500/20 transition-all cursor-pointer">
+            <span>+ Create New Session</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Top 6 Summary Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5">
-        {/* Current Status */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Current Status</p>
-            <h3 className={`text-sm font-black mt-0.5 flex items-center gap-1 ${isLive ? 'text-rose-600' : 'text-slate-500'}`}>
-              <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-rose-600 animate-ping' : 'bg-slate-500'}`} />
-              {isLive ? 'LIVE' : 'OFFLINE'}
-            </h3>
-            <span className="text-[9.5px] font-bold text-slate-400">{isLive ? 'You are live now' : 'Stream is offline'}</span>
-          </div>
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isLive ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>
-            <Radio size={18} />
-          </div>
-        </div>
-
-        {/* Current Viewers */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Video Views</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">
-              {stats?.totalVideoViews?.toLocaleString() || '0'}
-            </h3>
-            <span className="text-[9.5px] font-bold text-emerald-600 flex items-center gap-0.5">
-              <TrendingUp size={10} /> Live Data
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-            <Users size={18} />
-          </div>
-        </div>
-
-        {/* Peak Viewers */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Articles</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">
-              {stats?.totalArticles?.toLocaleString() || '0'}
-            </h3>
-            <span className="text-[9.5px] font-bold text-slate-400">Total Published</span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <BarChart3 size={18} />
-          </div>
-        </div>
-
-        {/* Watch Time */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Streams</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">
-              {stats?.totalStreams || '0'}
-            </h3>
-            <span className="text-[9.5px] font-bold text-emerald-600 flex items-center gap-0.5">
-              Platform wide
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Clock size={18} />
-          </div>
-        </div>
-
-        {/* Total Broadcasts */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Total Broadcasts</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-outfit">
-              {liveSchedules.filter(s => new Date(s.startDate).toDateString() === new Date().toDateString()).length}
-            </h3>
-            <span className="text-[9.5px] font-bold text-slate-400">Today</span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <FileText size={18} />
-          </div>
-        </div>
-
-        {/* Duration */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Duration</p>
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-0.5 font-mono">02:35:28</h3>
-            <span className="text-[9.5px] font-bold text-slate-400">Live Since 06:45 PM</span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-            <Clock size={18} />
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Upper Grid (3 Columns: Current Live Stream, Stream Health, Live Chat) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* Column 1: Native In-Browser Studio & Broadcast Feed (5 Cols) */}
-        <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                <Camera size={16} className="text-purple-600" />
-                <span>Nirbhik Native Studio</span>
-              </h3>
-              {isRecording ? (
-                <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5 animate-pulse">
-                  <Disc size={12} />
-                  <span>REC {formatRecordingTime(recordingSeconds)}</span>
-                </span>
-              ) : (
-                <span className="bg-slate-100 text-slate-600 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
-                  {isStudioCamActive ? 'CAM ACTIVE' : 'CAM OFFLINE'}
-                </span>
-              )}
-            </div>
-
-            {/* Studio Screen / Webcam Feed */}
-            <div className="relative rounded-2xl overflow-hidden shadow-md group bg-slate-950 min-h-[220px] flex items-center justify-center">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted={isMicMuted}
-                className={`w-full h-56 object-cover ${isStudioCamActive ? 'block' : 'hidden'}`}
-              />
-
-              {!isStudioCamActive && (
-                <div className="text-center p-6 space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-400">
-                    <Camera size={22} />
-                  </div>
-                  <h4 className="text-white text-xs font-extrabold">In-Browser Studio Ready</h4>
-                  <p className="text-slate-400 text-[11px] max-w-[220px] mx-auto">
-                    Turn on camera to broadcast or record news directly from your browser without third-party software.
-                  </p>
-                </div>
-              )}
-
-              <span className={`absolute top-3 left-3 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md ${isLive ? 'bg-[#eb1c24] animate-pulse' : 'bg-slate-800'}`}>
-                {isLive ? 'LIVE' : 'OFFLINE'}
-              </span>
-
-              {/* Top-Right Channel Watermark Logo */}
-              <div className="absolute top-3 right-3 z-10 bg-white/40 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 shadow-lg">
-                <img
-                  src="/images/logos/Nirbhik-Bangla-Logo-No-Bg.png"
-                  alt="Nirbhik Bangla Logo"
-                  className="h-7 w-auto object-contain filter drop-shadow-md"
-                />
-              </div>
-
-              {/* Lower Third Ticker Banner */}
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3 pt-6 text-white space-y-1">
-                <div className="bg-[#eb1c24] text-white text-[10px] font-black px-2 py-0.5 rounded inline-block uppercase font-bangla">
-                  {liveStreamInfo ? 'নির্ভীক বাংলা স্টুডিও' : 'বিশেষ কভারেজ'}
-                </div>
-                <p className="text-xs font-bold font-bangla truncate">
-                  {typeof liveStreamInfo?.title === 'object' ? (liveStreamInfo.title.bn || liveStreamInfo.title.en) : (liveStreamInfo?.title || 'সরাসরি স্টুডিও ব্রডকাস্টের জন্য নির্ভীক বাংলায় চোখ রাখুন')}
-                </p>
-              </div>
-            </div>
-
-            {/* Studio Action Control Bar */}
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={toggleStudioCam}
-                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
-                  isStudioCamActive
-                    ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                    : 'bg-slate-900 text-white border-slate-800 hover:bg-slate-800'
-                }`}
-              >
-                {isStudioCamActive ? <VideoOff size={14} /> : <Camera size={14} />}
-                <span>{isStudioCamActive ? 'Turn Off Cam' : 'Turn On Cam'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleMic}
-                disabled={!isStudioCamActive}
-                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
-                  !isStudioCamActive
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                    : isMicMuted
-                    ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                }`}
-              >
-                {isMicMuted ? <MicOff size={14} /> : <Mic size={14} />}
-                <span>{isMicMuted ? 'Unmute Mic' : 'Mute Mic'}</span>
-              </button>
-
-              {!isRecording ? (
-                <button
-                  type="button"
-                  onClick={startStudioRecording}
-                  disabled={!isStudioCamActive}
-                  className={`py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
-                    !isStudioCamActive
-                      ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 cursor-pointer'
-                  }`}
-                >
-                  <Disc size={14} />
-                  <span>Start Record</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={stopStudioRecordingAndSave}
-                  className="py-2 px-3 bg-slate-900 hover:bg-black text-white text-xs font-black rounded-xl flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer animate-pulse"
-                >
-                  <Square size={14} />
-                  <span>Stop & Save</span>
-                </button>
-              )}
-            </div>
-
-            {/* Stream Metadata Grid */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 space-y-2 text-xs font-semibold text-slate-700">
-              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                <span className="text-slate-400 font-bold">Studio Mode</span>
-                <span className="font-bangla font-black text-purple-700">Native Browser Studio</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 font-bold">Encoding Format</span>
-                <span className="font-mono font-bold text-slate-800 text-[10px] uppercase">WebM / VP9 High-Def</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 font-bold">Auto Recording</span>
-                <span className="font-bold text-emerald-600 text-[11px]">Enabled (Direct to Database)</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={async () => {
-              if (liveStreamInfo?._id) {
-                try {
-                  const token = localStorage.getItem('token');
-                  await fetch(`${API_BASE_URL}/live-streams/${liveStreamInfo._id}`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ isLive: false })
-                  });
-                } catch (error) {
-                  console.error('Failed to end stream', error);
-                }
-              }
-              setIsLive(false);
-              showToast('লাইভ সম্প্রচার সফলভাবে সমাপ্ত করা হলো!');
-            }}
-            className="w-full py-2.5 bg-[#eb1c24] hover:bg-red-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer uppercase tracking-wider"
-          >
-            <Square size={14} fill="white" />
-            <span>End Stream</span>
-          </button>
-        </div>
-
-        {/* Column 2: Stream Health & Real-time Metrics (4 Cols) */}
-        <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-              <h3 className="font-extrabold text-sm text-slate-900">Stream Health</h3>
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md">
-                All systems normal
-              </span>
-            </div>
-
-            <div className="space-y-3.5 text-xs font-semibold text-slate-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity size={15} className="text-slate-400" />
-                  <span>RTMP Connection</span>
-                </div>
-                <span className="font-bold text-emerald-600">Connected</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Video size={15} className="text-slate-400" />
-                  <span>Video Bitrate</span>
-                </div>
-                <span className="font-mono font-bold text-slate-900">6000 kbps</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock size={15} className="text-slate-400" />
-                  <span>Dropped Frames</span>
-                </div>
-                <span className="font-mono font-bold text-emerald-600">0 (0%)</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={15} className="text-slate-400" />
-                  <span>CPU Usage</span>
-                </div>
-                <span className="font-mono font-bold text-slate-900">23%</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity size={15} className="text-slate-400" />
-                  <span>Memory Usage</span>
-                </div>
-                <span className="font-mono font-bold text-slate-900">46%</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock size={15} className="text-slate-400" />
-                  <span>Latency</span>
-                </div>
-                <span className="font-mono font-bold text-emerald-600">2.3 sec</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Globe size={15} className="text-slate-400" />
-                  <span>Network</span>
-                </div>
-                <span className="font-bold text-emerald-600">Excellent</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Column 3: Live Chat Panel (3 Cols) */}
-        <div className="lg:col-span-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
-              <MessageSquare size={15} className="text-purple-600" />
-              <span>Live Chat</span>
-            </h3>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-              🟢 1.2K Online
-            </span>
-          </div>
-
-          {/* Chat Messages Stream */}
-          <div className="space-y-2.5 overflow-y-auto max-h-56 pr-1 custom-scrollbar text-xs">
-            {chatList.map((msg) => (
-              <div key={msg._id || msg.id} className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900 text-[11px] font-bangla">{msg.senderName || msg.name}</span>
-                  <span className="text-[9px] text-slate-400 font-mono">
-                    {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.time || '')}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-700 font-bangla font-semibold leading-tight">{msg.text}</p>
-                <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold pt-0.5">
-                  <ThumbsUp size={10} className="text-purple-600" />
-                  <span>{msg.likesCount ?? msg.likes ?? 0}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Chat Input Form */}
-          <form onSubmit={handleSendChat} className="space-y-2 pt-2 border-t border-slate-100">
-            <div className="flex items-center gap-1.5">
-              <input
-                type="text"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs outline-none focus:border-[#eb1c24] font-bangla"
-              />
-              <button
-                type="submit"
-                className="w-8 h-8 rounded-xl bg-[#eb1c24] text-white flex items-center justify-center shadow-2xs hover:bg-red-700 cursor-pointer"
-              >
-                <Send size={14} />
-              </button>
-            </div>
-            <span className="text-[9.5px] text-slate-400 font-semibold block text-center">
-              ⏱ Slow Mode is ON
-            </span>
-          </form>
-        </div>
-
-      </div>
-
-      {/* 4. Middle Row: Multi Platform, Stream Analytics, Live Poll, AI Live Tools */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-        {/* Widget 1: Multi Platform Streaming */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-          <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-            Multi Platform Streaming
-          </h3>
-
-          <div className="space-y-2.5 text-xs font-semibold">
-            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-              <div className="flex items-center gap-2">
-                <Globe size={15} className="text-purple-600" />
-                <span className="font-bold text-slate-800">Website</span>
-              </div>
-              <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-red-600 text-white font-black text-[9px] flex items-center justify-center">▶</span>
-                <span className="font-bold text-slate-800">YouTube</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
-                <span className="text-[10px] font-mono text-slate-500 font-bold">👁 8,542</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-blue-600 text-white font-black text-[9px] flex items-center justify-center">f</span>
-                <span className="font-bold text-slate-800">Facebook</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
-                <span className="text-[10px] font-mono text-slate-500 font-bold">👁 3,128</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-slate-900 text-white font-black text-[9px] flex items-center justify-center">𝕏</span>
-                <span className="font-bold text-slate-800">X (Twitter)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded">LIVE</span>
-                <span className="text-[10px] font-mono text-slate-500 font-bold">👁 1,245</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => showToast('নতুন প্ল্যাটফর্ম যোগ করার উইন্ডো খোলা হলো!')}
-            className="w-full py-2 bg-purple-50 text-purple-700 font-extrabold text-xs rounded-xl hover:bg-purple-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
-          >
-            <Plus size={14} />
-            <span>Add Platform</span>
-          </button>
-        </div>
-
-        {/* Widget 2: Stream Analytics (Live) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900">Stream Analytics (Live)</h3>
-            <button className="text-xs font-bold text-purple-700 hover:underline">View All Analytics →</button>
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-              <span>Live Viewers</span>
-              <span className="font-mono text-purple-700 font-black">15,248</span>
-            </div>
-            {/* SVG Trend Wave */}
-            <div className="w-full h-20 pt-1">
-              <svg viewBox="0 0 300 80" className="w-full h-full">
-                <path d="M0 60 Q 40 40, 80 50 T 160 20 T 240 10 T 300 40 L 300 80 L 0 80 Z" fill="rgba(147, 51, 234, 0.15)" />
-                <path d="M0 60 Q 40 40, 80 50 T 160 20 T 240 10 T 300 40" fill="none" stroke="#9333ea" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-5 gap-1 text-[9.5px] font-bold text-slate-600 text-center pt-1 border-t border-slate-100">
-            <div><span className="block font-mono font-black text-slate-900 text-xs">125h</span>Watch</div>
-            <div><span className="block font-mono font-black text-slate-900 text-xs">8,654</span>Likes</div>
-            <div><span className="block font-mono font-black text-slate-900 text-xs">2,356</span>Comments</div>
-            <div><span className="block font-mono font-black text-slate-900 text-xs">1,248</span>Shares</div>
-            <div><span className="block font-mono font-black text-slate-900 text-xs">345</span>Subs</div>
-          </div>
-        </div>
-
-        {/* Widget 3: Live Poll */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900">Live Poll</h3>
-            {poll?.isActive ? (
-              <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-md">Active</span>
-            ) : (
-              <span className="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded-md">Closed</span>
-            )}
-          </div>
-
-          {poll ? (
-            <div className="space-y-2 text-xs font-semibold">
-              <h4 className="font-bangla font-black text-slate-900 text-xs">{poll.question}</h4>
-              
-              {poll.options.map((opt, idx) => {
-                const totalVotes = poll.options.reduce((sum, o) => sum + (o.votes || 0), 0);
-                const percent = totalVotes === 0 ? 0 : Math.round((opt.votes / totalVotes) * 100);
-                return (
-                  <div key={idx} className="space-y-1.5 cursor-pointer" onClick={() => {
-                    fetch(`${API_BASE_URL}/polls/${poll._id}/vote`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ optionIndex: idx })
-                    }).then(res => res.json()).then(data => {
-                      if (data.success) setPoll(data.data);
-                    });
-                  }}>
-                    <div className="flex justify-between text-[11px] font-bangla font-bold">
-                      <span>{opt.text}</span>
-                      <span className={`font-mono font-extrabold text-${opt.color || 'purple-600'}`}>{percent}% ({opt.votes})</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full bg-${opt.color || 'purple-600'} rounded-full`} style={{ width: `${percent}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400 font-bold text-xs">
-              No active polls
-            </div>
-          )}
-
-          <span className="text-[10px] text-slate-400 font-bold block pt-1 border-t border-slate-100">
-            Total Votes: {poll ? poll.options.reduce((sum, o) => sum + (o.votes || 0), 0) : 0}
-          </span>
-        </div>
-
-        {/* Widget 4: AI Live Tools (BETA) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
-              <Sparkles size={15} className="text-purple-600" />
-              <span>AI Live Tools</span>
-            </h3>
-            <span className="bg-purple-100 text-purple-700 text-[9px] font-black px-1.5 py-0.2 rounded">BETA</span>
-          </div>
-
-          <div className="space-y-2 text-xs font-semibold text-slate-700">
-            <div className="flex justify-between items-center">
-              <span>AI Live Captions</span>
-              <span className="font-bold text-emerald-600">ON</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>AI Translation (EN)</span>
-              <span className="font-bold text-emerald-600">ON</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>AI Translation (HI)</span>
-              <span className="font-bold text-emerald-600">ON</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>AI Highlights</span>
-              <span className="font-bold text-amber-600 animate-pulse">Detecting...</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>AI Moderation</span>
-              <span className="font-bold text-emerald-600">Active</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => showToast('AI ব্রডকাস্ট ডিরেক্টর খোলা হলো!')}
-            className="w-full py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1 mt-1"
-          >
-            <span>Open AI Broadcast Director</span>
-            <ArrowRight size={14} />
-          </button>
-        </div>
-
-      </div>
-
-      {/* 5. Bottom Row (4 Cards Grid) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-        {/* Card 1: Upcoming Scheduled Streams */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900">Upcoming Scheduled Streams</h3>
-            <button className="text-[11px] font-bold text-purple-700 hover:underline">View All →</button>
-          </div>
-
-          <div className="space-y-2 text-xs font-semibold">
-            {liveSchedules.length > 0 ? (
-              liveSchedules.slice(0, 3).map((item) => (
-                <div key={item._id} className="p-2 rounded-xl bg-slate-50 space-y-0.5 border border-slate-200/50">
-                  <h5 className="font-bangla font-black text-slate-900 text-xs">
-                    {typeof item.title === 'object' ? (item.title.bn || item.title.en) : item.title}
-                  </h5>
-                  <span className="text-[9.5px] font-mono text-slate-400 block">{item.startTime || 'Scheduled'}</span>
-                </div>
-              ))
-            ) : (
-              [
-                { title: 'বিশেষ সংবাদ বুলেটিন', time: 'Today - 07:00 PM' },
-                { title: 'আন্তর্জাতিক সংবাদ', time: 'Today - 09:00 PM' },
-              ].map((item, idx) => (
-                <div key={idx} className="p-2 rounded-xl bg-slate-50 space-y-0.5 border border-slate-200/50">
-                  <h5 className="font-bangla font-black text-slate-900 text-xs">{item.title}</h5>
-                  <span className="text-[9.5px] font-mono text-slate-400 block">{item.time}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Card 2: Recent Recordings */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900">Recent Recordings</h3>
-            <button className="text-[11px] font-bold text-purple-700 hover:underline">View All →</button>
-          </div>
-
-          <div className="space-y-2 text-xs font-semibold">
-            {liveRecordings.length > 0 ? liveRecordings.map((item) => (
-              <div key={item._id} className="p-2 rounded-xl bg-slate-50 flex items-center justify-between border border-slate-200/50">
-                <h5 className="font-bangla font-black text-slate-900 text-xs truncate max-w-[150px]">
-                  {typeof item.title === 'object' ? (item.title.bn || item.title.en) : item.title}
-                </h5>
-                <span className="text-[10px] font-mono font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-                  {item.duration || '00:00'}
+      {/* 3-Column Top Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Column 1: Session Configuration (~42% width - lg:col-span-5) */}
+        <div className="lg:col-span-5">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 h-full flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-extrabold text-slate-900 text-base">Session Configuration</h3>
+                <span className={`px-2.5 py-0.5 text-[10px] font-black uppercase rounded-md flex items-center gap-1 ${
+                  currentSession?.status === 'live' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  Status: <span className="font-bold">{currentSession?.status?.toUpperCase() || 'OFFLINE'}</span>
+                  {currentSession?.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping" />}
                 </span>
               </div>
-            )) : (
-              <div className="text-center text-slate-400 py-2">No recordings found</div>
-            )}
-          </div>
-        </div>
 
-        {/* Card 3: AI Generated Highlights */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900">AI Generated Highlights</h3>
-            <button className="text-[11px] font-bold text-purple-700 hover:underline">View All →</button>
-          </div>
-
-          <div className="space-y-2 text-xs font-semibold">
-            {highlights.length > 0 ? highlights.map((item) => (
-              <div key={item._id} className="p-2 rounded-xl bg-slate-50 flex items-center justify-between border border-slate-200/50">
-                <h5 className="font-extrabold text-slate-900 font-bangla text-xs truncate max-w-[130px]">
-                  {typeof item.title === 'object' ? (item.title.bn || item.title.en) : item.title}
-                </h5>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-slate-500 font-bold">{item.duration || '00:00'}</span>
-                  <button className="p-1 text-purple-700 hover:bg-purple-100 rounded cursor-pointer" title="Download Highlight">
-                    <Download size={13} />
+              {/* Title Language Tabs */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Title Language Tabs</label>
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTitleLang('bn')}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      activeTitleLang === 'bn' ? 'bg-white text-[#eb1c24] border border-red-200 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    বাংলা (BN)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTitleLang('en')}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      activeTitleLang === 'en' ? 'bg-white text-[#eb1c24] border border-red-200 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    English (EN)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTitleLang('hi')}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      activeTitleLang === 'hi' ? 'bg-white text-[#eb1c24] border border-red-200 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    हिंदी (HI)
                   </button>
                 </div>
               </div>
-            )) : (
-              <div className="text-center text-slate-400 py-2">No highlights available</div>
-            )}
+
+              {/* Title Input based on active tab */}
+              {activeTitleLang === 'bn' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Bengali Title (বাংলা শিরোনাম) *</label>
+                  <textarea
+                    rows={2}
+                    name="titleBn"
+                    value={formData.titleBn}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-[#eb1c24] resize-none"
+                    placeholder="LIVE | Annapurna Yojana News | অন্নপূর্ণা প্রকল্পে কারা যোগ্যা? বিভ্রান্তি কাটাতে পথে BJP মহিলা মোর্চা"
+                  />
+                </div>
+              )}
+
+              {activeTitleLang === 'en' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">English Title (English Title)</label>
+                  <textarea
+                    rows={2}
+                    name="titleEn"
+                    value={formData.titleEn}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-[#eb1c24] resize-none"
+                    placeholder="Enter Live Session Title in English"
+                  />
+                </div>
+              )}
+
+              {activeTitleLang === 'hi' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Hindi Title (हिंदी शीर्षक)</label>
+                  <textarea
+                    rows={2}
+                    name="titleHi"
+                    value={formData.titleHi}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-[#eb1c24] resize-none"
+                    placeholder="यहाँ हिंदी में लाइव सेशन शीर्षक दर्ज करें"
+                  />
+                </div>
+              )}
+
+              {/* URL Slug with checkmark */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">URL Slug *</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="slug"
+                    value={formData.slug}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 pr-9 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-[#eb1c24]"
+                    placeholder="YojanaNews"
+                  />
+                  {formData.slug && (
+                    <div className="absolute right-3 top-2.5 text-emerald-500">
+                      <CheckCircle2 size={16} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Source Provider Buttons with SVG Icons */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Source Provider</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {/* YouTube */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, sourceType: 'youtube' }))}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      formData.sourceType === 'youtube'
+                        ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ProviderIcons.youtube className={formData.sourceType === 'youtube' ? 'text-white' : 'text-red-600'} />
+                    <span>YouTube</span>
+                  </button>
+
+                  {/* Facebook */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, sourceType: 'facebook' }))}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      formData.sourceType === 'facebook'
+                        ? 'bg-[#1877f2] text-white border-[#1877f2] shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ProviderIcons.facebook className={formData.sourceType === 'facebook' ? 'text-white' : 'text-[#1877f2]'} />
+                    <span>Facebook</span>
+                  </button>
+
+                  {/* Restream */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, sourceType: 'restream' }))}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      formData.sourceType === 'restream'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ProviderIcons.restream className={formData.sourceType === 'restream' ? 'text-white' : 'text-slate-900'} />
+                    <span>Restream</span>
+                  </button>
+
+                  {/* RTMP */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, sourceType: 'rtmp' }))}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      formData.sourceType === 'rtmp'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ProviderIcons.rtmp className={formData.sourceType === 'rtmp' ? 'text-white' : 'text-purple-600'} />
+                    <span>RTMP</span>
+                  </button>
+
+                  {/* Embed */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, sourceType: 'embed' }))}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      formData.sourceType === 'embed'
+                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ProviderIcons.embed className={formData.sourceType === 'embed' ? 'text-white' : 'text-teal-600'} />
+                    <span>Embed</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Provider Inputs */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2.5">
+                {formData.sourceType === 'youtube' && (
+                  <>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">YouTube Video ID</label>
+                      <input
+                        type="text"
+                        name="youtubeVideoId"
+                        value={formData.youtubeVideoId}
+                        onChange={handleChange}
+                        placeholder="e.g. jfKfPfyJRdk"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:border-[#eb1c24]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">YouTube URL</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="youtubeUrl"
+                          value={formData.youtubeUrl}
+                          onChange={handleChange}
+                          placeholder="https://www.youtube.com/live/..."
+                          className="w-full px-3 py-1.5 pr-8 border border-slate-200 rounded-lg text-xs bg-white outline-none focus:border-[#eb1c24]"
+                        />
+                        {formData.youtubeUrl && (
+                          <div className="absolute right-2.5 top-2 text-emerald-500">
+                            <CheckCircle2 size={14} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {formData.sourceType === 'facebook' && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Facebook Video URL</label>
+                    <input
+                      type="text"
+                      name="facebookUrl"
+                      value={formData.facebookUrl}
+                      onChange={handleChange}
+                      placeholder="https://facebook.com/..."
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none"
+                    />
+                  </div>
+                )}
+
+                {formData.sourceType === 'restream' && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Restream Event ID</label>
+                    <input
+                      type="text"
+                      name="restreamStreamId"
+                      value={formData.restreamStreamId}
+                      onChange={handleChange}
+                      placeholder="Restream Event ID"
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none"
+                    />
+                  </div>
+                )}
+
+                {formData.sourceType === 'rtmp' && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">External RTMP Stream URL</label>
+                    <input
+                      type="text"
+                      name="rtmpUrl"
+                      value={formData.rtmpUrl}
+                      onChange={handleChange}
+                      placeholder="rtmp://..."
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none"
+                    />
+                  </div>
+                )}
+
+                {formData.sourceType === 'embed' && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Iframe Embed URL</label>
+                    <input
+                      type="text"
+                      name="embedUrl"
+                      value={formData.embedUrl}
+                      onChange={handleChange}
+                      placeholder="https://..."
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons Row (Exact match to screenshot) */}
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleSaveSession}
+                className="flex-1 bg-[#eb1c24] hover:bg-red-700 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20 cursor-pointer transition-all"
+              >
+                <Save size={14} />
+                <span>{currentSession ? 'Update Session' : 'Save as Scheduled'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleUpdateStatus('paused')}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+              >
+                <Pause size={14} />
+                <span>Pause Stream</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleUpdateStatus('archived')}
+                className="flex-1 bg-slate-900 hover:bg-black text-white py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all"
+              >
+                <Square size={14} />
+                <span>End Broadcast (Archive)</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Card 4: Quick Stats */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="font-extrabold text-sm text-slate-900">Platform Quick Stats</h3>
-            <span className="text-[10px] font-bold text-slate-500">Live ˅</span>
+        {/* Column 2: AI Content Assistant (~28% width - lg:col-span-3.5) */}
+        <div className="lg:col-span-3">
+          <AIAssistantWidget
+            title={formData.titleBn}
+            description={formData.descriptionBn}
+            onApplySlug={(slug) => setFormData(prev => ({ ...prev, slug }))}
+            onApplyTitle={(titleBn) => setFormData(prev => ({ ...prev, titleBn }))}
+            onApplyTranslation={(data) => {
+              setFormData(prev => ({
+                ...prev,
+                titleEn: data.en?.title || prev.titleEn,
+                titleHi: data.hi?.title || prev.titleHi
+              }));
+            }}
+          />
+        </div>
+
+        {/* Column 3: Live Preview & Status Overview (~30% width - lg:col-span-4) */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Live Preview Box */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Live Preview ({formData.sourceType})</h3>
+              <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded uppercase">LIVE</span>
+            </div>
+
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center">
+              {currentSession && getEmbedUrl(currentSession) ? (
+                <iframe
+                  src={getEmbedUrl(currentSession)}
+                  title="Live Preview"
+                  className="w-full h-full border-0"
+                  allow="autoplay"
+                />
+              ) : (
+                <div className="relative w-full h-full flex flex-col items-center justify-center bg-radial from-red-950 via-slate-950 to-black text-center p-4">
+                  <div className="w-24 h-24 rounded-full border border-red-500/30 animate-pulse absolute" />
+                  <div className="flex items-center gap-1 text-white font-black text-sm tracking-widest uppercase relative z-10">
+                    <span>NIRBHIK</span>
+                    <span className="bg-red-600 text-white px-1 rounded text-xs">বাংলা</span>
+                  </div>
+                  <span className="text-[10px] text-white/70 mt-1 relative z-10">Broadcast is currently offline</span>
+                </div>
+              )}
+              <span className="absolute top-2 left-2 bg-[#d70b18] text-white text-[8px] font-black px-1.5 py-0.2 rounded uppercase tracking-wider shadow-sm">
+                LIVE
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-2.5 text-xs font-semibold text-slate-700">
-            <div className="flex justify-between items-center">
-              <span>Total Broadcasts</span>
-              <span className="font-mono font-black text-slate-900">{stats?.totalStreams || 0}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Total Video Views</span>
-              <span className="font-mono font-black text-slate-900">{stats?.totalVideoViews?.toLocaleString() || 0}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Total Article Views</span>
-              <span className="font-mono font-black text-slate-900">{stats?.totalViews?.toLocaleString() || 0}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Total Published Articles</span>
-              <span className="font-mono font-black text-slate-900">{stats?.totalArticles || 0}</span>
+          {/* Status Overview Grid (4 Stat Cards in a row) */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
+            <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-100 pb-2">Status Overview</h3>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <span className="text-[9px] font-bold text-slate-400 block">Status</span>
+                <span className="text-xs font-black text-rose-600 mt-0.5 block flex items-center justify-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping inline-block" /> LIVE
+                </span>
+              </div>
+              <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <span className="text-[9px] font-bold text-slate-400 block">Connection</span>
+                <span className="text-xs font-black text-emerald-600 mt-0.5 block">📡 Active</span>
+              </div>
+              <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <span className="text-[9px] font-bold text-slate-400 block">Provider</span>
+                <span className="text-xs font-black text-rose-600 mt-0.5 block uppercase">▶ YouTube</span>
+              </div>
+              <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <span className="text-[9px] font-bold text-slate-400 block">Quality</span>
+                <span className="text-xs font-black text-emerald-600 mt-0.5 block">HD 1080p</span>
+              </div>
             </div>
           </div>
+
         </div>
 
       </div>
 
+      {/* Broadcast History Table Section */}
+      <div className="space-y-4 pt-4 border-t border-slate-200/80 mt-6">
+        
+        {/* Table Header with Filter Pills and Search */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-black text-slate-900 mr-2">Broadcast History</h2>
+            <div className="flex items-center gap-1.5">
+              {[
+                { id: 'all', label: 'All Sessions' },
+                { id: 'live', label: 'Live Now ●' },
+                { id: 'scheduled', label: '📅 Scheduled' },
+                { id: 'archived', label: '📦 Archived / Ended' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-[#eb1c24] text-white shadow-xs'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-60">
+              <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search sessions..."
+                className="w-full h-8 pl-8 pr-3 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
+              />
+            </div>
+            <button className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 cursor-pointer">
+              <SlidersHorizontal size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50/80 text-slate-400 font-extrabold uppercase tracking-wider text-[10px] border-b border-slate-100">
+                <tr>
+                  <th className="py-3 px-3 w-8 text-center">#</th>
+                  <th className="py-3 px-3">Session Title (BN / EN / HI)</th>
+                  <th className="py-3 px-3">Provider</th>
+                  <th className="py-3 px-3">Status</th>
+                  <th className="py-3 px-3">Start Time</th>
+                  <th className="py-3 px-3">Duration</th>
+                  <th className="py-3 px-3">Views</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {filteredSessions.map((item, idx) => (
+                  <tr key={item._id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3.5 px-3 font-mono font-bold text-slate-400 text-center">{idx + 1}</td>
+                    
+                    {/* Multilingual Title Stack */}
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-start gap-1.5">
+                        {item.status === 'live' && (
+                          <span className="bg-[#eb1c24] text-white text-[8px] font-black px-1 py-0.2 rounded uppercase mt-0.5 shrink-0">
+                            LIVE
+                          </span>
+                        )}
+                        <div>
+                          <h4 className="font-extrabold text-slate-900 text-xs leading-snug">
+                            {item.title?.bn || item.title?.en}
+                          </h4>
+                          {item.title?.en && (
+                            <p className="text-[10.5px] text-slate-400 line-clamp-1 mt-0.5">
+                              {item.title.en}
+                            </p>
+                          )}
+                          {item.title?.hi && (
+                            <p className="text-[10.5px] text-slate-400 line-clamp-1">
+                              {item.title.hi}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Provider */}
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-center gap-1.5 font-extrabold text-xs text-slate-800">
+                        {item.sourceType === 'youtube' && <span className="text-red-600">▶</span>}
+                        {item.sourceType === 'facebook' && <span className="text-blue-600 font-bold">f</span>}
+                        {item.sourceType === 'restream' && <span className="text-slate-900 font-black">R</span>}
+                        <span className="capitalize">{item.sourceType}</span>
+                      </div>
+                    </td>
+
+                    {/* Status Badge */}
+                    <td className="py-3.5 px-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
+                        item.status === 'live' ? 'bg-rose-100 text-rose-600' :
+                        item.status === 'scheduled' ? 'bg-amber-100 text-amber-700' :
+                        item.status === 'ended' ? 'bg-slate-100 text-slate-500' :
+                        'bg-blue-100 text-blue-600'
+                      }`}>
+                        {item.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping" />}
+                        {item.status}
+                      </span>
+                    </td>
+
+                    {/* Start Time */}
+                    <td className="py-3.5 px-3 text-slate-500 text-[11px]">
+                      {new Date(item.startedAt || item.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                      <br />
+                      <span className="text-[10px] text-slate-400">{new Date(item.startedAt || item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </td>
+
+                    {/* Duration */}
+                    <td className="py-3.5 px-3 font-mono text-[11px] text-slate-600">
+                      {item.duration || '01:25:45'}
+                    </td>
+
+                    {/* Views */}
+                    <td className="py-3.5 px-3 font-mono font-bold text-emerald-600">
+                      {(item.viewerCount || 12400).toLocaleString()}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3.5 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {setCurrentSession(item); populateForm(item); window.scrollTo(0, 0);}}
+                          className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="View"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          onClick={() => {setCurrentSession(item); populateForm(item); window.scrollTo(0, 0);}}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={() => showToast('Analytics features active')}
+                          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Analytics"
+                        >
+                          <BarChart2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSession(item._id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
     </div>
   );
 }

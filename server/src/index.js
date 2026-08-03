@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 
 // Load environment variables FIRST
@@ -12,6 +14,17 @@ const v1Router = require('./routes/v1');
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  }
+});
+
+// Pass io to liveSessionController
+const liveSessionController = require('./controllers/liveSessionController');
+liveSessionController.setIo(io);
 
 const path = require('path');
 
@@ -49,6 +62,20 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+let liveViewersCount = 0;
+
+io.on('connection', (socket) => {
+  liveViewersCount++;
+  console.log(`🔌 New client connected via Socket.IO: ${socket.id} (Live Viewers: ${liveViewersCount})`);
+  io.emit('viewer_updated', liveViewersCount);
+
+  socket.on('disconnect', () => {
+    liveViewersCount = Math.max(0, liveViewersCount - 1);
+    console.log(`🔌 Client disconnected: ${socket.id} (Live Viewers: ${liveViewersCount})`);
+    io.emit('viewer_updated', liveViewersCount);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`🚀 Nirbhik Bangla 2.0 Headless API Server running on port ${PORT}`);
 });

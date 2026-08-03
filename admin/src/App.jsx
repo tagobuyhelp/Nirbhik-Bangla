@@ -20,7 +20,6 @@ import CreateAdPage from './pages/CreateAdPage';
 import CreatePlacementPage from './pages/CreatePlacementPage';
 import GoLivePage from './pages/GoLivePage';
 import CommentsPage from './pages/CommentsPage';
-import LiveStreamsPage from './pages/LiveStreamsPage';
 import ReportersPage from './pages/ReportersPage';
 import CreateReporterPage from './pages/CreateReporterPage';
 import SettingsPage from './pages/SettingsPage';
@@ -60,7 +59,7 @@ export default function App() {
           {/* Live & Video Routes */}
           <Route path="live-tv" element={<GoLivePage />} />
           <Route path="go-live" element={<GoLivePage />} />
-          <Route path="live-streams" element={<LiveStreamsPage />} />
+          <Route path="live-streams" element={<GoLivePage />} />
           <Route path="videos" element={<VideosPage />} />
           <Route path="videos/create" element={<CreateVideoPage />} />
           <Route path="videos/edit/:id" element={<CreateVideoPage />} />

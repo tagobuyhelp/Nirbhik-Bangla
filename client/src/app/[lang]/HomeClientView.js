@@ -376,7 +376,7 @@ export default function LanguageHomePage({ params }) {
                 </Link>
               </div>
               <div className="relative h-[165px] w-full overflow-hidden rounded-xl border border-white/15 bg-[#170e11] group shrink-0 shadow-inner">
-                <img src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=640&q=80" alt="" className="h-full w-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500" />
+                <img src="/images/live-tv-cover-image.png" alt="Live TV" className="h-full w-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-full bg-[#d70b18] px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
                   <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
                   LIVE • 1.2K

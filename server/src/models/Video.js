@@ -18,7 +18,7 @@ const VideoSchema = new mongoose.Schema({
   },
   sourceType: {
     type: String,
-    enum: ['upload', 'yt_single', 'yt_playlist', 'yt_live', 'fb', 'url'],
+    enum: ['upload', 'local_upload', 'yt_single', 'yt_playlist', 'yt_live', 'fb', 'url'],
     default: 'yt_single'
   },
   videoUrl: { type: String, default: '' },
@@ -67,7 +67,7 @@ const VideoSchema = new mongoose.Schema({
 // Helper to extract YouTube Video ID from URL
 VideoSchema.statics.extractYoutubeId = function(url) {
   if (!url) return '';
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|live\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : '';
 };
