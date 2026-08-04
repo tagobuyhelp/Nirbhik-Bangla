@@ -19,6 +19,7 @@ const socialRoutes = require('./socialRoutes');
 const scheduleRoutes = require('./scheduleRoutes');
 const pollRoutes = require('./pollRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const reporterRoutes = require('./reporterRoutes');
 
 // Mount Versioned Routes
 router.use('/public', publicRoutes);
@@ -39,6 +40,7 @@ router.use('/social', socialRoutes);
 router.use('/schedules', scheduleRoutes);
 router.use('/polls', pollRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/reporters', reporterRoutes);
 
 // Health check endpoint for v1
 router.get('/health', (req, res) => {

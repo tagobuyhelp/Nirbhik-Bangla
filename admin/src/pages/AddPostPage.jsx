@@ -51,6 +51,7 @@ import {
   Calendar,
   AlertCircle,
   ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function AddPostPage() {
@@ -900,161 +901,140 @@ export default function AddPostPage() {
         </div>
       )}
 
-      {/* Top Header Bar inside Add Post */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
-        {/* Breadcrumb + Status */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <NavLink to="/" className="hover:text-[#eb1c24] transition-colors">Dashboard</NavLink>
-            <span>›</span>
-            <NavLink to="/posts" className="hover:text-[#eb1c24] transition-colors">Posts</NavLink>
-            <span>›</span>
-            <span className="text-slate-900 font-bold">{isEditMode ? 'Edit Post' : 'Add New Post'}</span>
-          </nav>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 mb-2">
+        <NavLink to="/" className="hover:text-[#eb1c24] transition-colors">Dashboard</NavLink>
+        <ChevronRight size={12} className="text-slate-400" />
+        <NavLink to="/posts" className="hover:text-[#eb1c24] transition-colors">Posts</NavLink>
+        <ChevronRight size={12} className="text-slate-400" />
+        <span className="text-slate-900 font-bold">{isEditMode ? 'Edit Post' : 'Add New Post'}</span>
+      </div>
 
-          <span className="h-3.5 w-px bg-slate-300 hidden sm:block" />
-
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
-            <CheckCircle2 size={15} className={lastSavedTime ? 'text-emerald-600' : 'text-slate-400'} />
-            <span className={lastSavedTime ? 'text-emerald-600' : 'text-slate-500'}>{savedStatusText}</span>
-          </div>
+      {/* Top Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">{isEditMode ? 'Edit Post' : 'Add New Post'}</h1>
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
+            {isEditMode ? 'Update and refine your news article with AI assistance.' : 'Create engaging content with the power of AI.'}
+          </p>
         </div>
 
-        {/* Top Right Action Buttons */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={handleSaveDraft}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-          >
-            <Save size={15} className="text-slate-500" />
-            <span>Save Draft</span>
-          </button>
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Status */}
+          <div className="flex items-center gap-1 text-xs text-emerald-600 font-bold">
+            <CheckCircle2 size={14} className={lastSavedTime ? 'text-emerald-600' : 'text-slate-400'} />
+            <span className={lastSavedTime ? 'text-emerald-600' : 'text-slate-500'}>{savedStatusText || 'Not saved yet'}</span>
+          </div>
 
-          <button
-            onClick={() => setShowPreviewModal(true)}
-            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-          >
-            <Eye size={15} className="text-slate-500" />
-            <span>Preview</span>
-          </button>
-
-          <div className="relative">
-            <button
-              onClick={handlePublishPost}
-              disabled={isPublishing}
-              className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/25 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Rocket size={15} />
-              <span>{isPublishing ? (isEditMode ? 'UPDATING...' : 'PUBLISHING...') : isEditMode ? 'UPDATE' : 'PUBLISH'}</span>
-              <ChevronDown size={14} />
+          <div className="flex items-center gap-2">
+            <button onClick={handleSaveDraft} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
+              <Save size={14} className="text-slate-500" />
+              <span>Save Draft</span>
             </button>
+            <button onClick={() => setShowPreviewModal(true)} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
+              <Eye size={14} className="text-slate-500" />
+              <span>Preview</span>
+            </button>
+            <button className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
+              <Calendar size={14} className="text-slate-500" />
+              <span>Schedule</span>
+            </button>
+            <div className="relative flex shadow-2xs rounded-lg">
+              <button onClick={handlePublishPost} disabled={isPublishing} className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-l-lg flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 border-r border-red-800/30">
+                <span>{isPublishing ? 'PUBLISHING...' : 'Publish'}</span>
+              </button>
+              <button className="bg-[#eb1c24] hover:bg-red-700 text-white px-2.5 rounded-r-lg transition-all cursor-pointer">
+                <ChevronDown size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main 3-Column Grid Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+      {/* Main 2-Column Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
-        {/* ================= COLUMN 1: MAIN FORM EDITOR (~50% - xl:col-span-6) ================= */}
-        <div className="xl:col-span-6 space-y-5">
+        {/* ================= COLUMN 1: MAIN FORM EDITOR (~66% - xl:col-span-8) ================= */}
+        <div className="xl:col-span-8 space-y-6">
 
-          {/* Title & Subtitle Card */}
+          {/* Title & Slug Container */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">{isEditMode ? 'Edit Article' : 'Add New Post'}</h1>
-              <p className="text-xs font-medium text-slate-500 mt-0.5">
-                {isEditMode ? 'Update and refine your news article with AI assistance.' : 'Create engaging content with the power of AI.'}
-              </p>
-            </div>
-
+            
             {/* Title Field */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700">
-                  Title <span className="text-red-500">*</span>
-                </label>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter news title..."
-                    className="w-full h-12 px-4 pr-16 text-base md:text-lg font-black text-slate-900 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all font-bangla shadow-2xs"
-                  />
-                  <span className="absolute right-3.5 top-3.5 text-xs font-extrabold text-slate-400">
+              <label className="block text-xs font-bold text-slate-700 mb-2">
+                Title <span className="text-[#eb1c24]">*</span>
+              </label>
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter news title..."
+                  className="w-full h-12 pl-4 pr-44 text-sm md:text-base font-bold text-slate-900 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] transition-all font-bangla"
+                />
+                <div className="absolute right-2 flex items-center gap-3">
+                  <span className="text-xs font-semibold text-slate-400">
                     {title.length}/100
                   </span>
+                  <button
+                    onClick={handleAiGenerateTitle}
+                    disabled={isAiLoading}
+                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Sparkles size={13} className={isAiLoading ? 'animate-spin' : ''} />
+                    <span>Generate AI Title</span>
+                  </button>
                 </div>
-                <button
-                  onClick={handleAiGenerateTitle}
-                  disabled={isAiLoading}
-                  className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-bold px-4 h-12 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0 disabled:opacity-50"
-                >
-                  <Sparkles size={15} className={isAiLoading ? 'animate-spin' : ''} />
-                  <span>{isAiLoading ? 'Generating...' : 'AI Generate Title'}</span>
-                </button>
               </div>
             </div>
 
             {/* Slug Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Slug</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-xs font-bold text-slate-700 mb-2">Slug</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-3 text-slate-400">
+                  {/* Lock icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
                 <input
                   type="text"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="post-url-slug"
-                  className="flex-1 h-10 px-3.5 text-xs font-mono font-medium text-slate-700 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all"
+                  className="w-full h-10 pl-9 pr-20 text-xs font-mono font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] transition-all"
                 />
                 <button
                   onClick={() => handleAiOptimizeSlug()}
                   disabled={isAiLoading}
-                  className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+                  className="absolute right-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <Wand2 size={14} className={isAiLoading ? 'animate-spin' : ''} />
-                  <span>{isAiLoading ? 'Generating...' : 'AI Generate Slug'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    const baseUrl = (import.meta.env.VITE_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-                    const currentLang = activeLang || 'bn';
-                    navigator.clipboard.writeText(`${baseUrl}/${currentLang}/news/${slug}`);
-                    showToast('লিংক কপি করা হয়েছে!');
-                  }}
-                  className="p-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
-                  title="Copy News Link"
-                >
-                  <LinkIcon size={15} />
+                  Edit
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Rich Text Editor Box */}
+          {/* AI Tools & Rich Text Editor Box */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-            {/* AI Tools Toolbar Header (Solid Slate Dark Toolbar) */}
-            <div className="bg-slate-900 text-white border-b border-slate-800 px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-none text-xs font-extrabold">
-              <span className="flex items-center gap-1.5 text-white bg-[#eb1c24] px-2.5 py-0.5 rounded-md shrink-0 shadow-xs">
-                <Sparkles size={13} />
-                AI Tools
-              </span>
-              <button onClick={() => handleAiEditorAction('write')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
+            {/* AI Tools Toolbar Header */}
+            {/* AI Tools Toolbar Header */}
+            <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-none text-[11px] font-bold text-slate-700">
+              <span className="text-slate-900 mr-2 font-extrabold text-xs">AI Tools</span>
+              <button onClick={() => handleAiEditorAction('write')} disabled={isAiLoading} className="border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
                 <PenTool size={13} /> Write
               </button>
-              <button onClick={() => handleAiEditorAction('headlines')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
+              <button onClick={() => handleAiEditorAction('headlines')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
                 <Heading size={13} /> Headlines
               </button>
-              <button onClick={() => handleAiEditorAction('rewrite')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
-                <RotateCw size={13} className={isAiLoading ? 'animate-spin' : ''} /> Rewrite
+              <button onClick={() => handleAiEditorAction('rewrite')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
+                <RotateCw size={13} className={isAiLoading ? 'animate-spin text-blue-500' : 'text-blue-500'} /> Rewrite
               </button>
-              <button onClick={() => handleAiEditorAction('expand')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
-                <Maximize2 size={13} /> Expand
+              <button onClick={() => handleAiEditorAction('expand')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
+                <Maximize2 size={13} className="text-red-500" /> Expand
               </button>
-              <button onClick={() => handleAiEditorAction('shorten')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
-                <Minimize2 size={13} /> Shorten
+              <button onClick={() => handleAiEditorAction('shorten')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
+                <Minimize2 size={13} className="text-emerald-600" /> Shorten
               </button>
               <button onClick={async () => {
                 const text = editorRef.current?.innerText;
@@ -1070,13 +1050,13 @@ export default function AddPostPage() {
                   }
                 } catch (err) { showToast('Translation failed'); }
                 finally { setIsAiLoading(false); }
-              }} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
-                <Languages size={13} /> Translate
+              }} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
+                <Languages size={13} className="text-blue-600" /> Translate
               </button>
-              <button onClick={() => handleAiRegenerateSidebar('seo')} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50">
-                <SearchCheck size={13} /> SEO
+              <button onClick={() => handleAiRegenerateSidebar('seo')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
+                <SearchCheck size={13} className="text-teal-600" /> SEO
               </button>
-              <button onClick={handleAiFactCheck} disabled={isAiLoading} className="hover:text-red-400 shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50 ml-auto bg-red-800/50 px-2 py-0.5 rounded">
+              <button onClick={handleAiFactCheck} disabled={isAiLoading} className="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ml-auto">
                 <ShieldCheck size={13} /> Fact Check
               </button>
             </div>
@@ -1131,303 +1111,250 @@ export default function AddPostPage() {
             </div>
 
             {/* Editor Status Footer */}
-            <div className="border-t border-slate-100 px-4 py-2.5 bg-slate-50/50 flex items-center justify-between text-xs font-semibold text-slate-500">
+            <div className="border-t border-slate-100 px-4 py-2.5 bg-white flex items-center justify-between text-[11px] font-semibold text-slate-500">
               <div className="flex items-center gap-4">
-                <span>Words: <strong>{wordCount}</strong></span>
-                <span>Characters: <strong>{charCount}</strong></span>
+                <span>Words: <strong className="text-slate-800">{wordCount}</strong></span>
+                <span>Characters: <strong className="text-slate-800">{charCount}</strong></span>
+                <span className="flex items-center gap-1"><Clock size={13} className="text-slate-400" /> Reading Time: <strong className="text-slate-800">{readingTime} min</strong></span>
               </div>
-              <div className="flex items-center gap-1.5 text-slate-600 font-bold">
-                <Clock size={14} className="text-slate-400" />
-                <span>Reading Time: {readingTime} min</span>
+              <div className="flex items-center gap-1.5 font-bold">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-emerald-600">Excellent</span>
               </div>
             </div>
           </div>
 
           {/* Excerpt Box */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                <FileText size={15} className="text-[#eb1c24]" />
-                <span>Post Excerpt (সংক্ষেপ)</span>
+              <label className="text-xs font-bold text-slate-700">
+                Post Excerpt (সংক্ষেপ)
               </label>
-              <span className="text-[10px] font-bold text-slate-400">
-                {excerpt.length}/300
-              </span>
             </div>
-            <textarea
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="Write brief news summary (Excerpt) or accept from AI Suggestions..."
-              rows={3}
-              className="w-full p-3 text-xs font-bangla text-slate-800 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all resize-none"
-            />
+            <div className="relative">
+              <textarea
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="Write brief news summary (Excerpt) or accept from AI Suggestions..."
+                rows={4}
+                className="w-full p-4 pb-10 text-sm font-bangla text-slate-800 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all resize-none shadow-sm"
+              />
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 px-2">
+                  {excerpt.length}/300
+                </span>
+                <button
+                  onClick={() => handleAiRegenerateSidebar('excerpt')}
+                  disabled={isAiLoading}
+                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles size={13} className={isAiLoading ? 'animate-spin' : ''} />
+                  <span>Generate Excerpt</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* SEO Metadata Settings Box */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                <SearchCheck size={15} className="text-[#eb1c24]" />
-                <span>SEO Settings</span>
-              </h4>
-              <span className="text-[10px] font-extrabold text-white bg-[#eb1c24] px-2 py-0.5 rounded flex items-center gap-1 shadow-xs">
-                <Sparkles size={11} /> AI Powered
-              </span>
+          {/* 2-Column Split Grid (SEO & Categories/Tags) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* SEO Settings */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+              <h4 className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">SEO Settings</h4>
+              <div className="space-y-3">
+                {/* SEO Title */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700">SEO Title</label>
+                    <span className="text-[10px] font-bold text-slate-400">{seoTitle.length}/60</span>
+                  </div>
+                  <input type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className="w-full px-3 py-2 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] transition-all" />
+                </div>
+                {/* Meta Description */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700">Meta Description</label>
+                    <span className="text-[10px] font-bold text-slate-400">{metaDescription.length}/160</span>
+                  </div>
+                  <textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} rows={2} className="w-full px-3 py-2 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] transition-all resize-none" />
+                </div>
+                {/* Focus Keywords */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 mb-1 block">Focus Keywords</label>
+                  <div className="flex flex-wrap gap-1.5 mb-2 font-sans">
+                    {focusKeywords.map((kw, idx) => (
+                      <span key={idx} className="px-2.5 py-1 bg-red-50 text-[#eb1c24] border border-red-200 text-[10px] font-bold rounded-lg flex items-center gap-1.5">
+                        {kw}
+                        <button onClick={() => setFocusKeywords(focusKeywords.filter((_, i) => i !== idx))} className="cursor-pointer hover:text-red-800"><X size={12} /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="text" placeholder="Add keyword..." value={newKeywordInput} onChange={(e) => setNewKeywordInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && newKeywordInput.trim()) { e.preventDefault(); setFocusKeywords([...new Set([...focusKeywords, newKeywordInput.trim()])]); setNewKeywordInput(''); } }} className="flex-1 px-3 py-1.5 text-[11px] font-bangla border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]" />
+                    <button onClick={() => { if (newKeywordInput.trim()) { setFocusKeywords([...new Set([...focusKeywords, newKeywordInput.trim()])]); setNewKeywordInput(''); } }} className="px-3 py-1.5 bg-slate-800 text-white text-[11px] font-bold rounded-xl hover:bg-slate-900 cursor-pointer">Add</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {/* SEO Title */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-slate-700">SEO Title</label>
-                  <span className="text-[10px] font-bold text-slate-400">{seoTitle.length}/60</span>
-                </div>
-                <input
-                  type="text"
-                  value={seoTitle}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  placeholder="Enter search engine title or accept from AI Suggestions..."
-                  className="w-full px-3 py-2 text-xs font-bangla text-slate-800 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all"
-                />
-              </div>
-
-              {/* Meta Description */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-slate-700">Meta Description</label>
-                  <span className="text-[10px] font-bold text-slate-400">{metaDescription.length}/160</span>
-                </div>
-                <textarea
-                  value={metaDescription}
-                  onChange={(e) => setMetaDescription(e.target.value)}
-                  placeholder="Enter meta description summary or accept from AI Suggestions..."
-                  rows={2}
-                  className="w-full px-3 py-2 text-xs font-bangla text-slate-800 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] focus:ring-2 focus:ring-red-100 transition-all resize-none"
-                />
-              </div>
-
-              {/* Focus Keywords */}
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 mb-1 block">Focus Keywords</label>
-                <div className="flex flex-wrap gap-1.5 mb-2 font-sans">
-                  {focusKeywords.length > 0 ? focusKeywords.map((kw, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-red-50 text-[#eb1c24] border border-red-200 text-xs font-bold rounded-lg flex items-center gap-1.5">
-                      {kw}
-                      <button onClick={() => setFocusKeywords(focusKeywords.filter((_, i) => i !== idx))} className="cursor-pointer hover:text-red-800">
-                        <X size={12} />
-                      </button>
-                    </span>
-                  )) : (
-                    <span className="text-[11px] text-slate-400 italic">No focus keywords added yet</span>
+            {/* Categories & Tags */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+              <h4 className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">Categories & Tags</h4>
+              <div className="space-y-4">
+                {/* Categories Panel */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-slate-700 block">Categories</label>
+                  <div className="space-y-2 text-xs font-semibold text-slate-700 font-bangla max-h-32 overflow-y-auto pr-1">
+                    {categories.length > 0 ? categories.map((cat) => {
+                      const catName = cat.translations?.bn?.name || cat.translations?.en?.name || (typeof cat.name === 'object' ? cat.name?.bn || cat.name?.en : cat.name) || 'Category';
+                      return (
+                        <label key={cat._id} className="flex items-center gap-2 cursor-pointer hover:text-slate-900">
+                          <input type="radio" name="category" checked={selectedCategory === cat._id} onChange={() => setSelectedCategory(cat._id)} className="rounded-full border-slate-300 text-[#eb1c24] focus:ring-red-200" />
+                          <span>{catName}</span>
+                        </label>
+                      );
+                    }) : <div className="text-slate-400 text-[10px]">No categories available</div>}
+                  </div>
+                  {showAddCatModal ? (
+                    <div className="flex items-center gap-2 pt-1">
+                      <input type="text" placeholder="Category name..." value={newCatInput} onChange={(e) => setNewCatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()} className="flex-1 px-2.5 py-1 text-[11px] border border-slate-200 rounded-lg font-bangla outline-none focus:border-[#eb1c24]" />
+                      <button onClick={handleAddNewCategory} className="px-2.5 py-1 bg-[#eb1c24] text-white text-[11px] font-bold rounded-lg cursor-pointer">Save</button>
+                      <button onClick={() => setShowAddCatModal(false)} className="p-1 text-slate-400 hover:text-slate-600"><X size={14} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setShowAddCatModal(true)} className="text-[11px] font-bold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer">
+                      <Plus size={12} /> Add New Category
+                    </button>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Type keyword and press Enter..."
-                    value={newKeywordInput}
-                    onChange={(e) => setNewKeywordInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newKeywordInput.trim()) {
-                        e.preventDefault();
-                        setFocusKeywords([...new Set([...focusKeywords, newKeywordInput.trim()])]);
-                        setNewKeywordInput('');
-                      }
-                    }}
-                    className="flex-1 px-3 py-1.5 text-xs font-bangla border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24]"
-                  />
-                  <button
-                    onClick={() => {
-                      if (newKeywordInput.trim()) {
-                        setFocusKeywords([...new Set([...focusKeywords, newKeywordInput.trim()])]);
-                        setNewKeywordInput('');
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 cursor-pointer"
-                  >
-                    Add
-                  </button>
+
+                {/* Tags Panel */}
+                <div className="space-y-2 pt-3 border-t border-slate-100">
+                  <label className="text-[11px] font-bold text-slate-700 block">Tags</label>
+                  <div className="flex flex-wrap gap-1.5 font-bangla">
+                    {tags.map((tag, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded text-[10px] font-bold flex items-center gap-1">
+                        {tag} <button onClick={() => removeTag(tag)} className="cursor-pointer text-slate-400 hover:text-red-600"><X size={10} /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="text" placeholder="New tag..." value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTag()} className="flex-1 px-2.5 py-1.5 text-[11px] border border-slate-200 rounded-lg font-bangla outline-none focus:border-[#eb1c24]" />
+                    <button onClick={addTag} className="px-2.5 py-1.5 bg-slate-800 text-white text-[11px] font-bold rounded-lg cursor-pointer">Add</button>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
-
-          {/* Bottom 4 Panels Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            {/* Categories Panel */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-extrabold text-slate-900">Categories</h4>
-                <span className="text-[10px] font-extrabold text-white bg-[#eb1c24] px-2 py-0.5 rounded flex items-center gap-1 shadow-xs">
-                  <Sparkles size={11} /> AI Suggested
-                </span>
-              </div>
-              <div className="space-y-2 text-xs font-semibold text-slate-700 font-bangla max-h-40 overflow-y-auto pr-1">
-                {categories.length > 0 ? categories.map((cat) => {
-                  const catName = cat.translations?.bn?.name || cat.translations?.en?.name || (typeof cat.name === 'object' ? cat.name?.bn || cat.name?.en : cat.name) || 'Category';
-                  return (
-                    <label key={cat._id} className="flex items-center gap-2 cursor-pointer hover:text-slate-900">
-                      <input
-                        type="radio"
-                        name="category"
-                        checked={selectedCategory === cat._id}
-                        onChange={() => setSelectedCategory(cat._id)}
-                        className="rounded-full border-slate-300 text-[#eb1c24] focus:ring-red-200"
-                      />
-                      <span>{catName}</span>
-                    </label>
-                  );
-                }) : (
-                  <div className="text-slate-400">No categories available</div>
+          
+          {/* 2-Column Split Grid (Featured Image & Publishing) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Featured Image Box */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+              <h4 className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center justify-between">
+                <span>Featured Image</span>
+              </h4>
+              <input type="file" ref={imageFileInputRef} onChange={handleImageFileUpload} accept="image/*" className="hidden" />
+              {featuredImage ? (
+                <div className="rounded-xl overflow-hidden border border-slate-200 relative group">
+                  <img src={featuredImage} alt={altText || 'Featured'} className="w-full h-36 object-cover" />
+                </div>
+              ) : (
+                <div onClick={handleFeaturedImageChange} className="h-36 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#eb1c24] hover:bg-red-50/20 flex flex-col items-center justify-center text-slate-400 hover:text-[#eb1c24] cursor-pointer transition-all">
+                  <Upload size={24} />
+                  <span className="text-[11px] font-bold mt-1">Upload Featured Image</span>
+                  <span className="text-[10px] text-slate-400">Click to select file</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button onClick={handleFeaturedImageChange} className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer">
+                  {featuredImage ? 'Change Image' : 'Upload Image'}
+                </button>
+                <button onClick={() => { const url = prompt('ইমেজ URL পেস্ট করুন:', featuredImage); if (url) { setFeaturedImage(url); showToast('ইমেজ URL সেট করা হয়েছে!'); } }} className="py-1.5 px-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-[11px] font-bold rounded-lg transition-colors cursor-pointer">
+                  URL
+                </button>
+                {featuredImage && (
+                  <button onClick={() => setFeaturedImage('')} className="py-1.5 px-3 border border-slate-200 hover:bg-rose-50 text-rose-600 text-[11px] font-bold rounded-lg transition-colors cursor-pointer">
+                    Remove
+                  </button>
                 )}
               </div>
-
-              {/* Add New Category Dialog */}
-              {showAddCatModal ? (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="text"
-                    placeholder="Category name..."
-                    value={newCatInput}
-                    onChange={(e) => setNewCatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
-                    className="flex-1 px-2.5 py-1 text-xs border border-slate-200 rounded-lg font-bangla outline-none focus:border-[#eb1c24]"
-                  />
-                  <button onClick={handleAddNewCategory} className="px-2.5 py-1 bg-[#eb1c24] text-white text-xs font-bold rounded-lg cursor-pointer">
-                    Save
-                  </button>
-                  <button onClick={() => setShowAddCatModal(false)} className="p-1 text-slate-400 hover:text-slate-600">
-                    <X size={14} />
+              <div className="space-y-3 pt-3 border-t border-slate-100 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-[#eb1c24] flex items-center gap-1">
+                    <Sparkles size={12} /> AI Generated Details
+                  </p>
+                  <button onClick={handleAiRegenerateImageDetails} disabled={isAiLoading} className="text-[10px] font-bold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                    <Sparkles size={10} className={isAiLoading ? 'animate-spin' : ''} />
+                    <span>{isAiLoading ? 'Generating...' : 'Regenerate'}</span>
                   </button>
                 </div>
-              ) : (
-                <button onClick={() => setShowAddCatModal(true)} className="text-xs font-extrabold text-[#eb1c24] hover:underline flex items-center gap-1 pt-1 cursor-pointer">
-                  <Plus size={13} /> Add New Category
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Alt Text</label>
+                    <input type="text" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Image alt text..." className="w-full px-2 py-1 text-[11px] font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded outline-none focus:border-[#eb1c24]" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Caption</label>
+                    <input type="text" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Image caption..." className="w-full px-2 py-1 text-[11px] font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded outline-none focus:border-[#eb1c24]" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Credit</label>
+                    <input type="text" value={credit} onChange={(e) => setCredit(e.target.value)} placeholder="Photo credit..." className="w-full px-2 py-1 text-[11px] font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded outline-none focus:border-[#eb1c24]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Publishing Box */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 flex flex-col">
+              <h4 className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">Publishing</h4>
+              <div className="space-y-3 flex-1">
+                <div className="space-y-2 text-[11px] font-semibold text-slate-700">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span>Publish Immediately</span>
+                    <input type="checkbox" checked={publishOptions.immediately} onChange={(e) => setPublishOptions({ ...publishOptions, immediately: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
+                  </label>
+                  {!publishOptions.immediately && (
+                    <div className="flex items-center gap-2 pl-4 py-1">
+                      <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-800 outline-none flex-1" />
+                      <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-[11px] font-bold text-slate-800 outline-none w-24" />
+                    </div>
+                  )}
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span>Allow Comments</span>
+                    <input type="checkbox" checked={publishOptions.allowComments} onChange={(e) => setPublishOptions({ ...publishOptions, allowComments: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span>Show on Homepage</span>
+                    <input type="checkbox" checked={publishOptions.showHomepage} onChange={(e) => setPublishOptions({ ...publishOptions, showHomepage: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span>Featured Post</span>
+                    <input type="checkbox" checked={publishOptions.featured} onChange={(e) => setPublishOptions({ ...publishOptions, featured: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span>Breaking News</span>
+                    <input type="checkbox" checked={publishOptions.breaking} onChange={(e) => setPublishOptions({ ...publishOptions, breaking: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
+                  </label>
+                </div>
+              </div>
+              <div className="pt-2 mt-auto border-t border-slate-100">
+                <button onClick={handlePublishPost} disabled={isPublishing} className="w-full py-2.5 bg-[#eb1c24] hover:bg-red-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-md shadow-red-500/25 transition-all cursor-pointer disabled:opacity-50">
+                  <Rocket size={14} />
+                  <span>{isPublishing ? 'PUBLISHING...' : 'PUBLISH POST'}</span>
                 </button>
-              )}
-            </div>
-
-            {/* Tags Panel */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-extrabold text-slate-900">Tags</h4>
-                <span className="text-[10px] font-extrabold text-white bg-[#eb1c24] px-2 py-0.5 rounded flex items-center gap-1 shadow-xs">
-                  <Sparkles size={11} /> AI Generated
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 font-bangla">
-                {tags.map((tag, i) => (
-                  <span key={i} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold flex items-center gap-1">
-                    {tag}
-                    <button onClick={() => removeTag(tag)} className="cursor-pointer text-slate-400 hover:text-red-600">
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="text"
-                  placeholder="New tag..."
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addTag()}
-                  className="flex-1 px-2.5 py-1 text-xs border border-slate-200 rounded-lg font-bangla outline-none focus:border-[#eb1c24]"
-                />
-                <button onClick={addTag} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg cursor-pointer">
-                  Add
-                </button>
               </div>
             </div>
-
-            {/* Publish Options Panel */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-              <h4 className="text-xs font-extrabold text-slate-900">Publish Options</h4>
-              <div className="space-y-2 text-xs font-semibold text-slate-700">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span>Publish Immediately</span>
-                  <input type="checkbox" checked={publishOptions.immediately} onChange={(e) => setPublishOptions({ ...publishOptions, immediately: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span>Allow Comments</span>
-                  <input type="checkbox" checked={publishOptions.allowComments} onChange={(e) => setPublishOptions({ ...publishOptions, allowComments: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span>Show on Homepage</span>
-                  <input type="checkbox" checked={publishOptions.showHomepage} onChange={(e) => setPublishOptions({ ...publishOptions, showHomepage: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span>Featured Post</span>
-                  <input type="checkbox" checked={publishOptions.featured} onChange={(e) => setPublishOptions({ ...publishOptions, featured: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span>Breaking News</span>
-                  <input type="checkbox" checked={publishOptions.breaking} onChange={(e) => setPublishOptions({ ...publishOptions, breaking: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                </label>
-              </div>
-            </div>
-
-            {/* Social Media Panel */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-extrabold text-slate-900">Social Media</h4>
-                <span className="text-[10px] font-extrabold text-white bg-[#eb1c24] px-2 py-0.5 rounded flex items-center gap-1 shadow-xs">
-                  <Sparkles size={11} /> AI Generated
-                </span>
-              </div>
-
-              {editingCaptions ? (
-                <div className="space-y-2 text-xs">
-                  <input
-                    type="text"
-                    value={socialCaptions.facebook}
-                    onChange={(e) => setSocialCaptions({ ...socialCaptions, facebook: e.target.value })}
-                    className="w-full px-2 py-1 border border-slate-200 rounded font-bangla text-xs"
-                    placeholder="Facebook Caption..."
-                  />
-                  <input
-                    type="text"
-                    value={socialCaptions.twitter}
-                    onChange={(e) => setSocialCaptions({ ...socialCaptions, twitter: e.target.value })}
-                    className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
-                    placeholder="Twitter Caption..."
-                  />
-                  <button onClick={() => { setEditingCaptions(false); showToast('সোশাল মিডিয়া ক্যাপশন সেভ হয়েছে!'); }} className="py-1 px-3 bg-[#eb1c24] text-white text-xs font-bold rounded cursor-pointer">
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2 text-[11px] font-bangla">
-                  <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 truncate flex items-center gap-1.5">
-                    <Share2 size={13} className="text-blue-600 shrink-0" />
-                    <span className="truncate"><strong>Facebook:</strong> {socialCaptions.facebook}</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 truncate flex items-center gap-1.5">
-                    <Share2 size={13} className="text-slate-900 shrink-0" />
-                    <span className="truncate"><strong>Twitter (X):</strong> {socialCaptions.twitter}</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 truncate flex items-center gap-1.5">
-                    <MessageCircle size={13} className="text-emerald-600 shrink-0" />
-                    <span className="truncate"><strong>WhatsApp:</strong> {socialCaptions.whatsapp}</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 truncate flex items-center gap-1.5">
-                    <Send size={13} className="text-cyan-600 shrink-0" />
-                    <span className="truncate"><strong>Telegram:</strong> {socialCaptions.telegram}</span>
-                  </div>
-                </div>
-              )}
-
-              <button onClick={() => setEditingCaptions(true)} className="text-xs font-bold text-[#eb1c24] hover:underline cursor-pointer">
-                Edit All Captions
-              </button>
-            </div>
-
           </div>
         </div>
 
-        {/* ================= COLUMN 2: AI GENERATED SUGGESTIONS (~25% - xl:col-span-3) ================= */}
-        <div className="xl:col-span-3 space-y-4">
+        {/* ================= COLUMN 2: RIGHT SIDEBAR (~33% - xl:col-span-4) ================= */}
+        <div className="xl:col-span-4 space-y-6">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
@@ -1660,10 +1587,6 @@ export default function AddPostPage() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* ================= COLUMN 3: PUBLISHING, SEO & FEATURED IMAGE (~25% - xl:col-span-3) ================= */}
-        <div className="xl:col-span-3 space-y-4">
 
           {/* 1. Languages Box */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
@@ -1835,162 +1758,50 @@ export default function AddPostPage() {
             </button>
           </div>
 
-          {/* 3. Featured Image Box */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <h3 className="font-extrabold text-xs text-slate-900">Featured Image</h3>
-            <input
-              type="file"
-              ref={imageFileInputRef}
-              onChange={handleImageFileUpload}
-              accept="image/*"
-              className="hidden"
-            />
-            {featuredImage ? (
-              <div className="rounded-xl overflow-hidden border border-slate-200 relative group">
-                <img
-                  src={featuredImage}
-                  alt={altText || 'Featured'}
-                  className="w-full h-36 object-cover"
-                />
+          {/* Social Media Panel */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 className="text-xs font-bold text-slate-900">Social Media Share</h4>
+              <span className="text-[10px] font-bold text-[#eb1c24] flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded">
+                <Sparkles size={11} /> AI Generated
+              </span>
+            </div>
+
+            {editingCaptions ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5"><Share2 size={10} className="text-blue-600"/> Facebook</label>
+                  <textarea value={socialCaptions.facebook} onChange={(e) => setSocialCaptions({ ...socialCaptions, facebook: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bangla text-[11px] outline-none focus:border-[#eb1c24] resize-none" placeholder="Facebook Caption..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5"><Share2 size={10} className="text-slate-900"/> Twitter (X)</label>
+                  <textarea value={socialCaptions.twitter} onChange={(e) => setSocialCaptions({ ...socialCaptions, twitter: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bangla text-[11px] outline-none focus:border-[#eb1c24] resize-none" placeholder="Twitter Caption..." />
+                </div>
+                <button onClick={() => { setEditingCaptions(false); showToast('সোশাল মিডিয়া ক্যাপশন সেভ হয়েছে!'); }} className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg cursor-pointer">
+                  Save Captions
+                </button>
               </div>
             ) : (
-              <div
-                onClick={handleFeaturedImageChange}
-                className="h-36 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#eb1c24] hover:bg-red-50/20 flex flex-col items-center justify-center text-slate-400 hover:text-[#eb1c24] cursor-pointer transition-all"
-              >
-                <Upload size={24} />
-                <span className="text-xs font-bold mt-1">Upload Featured Image</span>
-                <span className="text-[10px] text-slate-400">Click to select file</span>
+              <div className="space-y-2 text-[11px] font-bangla">
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 flex items-start gap-2">
+                  <Share2 size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs text-slate-900 mb-0.5">Facebook</p>
+                    <p className="line-clamp-2 text-slate-600">{socialCaptions.facebook}</p>
+                  </div>
+                </div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 flex items-start gap-2">
+                  <Share2 size={14} className="text-slate-900 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs text-slate-900 mb-0.5">Twitter (X)</p>
+                    <p className="line-clamp-2 text-slate-600">{socialCaptions.twitter}</p>
+                  </div>
+                </div>
+                <button onClick={() => setEditingCaptions(true)} className="w-full py-1.5 text-slate-700 hover:bg-slate-50 border border-slate-200 text-[11px] font-bold rounded-lg cursor-pointer mt-2">
+                  Edit Captions
+                </button>
               </div>
             )}
-
-            <div className="flex items-center gap-2">
-              <button onClick={handleFeaturedImageChange} className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-colors cursor-pointer">
-                {featuredImage ? 'Change Image' : 'Upload Image'}
-              </button>
-              <button
-                onClick={() => {
-                  const url = prompt('ইমেজ URL পেস্ট করুন:', featuredImage);
-                  if (url) {
-                    setFeaturedImage(url);
-                    showToast('ইমেজ URL সেট করা হয়েছে!');
-                  }
-                }}
-                className="py-1.5 px-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-              >
-                URL
-              </button>
-              {featuredImage && (
-                <button onClick={() => setFeaturedImage('')} className="py-1.5 px-3 border border-slate-200 hover:bg-rose-50 text-rose-600 text-xs font-bold rounded-lg transition-colors cursor-pointer">
-                  Remove
-                </button>
-              )}
-            </div>
-
-            {/* AI Generated Image Details */}
-            <div className="space-y-3 pt-3 border-t border-slate-100 text-xs">
-              <div className="flex items-center justify-between">
-                <p className="font-extrabold text-[#eb1c24] flex items-center gap-1">
-                  <Sparkles size={13} /> AI Generated Details
-                </p>
-                <button
-                  onClick={handleAiRegenerateImageDetails}
-                  disabled={isAiLoading}
-                  className="text-[10px] font-extrabold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                >
-                  <Sparkles size={11} className={isAiLoading ? 'animate-spin' : ''} />
-                  <span>{isAiLoading ? 'Generating...' : 'Regenerate'}</span>
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Alt Text</label>
-                  <input
-                    type="text"
-                    value={altText}
-                    onChange={(e) => setAltText(e.target.value)}
-                    placeholder="Image alt text..."
-                    className="w-full px-2.5 py-1.5 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-[#eb1c24]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Caption</label>
-                  <input
-                    type="text"
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    placeholder="Image caption..."
-                    className="w-full px-2.5 py-1.5 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-[#eb1c24]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Credit</label>
-                  <input
-                    type="text"
-                    value={credit}
-                    onChange={(e) => setCredit(e.target.value)}
-                    placeholder="Photo credit..."
-                    className="w-full px-2.5 py-1.5 text-xs font-bangla text-slate-800 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-[#eb1c24]"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Publishing Box */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-xs text-slate-900">Publishing</h3>
-
-            <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="font-bold text-slate-600">Schedule</span>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="date"
-                    value={scheduleDate}
-                    onChange={(e) => setScheduleDate(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none"
-                  />
-                  <input
-                    type="time"
-                    value={scheduleTime}
-                    onChange={(e) => setScheduleTime(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2 font-semibold text-slate-700 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={socialShares.subscribers} onChange={(e) => setSocialShares({ ...socialShares, subscribers: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                  <span>Notify Subscribers</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={socialShares.pushNotification} onChange={(e) => setSocialShares({ ...socialShares, pushNotification: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                  <span>Send Push Notification</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={socialShares.facebook} onChange={(e) => setSocialShares({ ...socialShares, facebook: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                  <span>Share to Facebook Page</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={socialShares.twitter} onChange={(e) => setSocialShares({ ...socialShares, twitter: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
-                  <span>Share to Twitter (X)</span>
-                </label>
-              </div>
-            </div>
-
-            <button
-              onClick={handlePublishPost}
-              disabled={isPublishing}
-              className="w-full py-2.5 bg-[#eb1c24] hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-md shadow-red-500/25 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Rocket size={15} />
-              <span>{isPublishing ? 'PUBLISHING...' : 'PUBLISH NOW'}</span>
-            </button>
           </div>
 
         </div>

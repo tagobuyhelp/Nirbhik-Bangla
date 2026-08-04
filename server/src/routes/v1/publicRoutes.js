@@ -152,14 +152,29 @@ router.get('/news', async (req, res, next) => {
 // GET /api/v1/public/news/by-slug/:slug
 router.get('/news/by-slug/:slug', async (req, res, next) => {
   try {
-    const { slug } = req.params;
+    let { slug } = req.params;
     const { lang = 'bn' } = req.query;
+
+    if (!slug) {
+      return sendResponse(res, 404, 'Article not found');
+    }
+
+    // Clean trailing slashes
+    slug = slug.trim().replace(/\/+$/, '');
+    // Strip trailing language suffix like -en, -bn, -hi if present
+    const baseSlug = slug.replace(/-(en|bn|hi)$/i, '');
 
     const article = await Article.findOne({
       $or: [
         { 'translations.bn.slug': slug },
         { 'translations.en.slug': slug },
         { 'translations.hi.slug': slug },
+        { 'translations.bn.slug': baseSlug },
+        { 'translations.en.slug': baseSlug },
+        { 'translations.hi.slug': baseSlug },
+        { 'translations.bn.slug': new RegExp(`^${baseSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') },
+        { 'translations.en.slug': new RegExp(`^${baseSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') },
+        { 'translations.hi.slug': new RegExp(`^${baseSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') },
       ],
     });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import {
   Plus,
@@ -42,6 +42,15 @@ export default function CategoriesPage() {
   const [newCatName, setNewCatName] = useState('');
   const [newCatSlug, setNewCatSlug] = useState('');
   const [newCatStatus, setNewCatStatus] = useState('Published');
+
+  // Edit Category Form State
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editStatus, setEditStatus] = useState('Published');
+
+  const [bulkAction, setBulkAction] = useState('');
+  const [openDropdownId, setOpenDropdownId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   const [categories, setCategories] = useState([]);
@@ -132,10 +141,85 @@ export default function CategoriesPage() {
     try {
       await api.delete(`/categories/${id}`);
       showToast('ক্যাটাগরি মুছে ফেলা হয়েছে!');
+      setOpenDropdownId(null);
       fetchCategories();
     } catch (error) {
       showToast('ক্যাটাগরি মুছতে ব্যর্থ হয়েছে');
     }
+  };
+
+  const handleToggleStatus = async (cat) => {
+    try {
+      const newActive = cat.status !== 'Published';
+      await api.put(`/categories/${cat.id}`, { isActive: newActive });
+      showToast(`Category "${cat.name}" updated to ${newActive ? 'Published' : 'Draft'}`);
+      setOpenDropdownId(null);
+      fetchCategories();
+    } catch (error) {
+      showToast('Could not update status');
+    }
+  };
+
+  const navigate = useNavigate();
+
+  const handleOpenEditModal = (cat) => {
+    navigate(`/categories/edit/${cat.id}`);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editName.trim() || !editingCategory) return;
+    try {
+      const slugValue = editSlug.trim() || editName.trim().toLowerCase().replace(/\s+/g, '-');
+      await api.put(`/categories/${editingCategory.id}`, {
+        slug: slugValue,
+        translations: {
+          bn: { name: editName.trim() }
+        },
+        isActive: editStatus === 'Published'
+      });
+
+      showToast(`Category "${editName}" updated successfully!`);
+      setEditingCategory(null);
+      fetchCategories();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Could not update category');
+    }
+  };
+
+  const handleApplyBulkActions = async () => {
+    if (selectedItems.length === 0) {
+      showToast('Select at least one category!');
+      return;
+    }
+    if (!bulkAction) {
+      showToast('Select a bulk action!');
+      return;
+    }
+
+    try {
+      if (bulkAction === 'delete') {
+        if (!window.confirm(`Delete ${selectedItems.length} categories?`)) return;
+        await Promise.all(selectedItems.map((id) => api.delete(`/categories/${id}`)));
+        showToast(`${selectedItems.length} categories deleted!`);
+      } else if (bulkAction === 'publish') {
+        await Promise.all(selectedItems.map((id) => api.put(`/categories/${id}`, { isActive: true })));
+        showToast(`${selectedItems.length} categories published!`);
+      } else if (bulkAction === 'draft') {
+        await Promise.all(selectedItems.map((id) => api.put(`/categories/${id}`, { isActive: false })));
+        showToast(`${selectedItems.length} categories marked as draft!`);
+      }
+      setSelectedItems([]);
+      setBulkAction('');
+      fetchCategories();
+    } catch (error) {
+      showToast('Error applying bulk action');
+    }
+  };
+
+  const handleViewCategory = (slug) => {
+    window.open(`http://localhost:3000/bn/category/${slug}`, '_blank');
+    setOpenDropdownId(null);
   };
 
   const filteredCategories = categories.filter(
@@ -253,14 +337,18 @@ export default function CategoriesPage() {
             {/* Filter & Action Header */}
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <select className="bg-white border border-slate-200 rounded-xl text-xs font-semibold px-3 py-2 text-slate-700 outline-none cursor-pointer">
+                <select
+                  value={bulkAction}
+                  onChange={(e) => setBulkAction(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl text-xs font-semibold px-3 py-2 text-slate-700 outline-none cursor-pointer"
+                >
                   <option value="">Bulk Actions</option>
                   <option value="delete">Delete Selected</option>
                   <option value="publish">Mark as Published</option>
                   <option value="draft">Mark as Draft</option>
                 </select>
                 <button
-                  onClick={() => selectedItems.length > 0 && showToast(`${selectedItems.length} categories updated!`)}
+                  onClick={handleApplyBulkActions}
                   className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
                 >
                   Apply
@@ -344,15 +432,17 @@ export default function CategoriesPage() {
                         </td>
 
                         <td className="py-3.5 px-3">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          <button
+                            onClick={() => handleToggleStatus(cat)}
+                            title="Click to toggle status (Published / Draft)"
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 transition-transform ${
                               cat.status === 'Published'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
                             }`}
                           >
                             {cat.status}
-                          </span>
+                          </button>
                         </td>
 
                         <td className="py-3.5 px-3 text-center">
@@ -361,29 +451,72 @@ export default function CategoriesPage() {
                           </span>
                         </td>
 
-                        <td className="py-3.5 px-3 text-right">
+                        <td className="py-3.5 px-3 text-right relative">
                           <div className="flex items-center justify-end gap-1">
                             <button
-                              onClick={() => showToast(`Edit category "${cat.name}"`)}
-                              className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              onClick={() => handleOpenEditModal(cat)}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
                               title="Edit Category"
                             >
                               <Pencil size={14} />
                             </button>
                             <button
-                              onClick={() => showToast(`Viewing category "${cat.name}"`)}
-                              className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                              title="View Category"
+                              onClick={() => handleViewCategory(cat.slug)}
+                              className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                              title="View Category on Website"
                             >
                               <Eye size={14} />
                             </button>
                             <button
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Delete Category"
+                            >
+                              <X size={15} />
+                            </button>
+                            <button
+                              onClick={() => setOpenDropdownId(openDropdownId === cat.id ? null : cat.id)}
                               className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                               title="More Options"
                             >
                               <MoreVertical size={14} />
                             </button>
                           </div>
+
+                          {/* Options Dropdown Menu */}
+                          {openDropdownId === cat.id && (
+                            <div className="absolute right-3 top-10 z-30 w-40 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-left text-xs font-semibold space-y-0.5 animate-in fade-in zoom-in-95">
+                              <button
+                                onClick={() => handleOpenEditModal(cat)}
+                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Pencil size={13} className="text-indigo-600" />
+                                <span>Edit Category</span>
+                              </button>
+                              <button
+                                onClick={() => handleToggleStatus(cat)}
+                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer"
+                              >
+                                <CheckCircle2 size={13} className="text-emerald-600" />
+                                <span>Toggle Status</span>
+                              </button>
+                              <button
+                                onClick={() => handleViewCategory(cat.slug)}
+                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Eye size={13} className="text-blue-600" />
+                                <span>View Category</span>
+                              </button>
+                              <div className="border-t border-slate-100 my-0.5" />
+                              <button
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className="w-full px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer"
+                              >
+                                <X size={13} />
+                                <span>Delete Category</span>
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -603,6 +736,71 @@ export default function CategoriesPage() {
                   className="px-5 py-2 bg-[#eb1c24] hover:bg-red-700 text-white font-black rounded-xl shadow-md cursor-pointer"
                 >
                   Create Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Category Modal */}
+      {editingCategory && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-black text-sm text-slate-900">Edit Category</h3>
+              <button onClick={() => setEditingCategory(null)} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">Category Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-bangla outline-none focus:border-[#eb1c24]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">Slug</label>
+                <input
+                  type="text"
+                  value={editSlug}
+                  onChange={(e) => setEditSlug(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-mono outline-none focus:border-[#eb1c24]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1 font-bold">Status</label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
+                >
+                  <option value="Published">Published</option>
+                  <option value="Draft">Draft</option>
+                </select>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCategory(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-md cursor-pointer"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>

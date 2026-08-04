@@ -18,8 +18,6 @@ import {
   Share2,
   Tag as TagIcon,
   ThumbsUp,
-  Volume2,
-  VolumeX,
 } from 'lucide-react';
 
 const fallbackArticle = {
@@ -114,7 +112,6 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
   const [article, setArticle] = useState(fallbackArticle);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [sidebarLatest, setSidebarLatest] = useState([]);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [fontSizeClass, setFontSizeClass] = useState('text-base');
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -194,7 +191,8 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
   }, [slug, lang]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/public/news/by-slug/${slug}?lang=${lang}`)
+    const cleanSlug = (slug || '').trim().replace(/\/+$/, '');
+    fetch(`${API_BASE_URL}/public/news/by-slug/${cleanSlug}?lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -242,9 +240,6 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
   const copyLinkTooltip = copiedLink
     ? (lang === 'en' ? 'Link Copied!' : lang === 'hi' ? 'लिंक कॉपी हो गया!' : 'লিঙ্ক কপি করা হয়েছে!')
     : (lang === 'en' ? 'Copy Link' : lang === 'hi' ? 'लिंक कॉपी करें' : 'লিঙ্ক কপি করুন');
-  const audioText = isPlayingAudio
-    ? (lang === 'en' ? 'Stop' : lang === 'hi' ? 'रोकें' : 'থামুন')
-    : (lang === 'en' ? 'Listen to News' : lang === 'hi' ? 'यह खबर सुनें' : 'শুনুন এই খবর');
 
   return (
     <div className="bg-white min-h-screen pb-24 md:pb-12 text-slate-900">
@@ -380,35 +375,6 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
                   {article.imageCredit && <span>{article.imageCredit}</span>}
                 </div>
               )}
-            </div>
-
-            {/* Audio Reader Widget */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs flex items-center justify-between gap-2.5">
-              <button
-                onClick={() => setIsPlayingAudio(!isPlayingAudio)}
-                className="flex items-center gap-2 text-slate-900 font-extrabold text-xs shrink-0 hover:text-[#d70b18] transition-colors"
-              >
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-[#d70b18] text-white shadow-xs">
-                  {isPlayingAudio ? <VolumeX size={14} /> : <Play size={14} fill="white" className="ml-0.5" />}
-                </span>
-                <span>{audioText}</span>
-              </button>
-
-              {/* Equalizer waveform vertical bars */}
-              <div className="flex items-center gap-0.5 h-6 flex-1 min-w-[60px] max-w-[200px] justify-center px-1">
-                {[40, 65, 80, 50, 90, 70, 45, 85, 100, 60, 40, 75, 95, 55, 35, 70, 80, 60, 45, 75, 50].map((height, i) => (
-                  <span
-                    key={i}
-                    className={`w-0.5 rounded-full transition-all ${isPlayingAudio ? (i % 2 === 0 ? 'bg-[#d70b18] animate-pulse' : 'bg-red-400') : i < 9 ? 'bg-[#d70b18]' : 'bg-slate-300'}`}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 text-xs font-semibold text-slate-500">
-                <span>04:35</span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-extrabold text-slate-700">1.0x</span>
-              </div>
             </div>
 
             {/* Article Content Body */}
@@ -572,32 +538,43 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
           {/* Right Sidebar (col-span-12 md:col-span-4) — Sticky Scroll */}
           <aside className="col-span-12 md:col-span-4 space-y-4 md:sticky md:top-[210px] self-start">
             {/* Live TV Widget */}
-            <div className="rounded-lg bg-[#07090c] p-3.5 text-white shadow-xs">
-              <div className="mb-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-1 rounded bg-[#d70b18]" />
-                  <h2 className="text-sm font-extrabold text-white">LIVE TV</h2>
+            <div className="rounded-2xl bg-gradient-to-br from-[#160608] via-[#26090e] to-[#0d0305] p-4 text-white shadow-md border border-red-950/70 relative overflow-hidden group">
+              <div className="absolute -top-10 -right-10 h-32 w-32 bg-[#d70b18]/20 rounded-full blur-2xl pointer-events-none" />
+              <div className="mb-2.5 flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d70b18]"></span>
+                  </span>
+                  <h2 className="text-sm font-black text-white">
+                    {lang === 'en' ? 'Live TV' : lang === 'hi' ? 'लाइव टीवी' : 'লাইভ টিভি'}
+                  </h2>
                 </div>
+                <Link href={`/${lang}/live`} className="flex items-center gap-1 text-xs font-bold text-red-300 hover:text-white transition-colors">
+                  {lang === 'en' ? 'View All' : lang === 'hi' ? 'सभी देखें' : 'সবগুলো দেখুন'} <ArrowRight size={13} className="text-[#d70b18]" />
+                </Link>
               </div>
-              <div className="relative h-[165px] w-full overflow-hidden rounded border border-white/10 bg-[#121826] group shrink-0">
-                <img src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=640&q=80" alt="" className="h-full w-full object-cover opacity-40 group-hover:scale-105 transition-transform" />
-                <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded bg-red-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+              <div className="relative h-[165px] w-full overflow-hidden rounded-xl border border-white/15 bg-[#170e11] group shrink-0 shadow-inner">
+                <img src="/images/live-tv-cover-image.png" alt="Live TV" className="h-full w-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-full bg-[#d70b18] px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
                   <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
                   LIVE • 1.2K
                 </div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
-                  <div className="mb-1 text-base font-black tracking-widest text-white">NIRBHIK BANGLA</div>
-                  <Link href={`/${lang}/live`} className="my-1.5 grid h-10 w-12 place-items-center rounded bg-[#d70b18] text-white hover:bg-red-700 transition-colors shadow-lg">
-                    <Play size={20} fill="white" className="ml-0.5" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                  <div className="mb-1 text-base font-black tracking-widest text-white drop-shadow-md">NIRBHIK BANGLA</div>
+                  <Link href={`/${lang}/live`} className="my-1.5 grid h-11 w-13 place-items-center rounded-xl bg-[#d70b18] hover:bg-red-600 text-white transition-all shadow-lg hover:scale-105 active:scale-95">
+                    <Play size={22} fill="white" className="ml-0.5" />
                   </Link>
                 </div>
               </div>
-              <div className="mt-2.5 flex items-center justify-between border-t border-white/10 pt-2.5 text-xs">
+              <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5 text-xs relative z-10">
                 <div>
-                  <h3 className="font-bold text-white">Nirbhik Bangla Live</h3>
-                  <p className="text-[9.5px] text-white/70">{lang === 'en' ? '24x7 Fearless News' : lang === 'hi' ? '24x7 निष्पक्ष समाचार' : '24x7 নির্ভীক সংবাদ'}</p>
+                  <h3 className="font-black text-white">Nirbhik Bangla Live</h3>
+                  <p className="text-[9.5px] font-semibold text-red-200/80">
+                    {lang === 'en' ? '24x7 Bengali News Channel' : lang === 'hi' ? '24x7 बंगाली समाचार चैनल' : '24x7 নির্ভীক বাংলা সংবাদ'}
+                  </p>
                 </div>
-                <Link href={`/${lang}/live`} className="rounded bg-[#d70b18] px-3 py-1 text-[11px] font-extrabold text-white hover:bg-red-700 transition-colors">
+                <Link href={`/${lang}/live`} className="rounded-xl bg-[#d70b18] px-3.5 py-1.5 text-[11px] font-black text-white hover:bg-red-600 transition-all shadow-md">
                   {lang === 'en' ? 'Watch Now' : lang === 'hi' ? 'अभी देखें' : 'এখনই দেখুন'}
                 </Link>
               </div>

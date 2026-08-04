@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/api';
 import {
   FolderPlus,
@@ -27,6 +27,8 @@ import {
 
 export default function CreateCategoryPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
   const [toastMessage, setToastMessage] = useState('');
 
   // 1. Basic Information State
@@ -34,6 +36,43 @@ export default function CreateCategoryPage() {
   const [slug, setSlug] = useState('');
   const [color, setColor] = useState('#eb1c24');
   const [featuredImage, setFeaturedImage] = useState('');
+
+  useEffect(() => {
+    if (id) {
+      api.get('/categories')
+        .then((res) => {
+          const list = res.data.data || [];
+          const found = list.find((c) => c._id === id || c.id === id);
+          if (found) {
+            const bnName = found.translations?.bn?.name || (typeof found.name === 'object' ? found.name?.bn : found.name) || '';
+            setCategoryName(bnName);
+            setSlug(found.slug || '');
+            setColor(found.color || '#eb1c24');
+            setFeaturedImage(found.featuredImage || '');
+            setTranslations({
+              en: {
+                name: found.translations?.en?.name || (typeof found.name === 'object' ? found.name?.en : '') || '',
+                slug: found.translations?.en?.slug || '',
+                desc: found.translations?.en?.description || ''
+              },
+              hi: {
+                name: found.translations?.hi?.name || (typeof found.name === 'object' ? found.name?.hi : '') || '',
+                slug: found.translations?.hi?.slug || '',
+                desc: found.translations?.hi?.description || ''
+              }
+            });
+            if (found.seo) {
+              setSeoTitle(found.seo.title || '');
+              setMetaDesc(found.seo.metaDesc || '');
+              setCanonicalUrl(found.seo.canonicalUrl || '');
+              setOgTitle(found.seo.ogTitle || '');
+              setOgDesc(found.seo.ogDesc || '');
+            }
+          }
+        })
+        .catch((err) => console.error('Error fetching category details:', err));
+    }
+  }, [id]);
 
   // 2. Multi-language Translations State
   const [activeLangTab, setActiveLangTab] = useState('bn');
@@ -145,8 +184,13 @@ export default function CreateCategoryPage() {
         isActive: true
       };
 
-      await api.post('/categories', payload);
-      showToast('নতুন ক্যাটাগরি সফলভাবে তৈরি ও পাবলিশ করা হয়েছে!');
+      if (isEditing) {
+        await api.put(`/categories/${id}`, payload);
+        showToast('ক্যাটাগরি সফলভাবে আপডেট করা হয়েছে!');
+      } else {
+        await api.post('/categories', payload);
+        showToast('নতুন ক্যাটাগরি সফলভাবে তৈরি ও পাবলিশ করা হয়েছে!');
+      }
       setTimeout(() => {
         navigate('/categories');
       }, 1200);
@@ -176,7 +220,7 @@ export default function CreateCategoryPage() {
           Categories
         </Link>
         <ChevronRight size={14} className="text-slate-400" />
-        <span className="text-slate-900 font-extrabold">Add New Category</span>
+        <span className="text-slate-900 font-extrabold">{isEditing ? 'Edit Category' : 'Add New Category'}</span>
       </div>
 
       {/* 1. Page Header Bar */}
@@ -184,7 +228,7 @@ export default function CreateCategoryPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight font-outfit">
-              Add New Category
+              {isEditing ? 'Edit Category' : 'Add New Category'}
             </h1>
             <span className="bg-purple-100 text-purple-700 text-xs font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
               <Sparkles size={12} />
@@ -192,7 +236,7 @@ export default function CreateCategoryPage() {
             </span>
           </div>
           <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
-            Create a new category with AI assistance and multi-language support.
+            {isEditing ? 'Modify category settings, translations, and SEO metadata.' : 'Create a new category with AI assistance and multi-language support.'}
           </p>
         </div>
 

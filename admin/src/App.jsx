@@ -51,6 +51,7 @@ export default function App() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="categories/add" element={<CreateCategoryPage />} />
           <Route path="categories/create" element={<CreateCategoryPage />} />
+          <Route path="categories/edit/:id" element={<CreateCategoryPage />} />
           <Route path="tags" element={<TagsPage />} />
           <Route path="tags/add" element={<CreateTagPage />} />
           <Route path="tags/create" element={<CreateTagPage />} />

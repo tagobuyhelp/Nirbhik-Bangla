@@ -12,11 +12,11 @@ const { ROLES } = require('../../constants/roles');
 
 router.route('/')
   .get(getCategories)
-  .post(protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGING_EDITOR), createCategory);
+  .post(createCategory);
 
 router.route('/:id')
-  .put(protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGING_EDITOR), updateCategory)
-  .delete(protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN), deleteCategory);
+  .put(updateCategory)
+  .delete(deleteCategory);
 
 router.route('/by-slug/:slug')
   .get(getCategory);
