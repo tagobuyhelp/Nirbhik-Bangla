@@ -109,7 +109,6 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
     { label: 'Push Notifications', path: '/notifications', icon: Bell, badge: 'PUSH' },
     { label: 'Social Connector', path: '/social-connector', icon: Share2, badge: 'AI' },
     { label: 'Analytics', path: '/analytics', icon: PieChart },
-    { label: 'Media Library', path: '/media', icon: ImageIcon },
     { label: 'Users', path: '/reporters', icon: Users },
   ];
 

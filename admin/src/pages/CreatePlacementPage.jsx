@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Target,
   ChevronRight,
@@ -19,14 +20,17 @@ import {
 
 export default function CreatePlacementPage() {
   const navigate = useNavigate();
+  const locationUrl = useLocation();
+  const editId = new URLSearchParams(locationUrl.search).get('edit');
   const [toastMessage, setToastMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 1. Placement Details State
   const [placementName, setPlacementName] = useState('');
-  const [placementType, setPlacementType] = useState('');
-  const [location, setLocation] = useState('');
+  const [placementType, setPlacementType] = useState('Banner');
+  const [location, setLocation] = useState('Top of Homepage');
   const [adSize, setAdSize] = useState('970x90');
-  const [adFormat, setAdFormat] = useState('');
+  const [adFormat, setAdFormat] = useState('Image');
   const [priority, setPriority] = useState('Medium');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('Active');
@@ -47,14 +51,58 @@ export default function CreatePlacementPage() {
   const [excludePages, setExcludePages] = useState('');
 
   // 4. Scheduling State
-  const [startDate, setStartDate] = useState('2024-05-21');
-  const [startTime, setStartTime] = useState('10:00');
-  const [endDate, setEndDate] = useState('2024-05-28');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('00:00');
+  const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('23:59');
   const [setExpiration, setSetExpiration] = useState(true);
 
   // Preview Device State
   const [previewDevice, setPreviewDevice] = useState('desktop');
+
+  useEffect(() => {
+    if (editId) {
+      fetchPlacement(editId);
+    }
+  }, [editId]);
+
+  const fetchPlacement = async (id) => {
+    try {
+      const res = await api.get('/placements');
+      const place = res.data.data.find(a => a._id === id);
+      if (place) {
+        setPlacementName(place.placementName || '');
+        setPlacementType(place.placementType || 'Banner');
+        setLocation(place.location || 'Top of Homepage');
+        setAdSize(place.adSize || '970x90');
+        setAdFormat(place.adFormat || 'Image');
+        setPriority(place.priority || 'Medium');
+        setDescription(place.description || '');
+        setStatus(place.isActive ? 'Active' : 'Draft');
+        if (place.devices) setDevices(place.devices);
+        setAdFrequency(place.adFrequency || 'every_page');
+        setLimitPages(place.limitPages || '0');
+        setAdRotation(place.adRotation || 'optimize');
+        setTargeting(place.targeting || '');
+        setIncludePages(place.includePages || '');
+        setExcludePages(place.excludePages || '');
+        
+        if (place.startDate) {
+          const s = new Date(place.startDate);
+          setStartDate(s.toISOString().split('T')[0]);
+          setStartTime(s.toISOString().split('T')[1].substring(0, 5));
+        }
+        if (place.endDate) {
+          const e = new Date(place.endDate);
+          setEndDate(e.toISOString().split('T')[0]);
+          setEndTime(e.toISOString().split('T')[1].substring(0, 5));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load placement', error);
+      showToast('প্লেসমেন্ট লোড করতে সমস্যা হয়েছে');
+    }
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -63,11 +111,44 @@ export default function CreatePlacementPage() {
     }, 3000);
   };
 
-  const handleSave = (statusType) => {
-    showToast(`অ্যাড প্লেসমেন্ট (${statusType === 'active' ? 'সক্রিয়' : 'ড্রাফট'}) সফলভাবে তৈরি হয়েছে!`);
-    setTimeout(() => {
-      navigate('/ad-placements');
-    }, 1500);
+  const handleSave = async (statusType) => {
+    setIsSubmitting(true);
+    const payload = {
+      placementName,
+      placementType,
+      location,
+      adSize,
+      adFormat,
+      priority,
+      description,
+      isActive: statusType === 'active' || status === 'Active',
+      devices,
+      adFrequency,
+      limitPages: parseInt(limitPages) || 0,
+      adRotation,
+      targeting,
+      includePages,
+      excludePages,
+      startDate: startDate ? new Date(`${startDate}T${startTime}:00`) : null,
+      endDate: endDate ? new Date(`${endDate}T${endTime}:00`) : null,
+    };
+
+    try {
+      if (editId) {
+        await api.put(`/placements/${editId}`, payload);
+      } else {
+        await api.post('/placements', payload);
+      }
+      showToast(`অ্যাড প্লেসমেন্ট (${statusType === 'active' ? 'সক্রিয়' : 'ড্রাফট'}) সফলভাবে ${editId ? 'আপডেট' : 'তৈরি'} হয়েছে!`);
+      setTimeout(() => {
+        navigate('/ad-placements');
+      }, 1500);
+    } catch (err) {
+      console.error('Save error', err);
+      showToast('সেভ করতে সমস্যা হয়েছে');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleDevice = (key) => {
@@ -91,7 +172,7 @@ export default function CreatePlacementPage() {
           Ad Placements
         </Link>
         <ChevronRight size={14} className="text-slate-400" />
-        <span className="text-slate-900 font-extrabold">Add New Placement</span>
+        <span className="text-slate-900 font-extrabold">{editId ? 'Edit Placement' : 'Add New Placement'}</span>
       </div>
 
       {/* 1. Page Header Bar */}
@@ -100,7 +181,7 @@ export default function CreatePlacementPage() {
           <div className="flex items-center gap-2">
             <Target size={22} className="text-purple-600" />
             <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight font-outfit">
-              Add New Placement
+              {editId ? 'Edit Placement' : 'Add New Placement'}
             </h1>
           </div>
           <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
@@ -112,17 +193,19 @@ export default function CreatePlacementPage() {
           <button
             type="button"
             onClick={() => handleSave('draft')}
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            disabled={isSubmitting}
+            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
           >
-            Save as Draft
+            {isSubmitting ? 'Saving...' : 'Save as Draft'}
           </button>
           <button
             type="button"
             onClick={() => handleSave('active')}
-            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider"
+            disabled={isSubmitting}
+            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider disabled:opacity-50"
           >
             <CheckCircle2 size={15} />
-            <span>Save & Activate</span>
+            <span>{isSubmitting ? 'Saving...' : (editId ? 'Update Placement' : 'Save & Activate')}</span>
           </button>
         </div>
       </div>

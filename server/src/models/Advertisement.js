@@ -2,20 +2,29 @@ const mongoose = require('mongoose');
 
 const AdvertisementSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  adType: {
-    type: String,
-    enum: ['google_adsense', 'banner', 'video', 'native', 'sponsored', 'interstitial', 'sticky', 'popup', 'anchor'],
-    default: 'banner'
-  },
-  locationSlot: {
-    type: String,
-    enum: ['header_top', 'sidebar_top', 'sidebar_bottom', 'article_inline', 'article_bottom', 'footer_sticky', 'popup_modal'],
-    required: true,
-    index: true
-  },
+  adType: { type: String, default: 'Image' },
+  locationSlot: { type: String, required: true, index: true },
+  adCategory: { type: String, default: '' },
+  priority: { type: String, enum: ['High', 'Medium', 'Low'], default: 'Medium' },
+  
   imageUrl: { type: String, default: '' },
   targetUrl: { type: String, default: '' },
-  scriptCode: { type: String, default: '' }, // For Google AdSense or HTML tags
+  scriptCode: { type: String, default: '' },
+  
+  altText: { type: String, default: '' },
+  description: { type: String, default: '' },
+  ctaButton: { type: String, default: 'Learn More' },
+  customCta: { type: String, default: '' },
+  
+  devices: {
+    desktop: { type: Boolean, default: true },
+    mobile: { type: Boolean, default: true },
+    tablet: { type: Boolean, default: true }
+  },
+  
+  frequencyCap: { type: Boolean, default: true },
+  timezone: { type: String, default: '' },
+  
   impressionsCount: { type: Number, default: 0 },
   clicksCount: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true, index: true },

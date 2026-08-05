@@ -34,6 +34,7 @@ export default function UploadMediaPage() {
   const [fileUploaded, setFileUploaded] = useState(false);
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState('');
+  const [resolution, setResolution] = useState('1200 x 675');
   const [isUploading, setIsUploading] = useState(false);
 
   // Basic Info State
@@ -92,7 +93,7 @@ export default function UploadMediaPage() {
     formData.append('caption', caption);
 
     try {
-      await api.post('/media/upload', formData, {
+      await api.post('/media', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       showToast('মিডিয়া ফাইলটি সফলভাবে আপলোড করা হয়েছে!');

@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Send,
   Save,
@@ -22,7 +23,10 @@ import {
 
 export default function CreateAdPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editId = new URLSearchParams(location.search).get('edit');
   const [toastMessage, setToastMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
   const [adTitle, setAdTitle] = useState('');
@@ -32,7 +36,8 @@ export default function CreateAdPage() {
   const [priority, setPriority] = useState('Medium');
   const [status, setStatus] = useState('Active');
 
-  const [destinationUrl, setDestinationUrl] = useState('https://example.com');
+  const [destinationUrl, setDestinationUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [altText, setAltText] = useState('');
   const [adDescription, setAdDescription] = useState('');
   const [ctaButton, setCtaButton] = useState('Learn More');
@@ -42,14 +47,55 @@ export default function CreateAdPage() {
   const [devices, setDevices] = useState({ desktop: true, mobile: true, tablet: false });
   const [targeting, setTargeting] = useState('');
 
-  const [startDate, setStartDate] = useState('2024-05-21');
-  const [startTime, setStartTime] = useState('10:00');
-  const [endDate, setEndDate] = useState('2024-05-28');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('00:00');
+  const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('23:59');
   const [timezone, setTimezone] = useState('(GMT+06:00) Dhaka, Bangladesh');
   const [frequencyCap, setFrequencyCap] = useState(true);
 
   const [previewTab, setPreviewTab] = useState('desktop');
+
+  useEffect(() => {
+    if (editId) {
+      fetchAd(editId);
+    }
+  }, [editId]);
+
+  const fetchAd = async (id) => {
+    try {
+      const res = await api.get('/ads');
+      const ad = res.data.data.find(a => a._id === id);
+      if (ad) {
+        setAdTitle(ad.title || '');
+        setAdType(ad.adType || 'Image');
+        setPlacement(ad.locationSlot || 'Top of Homepage');
+        setAdCategory(ad.adCategory || '');
+        setPriority(ad.priority || 'Medium');
+        setStatus(ad.isActive ? 'Active' : 'Paused');
+        setDestinationUrl(ad.targetUrl || '');
+        setAltText(ad.altText || '');
+        setAdDescription(ad.description || '');
+        setCtaButton(ad.ctaButton || 'Learn More');
+        setCustomCta(ad.customCta || '');
+        setImageUrl(ad.imageUrl || '');
+        if (ad.devices) setDevices(ad.devices);
+        if (ad.startDate) {
+          const s = new Date(ad.startDate);
+          setStartDate(s.toISOString().split('T')[0]);
+          setStartTime(s.toISOString().split('T')[1].substring(0, 5));
+        }
+        if (ad.endDate) {
+          const e = new Date(ad.endDate);
+          setEndDate(e.toISOString().split('T')[0]);
+          setEndTime(e.toISOString().split('T')[1].substring(0, 5));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load ad', error);
+      showToast('বিজ্ঞাপন লোড করতে সমস্যা হয়েছে');
+    }
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -58,12 +104,45 @@ export default function CreateAdPage() {
     }, 3000);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    showToast('বিজ্ঞাপন প্রচারণা সফলভাবে তৈরি এবং সাবমিট করা হয়েছে!');
-    setTimeout(() => {
-      navigate('/ads-manager');
-    }, 1500);
+    setIsSubmitting(true);
+    
+    const payload = {
+      title: adTitle,
+      adType,
+      locationSlot: placement,
+      adCategory,
+      priority,
+      isActive: status === 'Active',
+      targetUrl: destinationUrl,
+      imageUrl,
+      altText,
+      description: adDescription,
+      ctaButton,
+      customCta,
+      devices,
+      frequencyCap,
+      timezone,
+      startDate: startDate ? new Date(`${startDate}T${startTime}:00`) : null,
+      endDate: endDate ? new Date(`${endDate}T${endTime}:00`) : null,
+    };
+
+    try {
+      if (editId) {
+        await api.put(`/ads/${editId}`, payload);
+        showToast('বিজ্ঞাপন সফলভাবে আপডেট করা হয়েছে!');
+      } else {
+        await api.post('/ads', payload);
+        showToast('বিজ্ঞাপন সফলভাবে তৈরি করা হয়েছে!');
+      }
+      setTimeout(() => navigate('/ads-manager'), 1500);
+    } catch (err) {
+      console.error('Error saving ad:', err);
+      showToast('বিজ্ঞাপন সেভ করতে সমস্যা হয়েছে');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,30 +168,33 @@ export default function CreateAdPage() {
         <div>
           <div className="flex items-center gap-2">
             <Send size={22} className="text-purple-600 transform -rotate-45" />
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Create New Ad</h1>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+              {editId ? 'Edit Ad Campaign' : 'Create New Ad'}
+            </h1>
           </div>
           <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Create and configure a new advertisement for your website.
+            {editId ? 'Update and configure your existing advertisement.' : 'Create and configure a new advertisement for your website.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             type="button"
-            onClick={() => showToast('ড্রাফট হিসেবে ড্রাফট ফোল্ডারে সেভ করা হয়েছে!')}
+            onClick={() => { setStatus('Draft'); showToast('ড্রাফট হিসেবে সেট করা হয়েছে, সেভ করুন!'); }}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
             <Save size={14} className="text-slate-500" />
-            <span>Save as Draft</span>
+            <span>Set as Draft</span>
           </button>
 
           <button
             type="button"
             onClick={handleSubmit}
-            className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer"
+            disabled={isSubmitting}
+            className="bg-[#eb1c24] hover:bg-red-700 disabled:opacity-50 text-white text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer"
           >
-            <span>Save & Continue</span>
-            <span>→</span>
+            <span>{isSubmitting ? 'Saving...' : 'Save & Continue'}</span>
+            {!isSubmitting && <span>→</span>}
           </button>
         </div>
       </div>
@@ -226,24 +308,24 @@ export default function CreateAdPage() {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Left Creative Upload Drag & Drop */}
+              {/* Left Creative Image URL */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Upload Creative <span className="text-red-500">*</span></label>
-                <div className="border-2 border-dashed border-purple-200 bg-purple-50/30 rounded-2xl p-6 text-center space-y-2 hover:border-purple-400 transition-colors cursor-pointer">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
-                    <CloudUpload size={20} />
-                  </div>
-                  <p className="text-xs font-bold text-slate-700">Drag & drop your file here</p>
-                  <span className="text-[10px] text-slate-400 font-semibold block">or</span>
-                  <button
-                    type="button"
-                    onClick={() => showToast('ফাইল ম্যানেজার চালু করা হয়েছে!')}
-                    className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-block"
-                  >
-                    Choose File
-                  </button>
-                  <p className="text-[9px] text-slate-400 font-medium pt-1">
-                    Supported formats: JPG, PNG, GIF, WebP, MP4 (Max: 5MB for images, 20MB for videos)
+                <label className="block text-xs font-bold text-slate-700">Ad Image URL <span className="text-red-500">*</span></label>
+                <div className="pt-2">
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://example.com/ad-banner.jpg"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] font-mono text-xs"
+                  />
+                  {imageUrl && (
+                    <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 max-h-40 flex items-center justify-center bg-slate-50">
+                      <img src={imageUrl} alt="Ad Preview" className="max-w-full max-h-40 object-contain" />
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-400 font-medium pt-2">
+                    Enter the URL of the creative (JPG, PNG, GIF, WebP).
                   </p>
                 </div>
               </div>

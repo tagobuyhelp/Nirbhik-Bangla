@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Plus,
   Search,
@@ -34,17 +35,37 @@ import {
 } from 'lucide-react';
 
 export default function AdPlacementsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPlacements, setSelectedPlacements] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [placements, setPlacements] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Add Form State
   const [placeName, setPlaceName] = useState('');
   const [placeType, setPlaceType] = useState('Banner');
   const [placeLocation, setPlaceLocation] = useState('Homepage - Top');
   const [placeSize, setPlaceSize] = useState('970 x 90');
+
+  useEffect(() => {
+    fetchPlacements();
+  }, []);
+
+  const fetchPlacements = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/placements');
+      setPlacements(res.data.data);
+    } catch (err) {
+      console.error('Failed to fetch placements', err);
+      showToast('প্লেসমেন্ট ডাটা লোড করতে সমস্যা হয়েছে');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -53,159 +74,6 @@ export default function AdPlacementsPage() {
     }, 3000);
   };
 
-  // Initial Ad Placements Dataset (Exact match to reference UI image)
-  const [placements, setPlacements] = useState([
-    {
-      id: 1,
-      name: 'Top Banner',
-      code: 'ID: PL-001',
-      type: 'Banner',
-      typeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      location: 'Top of Homepage',
-      size: '970 x 90',
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '1.25M',
-      ctr: '0.79%',
-      clicks: '9,850',
-    },
-    {
-      id: 2,
-      name: 'Article Sidebar 1',
-      code: 'ID: PL-002',
-      type: 'Sidebar',
-      typeColor: 'bg-blue-50 text-blue-700 border-blue-200',
-      location: 'Right Sidebar (Articles)',
-      size: '300 x 250',
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '820K',
-      ctr: '0.76%',
-      clicks: '6,250',
-    },
-    {
-      id: 3,
-      name: 'In-Content Ad',
-      code: 'ID: PL-003',
-      type: 'In-Content',
-      typeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      location: 'Inside Article (After 3rd Para)',
-      size: '728 x 90',
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '640K',
-      ctr: '0.77%',
-      clicks: '4,950',
-    },
-    {
-      id: 4,
-      name: 'Mobile In-Article',
-      code: 'ID: PL-004',
-      type: 'In-Content',
-      typeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      location: 'Mobile Article (After 2nd Para)',
-      size: '300 x 250',
-      desktop: false,
-      mobile: true,
-      status: 'Active',
-      impr: '410K',
-      ctr: '0.76%',
-      clicks: '3,120',
-    },
-    {
-      id: 5,
-      name: 'Below Post',
-      code: 'ID: PL-005',
-      type: 'In-Content',
-      typeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      location: 'Below Article Content',
-      size: '728 x 90',
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '380K',
-      ctr: '0.75%',
-      clicks: '2,860',
-    },
-    {
-      id: 6,
-      name: 'Homepage Middle',
-      code: 'ID: PL-006',
-      type: 'Banner',
-      typeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      location: 'Homepage - Middle',
-      size: '970 x 250',
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '290K',
-      ctr: '0.71%',
-      clicks: '2,050',
-    },
-    {
-      id: 7,
-      name: 'Bottom Banner',
-      code: 'ID: PL-007',
-      type: 'Banner',
-      typeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      location: 'Bottom of Homepage',
-      size: '970 x 90',
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '180K',
-      ctr: '0.69%',
-      clicks: '1,240',
-    },
-    {
-      id: 8,
-      name: 'Mobile Sticky Bottom',
-      code: 'ID: PL-008',
-      type: 'Sticky',
-      typeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-      location: 'Mobile - Sticky Bottom',
-      size: '320 x 50',
-      desktop: false,
-      mobile: true,
-      status: 'Active',
-      impr: '150K',
-      ctr: '0.65%',
-      clicks: '980',
-    },
-    {
-      id: 9,
-      name: 'Left Sidebar',
-      code: 'ID: PL-009',
-      type: 'Sidebar',
-      typeColor: 'bg-blue-50 text-blue-700 border-blue-200',
-      location: 'Left Sidebar',
-      size: '300 x 600',
-      desktop: true,
-      mobile: true,
-      status: 'Inactive',
-      impr: '0',
-      ctr: '0.00%',
-      clicks: '0',
-    },
-    {
-      id: 10,
-      name: 'Pop-up Ad',
-      code: 'ID: PL-010',
-      type: 'Pop-up',
-      typeColor: 'bg-rose-50 text-rose-700 border-rose-200',
-      location: 'Exit Intent Pop-up',
-      size: '600 x 400',
-      desktop: true,
-      mobile: true,
-      status: 'Inactive',
-      impr: '0',
-      ctr: '0.00%',
-      clicks: '0',
-    },
-  ]);
 
   const handleToggleSelect = (id) => {
     if (selectedPlacements.includes(id)) {
@@ -215,42 +83,42 @@ export default function AdPlacementsPage() {
     }
   };
 
-  const handleAddPlacement = (e) => {
-    e.preventDefault();
-    if (!placeName.trim()) return;
-
-    const newPlace = {
-      id: Date.now(),
-      name: placeName.trim(),
-      code: `ID: PL-00${placements.length + 1}`,
-      type: placeType,
-      typeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-      location: placeLocation,
-      size: placeSize,
-      desktop: true,
-      mobile: true,
-      status: 'Active',
-      impr: '0',
-      ctr: '0.00%',
-      clicks: '0',
-    };
-
-    setPlacements([newPlace, ...placements]);
-    setPlaceName('');
-    setShowAddModal(false);
-    showToast(`নতুন অ্যাড প্লেসমেন্ট "${newPlace.name}" যুক্ত হয়েছে!`);
+  const deletePlacement = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this placement?')) return;
+    try {
+      await api.delete(`/placements/${id}`);
+      setPlacements(placements.filter(p => p._id !== id));
+      showToast('প্লেসমেন্ট ডিলিট করা হয়েছে');
+    } catch (err) {
+      console.error('Delete error', err);
+      showToast('ডিলিট করতে সমস্যা হয়েছে');
+    }
   };
 
   const filteredPlacements = placements.filter((p) => {
+    if (!p) return false;
+    const searchVal = (searchQuery || '').toLowerCase();
     const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.location.toLowerCase().includes(searchQuery.toLowerCase());
+      (p.placementName || '').toLowerCase().includes(searchVal) ||
+      (p.location || '').toLowerCase().includes(searchVal);
 
     if (activeTab === 'all') return matchesSearch;
-    if (activeTab === 'active') return matchesSearch && p.status === 'Active';
-    if (activeTab === 'inactive') return matchesSearch && p.status === 'Inactive';
+    if (activeTab === 'active') return matchesSearch && p.isActive === true;
+    if (activeTab === 'inactive') return matchesSearch && p.isActive === false;
     return matchesSearch;
   });
+
+  const totalPlacements = placements.length;
+  const activePlacementsCount = placements.filter(p => p && p.isActive).length;
+  const totalImpr = placements.reduce((acc, curr) => acc + (curr?.impressionsCount || 0), 0);
+  const totalClicks = placements.reduce((acc, curr) => acc + (curr?.clicksCount || 0), 0);
+  const totalCtr = totalImpr > 0 ? ((totalClicks / totalImpr) * 100).toFixed(2) : '0.00';
+  
+  const formatNumber = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
 
   return (
     <div className="space-y-6 text-slate-800 font-sans relative">
@@ -304,7 +172,7 @@ export default function AdPlacementsPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Total Placements</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">28</h3>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{totalPlacements}</h3>
             <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">All ad spaces</span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -316,8 +184,10 @@ export default function AdPlacementsPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Active Placements</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">21</h3>
-            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">75% of total</span>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{activePlacementsCount}</h3>
+            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">
+              {totalPlacements > 0 ? Math.round((activePlacementsCount/totalPlacements)*100) : 0}% of total
+            </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <CheckCircle2 size={18} />
@@ -327,9 +197,9 @@ export default function AdPlacementsPage() {
         {/* Card 3: Impressions (This Month) */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-slate-400">Impressions (This Month)</p>
+            <p className="text-[10px] font-bold text-slate-400">Total Impressions</p>
             <div className="flex items-baseline gap-1">
-              <h3 className="text-xl font-black text-slate-900 mt-0.5">3.25M</h3>
+              <h3 className="text-xl font-black text-slate-900 mt-0.5">{formatNumber(totalImpr)}</h3>
             </div>
             <span className="text-[9px] font-bold text-emerald-600 mt-0.5 flex items-center gap-0.5">
               <TrendingUp size={10} /> ↑ 18.6% vs last month
@@ -343,9 +213,9 @@ export default function AdPlacementsPage() {
         {/* Card 4: Clicks (This Month) */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-slate-400">Clicks (This Month)</p>
+            <p className="text-[10px] font-bold text-slate-400">Total Clicks</p>
             <div className="flex items-baseline gap-1">
-              <h3 className="text-xl font-black text-slate-900 mt-0.5">24,850</h3>
+              <h3 className="text-xl font-black text-slate-900 mt-0.5">{formatNumber(totalClicks)}</h3>
             </div>
             <span className="text-[9px] font-bold text-emerald-600 mt-0.5 flex items-center gap-0.5">
               <TrendingUp size={10} /> ↑ 12.4% vs last month
@@ -359,9 +229,9 @@ export default function AdPlacementsPage() {
         {/* Card 5: CTR (This Month) */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-slate-400">CTR (This Month)</p>
+            <p className="text-[10px] font-bold text-slate-400">Avg CTR</p>
             <div className="flex items-baseline gap-1">
-              <h3 className="text-xl font-black text-slate-900 mt-0.5">0.76%</h3>
+              <h3 className="text-xl font-black text-slate-900 mt-0.5">{totalCtr}%</h3>
             </div>
             <span className="text-[9px] font-bold text-emerald-600 mt-0.5 flex items-center gap-0.5">
               <TrendingUp size={10} /> ↑ 5.2% vs last month
@@ -378,9 +248,9 @@ export default function AdPlacementsPage() {
         {/* Tabs Row */}
         <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto scrollbar-none">
           {[
-            { id: 'all', label: 'All Placements', count: 28 },
-            { id: 'active', label: 'Active', count: 21 },
-            { id: 'inactive', label: 'Inactive', count: 7 },
+            { id: 'all', label: 'All Placements', count: totalPlacements },
+            { id: 'active', label: 'Active', count: activePlacementsCount },
+            { id: 'inactive', label: 'Inactive', count: totalPlacements - activePlacementsCount },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -442,8 +312,19 @@ export default function AdPlacementsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {filteredPlacements.map((place) => (
-                    <tr key={place.id} className="hover:bg-slate-50/70 transition-colors group">
+                  {filteredPlacements.map((place) => {
+                    const placeCode = place._id ? `ID: PL-${place._id.substring(place._id.length - 4).toUpperCase()}` : 'ID: NEW';
+                    const isStatusActive = place.isActive;
+                    const ctrValue = place.impressionsCount > 0 ? ((place.clicksCount / place.impressionsCount) * 100).toFixed(2) + '%' : '0.00%';
+                    let typeColor = 'bg-slate-50 text-slate-700 border-slate-200';
+                    if (place.placementType === 'Banner') typeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                    else if (place.placementType === 'Sidebar') typeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                    else if (place.placementType === 'In-Content') typeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    else if (place.placementType === 'Pop-up') typeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                    else if (place.placementType === 'Sticky') typeColor = 'bg-purple-50 text-purple-700 border-purple-200';
+
+                    return (
+                    <tr key={place._id} className="hover:bg-slate-50/70 transition-colors group">
                       <td className="py-3.5 px-3 text-center">
                         <GripVertical size={14} className="text-slate-300 cursor-grab group-hover:text-slate-400 mx-auto" />
                       </td>
@@ -455,18 +336,18 @@ export default function AdPlacementsPage() {
                           </div>
                           <div>
                             <h4 className="font-extrabold text-slate-900 text-xs leading-tight group-hover:text-purple-700 transition-colors">
-                              {place.name}
+                              {place.placementName}
                             </h4>
                             <span className="text-[10px] font-mono font-medium text-slate-400 block">
-                              {place.code}
+                              {placeCode}
                             </span>
                           </div>
                         </div>
                       </td>
 
                       <td className="py-3.5 px-3">
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold border ${place.typeColor}`}>
-                          {place.type}
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold border ${typeColor}`}>
+                          {place.placementType || 'Banner'}
                         </span>
                       </td>
 
@@ -475,37 +356,37 @@ export default function AdPlacementsPage() {
                       </td>
 
                       <td className="py-3.5 px-3 font-mono font-bold text-slate-800">
-                        {place.size}
+                        {place.adSize}
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5 text-slate-600">
-                          {place.desktop && <Monitor size={15} title="Desktop Compatible" />}
-                          {place.mobile && <Smartphone size={14} title="Mobile Compatible" />}
+                          {place.devices?.desktop && <Monitor size={15} title="Desktop Compatible" />}
+                          {place.devices?.mobile && <Smartphone size={14} title="Mobile Compatible" />}
                         </div>
                       </td>
 
                       <td className="py-3.5 px-3">
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            place.status === 'Active'
+                            isStatusActive
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-slate-100 text-slate-600 border border-slate-200'
                           }`}
                         >
-                          {place.status}
+                          {isStatusActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
 
                       <td className="py-3.5 px-3">
-                        {place.status === 'Active' ? (
+                        {isStatusActive ? (
                           <div className="space-y-0.5">
                             <div className="flex items-baseline gap-1 text-slate-900 font-bold">
-                              <span>{place.impr} Impr.</span>
-                              <span className="text-[10px] text-emerald-600 font-extrabold">{place.ctr} CTR</span>
+                              <span>{place.impressionsCount} Impr.</span>
+                              <span className="text-[10px] text-emerald-600 font-extrabold">{ctrValue} CTR</span>
                             </div>
                             <span className="text-[10px] font-mono font-semibold text-slate-400 block">
-                              {place.clicks} Clicks
+                              {place.clicksCount} Clicks
                             </span>
                           </div>
                         ) : (
@@ -515,23 +396,24 @@ export default function AdPlacementsPage() {
 
                       <td className="py-3.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => showToast(`Edit placement "${place.name}"`)}
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                          <Link
+                            to={`/ad-placements/create?edit=${place._id}`}
+                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer inline-flex"
                             title="Edit Placement"
                           >
                             <Pencil size={14} />
-                          </button>
+                          </Link>
                           <button
-                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="More Options"
+                            onClick={() => deletePlacement(place._id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Placement"
                           >
-                            <MoreVertical size={14} />
+                            <X size={14} />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>

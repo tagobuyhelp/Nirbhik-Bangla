@@ -49,18 +49,26 @@ export default function MediaLibraryPage() {
 
   const fetchMedia = async () => {
     try {
-      const { data } = await api.get('/media');
-      const formatted = (data.data || []).map((file) => ({
-        id: file._id,
-        name: file.filename,
-        type: file.mimeType ? file.mimeType.split('/')[1]?.toUpperCase() : 'FILE',
-        category: file.resourceType === 'video' ? 'Videos' : 'Images',
-        size: (file.size / 1024).toFixed(1) + ' KB',
-        date: new Date(file.createdAt).toLocaleDateString(),
-        url: file.url,
-        isImage: file.resourceType === 'image',
-        isVideo: file.resourceType === 'video'
-      }));
+      const { data } = await api.get('/media?limit=1000');
+      const formatted = (data.data || []).map((file) => {
+        let cat = 'Others';
+        if (file.type === 'image') cat = 'Images';
+        if (file.type === 'video') cat = 'Videos';
+        if (file.type === 'audio') cat = 'Audio';
+        if (file.type === 'document') cat = 'Documents';
+        
+        return {
+          id: file._id,
+          name: file.title || file.url.split('/').pop() || 'Untitled',
+          type: file.mime ? file.mime.split('/')[1]?.toUpperCase() : 'FILE',
+          category: cat,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          date: new Date(file.createdAt).toLocaleDateString(),
+          url: file.url,
+          isImage: file.type === 'image',
+          isVideo: file.type === 'video'
+        };
+      });
       setMediaFiles(formatted);
     } catch (error) {
       console.error('Error fetching media:', error);
@@ -178,7 +186,7 @@ export default function MediaLibraryPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Total Files</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">2,458</h3>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{mediaFiles.length}</h3>
             <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">All media files</span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -190,8 +198,10 @@ export default function MediaLibraryPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Images</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">1,842</h3>
-            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">75% of total</span>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{mediaFiles.filter(m => m.category === 'Images').length}</h3>
+            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">
+              {mediaFiles.length > 0 ? ((mediaFiles.filter(m => m.category === 'Images').length / mediaFiles.length) * 100).toFixed(0) : 0}% of total
+            </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <ImageIcon size={18} />
@@ -202,8 +212,10 @@ export default function MediaLibraryPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Videos</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">324</h3>
-            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">13% of total</span>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{mediaFiles.filter(m => m.category === 'Videos').length}</h3>
+            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">
+              {mediaFiles.length > 0 ? ((mediaFiles.filter(m => m.category === 'Videos').length / mediaFiles.length) * 100).toFixed(0) : 0}% of total
+            </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <Video size={18} />
@@ -214,8 +226,10 @@ export default function MediaLibraryPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Documents</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">186</h3>
-            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">8% of total</span>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{mediaFiles.filter(m => m.category === 'Documents').length}</h3>
+            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">
+              {mediaFiles.length > 0 ? ((mediaFiles.filter(m => m.category === 'Documents').length / mediaFiles.length) * 100).toFixed(0) : 0}% of total
+            </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
             <FileText size={18} />
@@ -226,8 +240,10 @@ export default function MediaLibraryPage() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-slate-400">Audio</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">106</h3>
-            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">4% of total</span>
+            <h3 className="text-xl font-black text-slate-900 mt-0.5">{mediaFiles.filter(m => m.category === 'Audio').length}</h3>
+            <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">
+              {mediaFiles.length > 0 ? ((mediaFiles.filter(m => m.category === 'Audio').length / mediaFiles.length) * 100).toFixed(0) : 0}% of total
+            </span>
           </div>
           <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
             <Music size={18} />
@@ -426,7 +442,7 @@ export default function MediaLibraryPage() {
 
           {/* Grid Pagination Footer */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500">
-            <span>Showing 1 to {filteredMedia.length} of 2,458 files</span>
+            <span>Showing 1 to {filteredMedia.length} of {mediaFiles.length} files</span>
 
             <div className="flex items-center gap-1.5">
               <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer">
