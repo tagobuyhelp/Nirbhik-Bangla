@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import api from '../utils/api';
 import {
   Tag,
   ChevronRight,
@@ -23,28 +24,113 @@ import {
 export default function CreateTagPage() {
   const navigate = useNavigate();
   const [toastMessage, setToastMessage] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
 
   // 1. Basic Info State
-  const [tagName, setTagName] = useState('নির্বাচন');
-  const [slug, setSlug] = useState('nirbachon');
-  const [description, setDescription] = useState('নির্বাচন সম্পর্কিত সকল সংবাদ, বিশ্লেষণ, আপডেট ও তথ্য।');
+  const [tagName, setTagName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState('');
 
   // 2. Multi-language State
   const [selectedLangTab, setSelectedLangTab] = useState('bn');
   const [translations, setTranslations] = useState({
-    bn: { name: 'নির্বাচন', slug: 'nirbachon', desc: 'নির্বাচন সম্পর্কিত সকল সংবাদ, বিশ্লেষণ, আপডেট ও তথ্য।' },
-    en: { name: 'Election', slug: 'election', desc: 'All news, analysis, updates and information related to elections.' },
-    hi: { name: 'चुनाव', slug: 'chunav', desc: 'चुनाव से संबंधित सभी समाचार, विश्लेषण, अपडेट और जानकारी।' },
+    bn: { name: '', slug: '', desc: '' },
+    en: { name: '', slug: '', desc: '' },
+    hi: { name: '', slug: '', desc: '' },
   });
 
-  // 3. Additional Settings State
-  const [selectedIcon, setSelectedIcon] = useState('tag');
-  const [tagColor, setTagColor] = useState('#6F42C1');
-  const [priority, setPriority] = useState('Medium');
-  const [status, setStatus] = useState('Active');
+  // 4. AI Suggestions State
+  const [aiSuggestions, setAiSuggestions] = useState({
+    relatedTags: ['ভোট', 'নির্বাচনী প্রচার', 'প্রার্থী', 'ভোটগ্রহণ', 'ফলাফল'],
+    seoTitle: 'নির্বাচন | সর্বশেষ নির্বাচন সংবাদ ও আপডেট',
+    seoDescription: 'নির্বাচন সম্পর্কিত সর্বশেষ খবর, বিশ্লেষণ, ফলাফল ও আপডেট পেতে আমাদের সাথে থাকুন।',
+    focusKeywords: ['নির্বাচন', 'ভোট', 'প্রচার', 'প্রার্থী', 'ফলাফল']
+  });
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
 
-  // Preview Mode
-  const [previewDevice, setPreviewDevice] = useState('desktop');
+  const generateTagDescription = async () => {
+    if (!tagName.trim()) {
+      showToast('আগে বাংলা ট্যাগ নাম লিখুন!');
+      return;
+    }
+    setIsGeneratingDesc(true);
+    try {
+      const res = await api.post('/ai/generate-tag-description', { tagName });
+      if (res.data?.data?.description) {
+        const descData = res.data.data.description;
+        setDescription(descData.bn);
+        setTranslations(prev => ({
+          ...prev,
+          bn: { ...prev.bn, desc: descData.bn },
+          en: { ...prev.en, desc: descData.en },
+          hi: { ...prev.hi, desc: descData.hi }
+        }));
+        showToast('AI ডেসক্রিপশন তৈরি হয়েছে!');
+      }
+    } catch (error) {
+      showToast('AI ডেসক্রিপশন তৈরি করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setIsGeneratingDesc(false);
+    }
+  };
+
+  const generateAiSuggestions = async () => {
+    if (!tagName.trim()) {
+      showToast('আগে বাংলা ট্যাগ নাম লিখুন!');
+      return;
+    }
+    setIsGeneratingAi(true);
+    try {
+      const tagsRes = await api.post('/ai/suggest-tags', { text: tagName });
+      const relatedTags = tagsRes.data?.data?.tags || [];
+
+      const seoRes = await api.post('/ai/seo', { title: tagName, description: description });
+      const seo = seoRes.data?.data || {};
+
+      setAiSuggestions({
+        relatedTags: relatedTags.slice(0, 5),
+        seoTitle: seo.seoTitle || `${tagName} | Nirbhik Bangla`,
+        seoDescription: seo.seoDescription || `${tagName} সম্পর্কিত সর্বশেষ খবর ও আপডেট।`,
+        focusKeywords: seo.keywords || [tagName, 'খবর', 'আপডেট']
+      });
+      showToast('AI সাজেশন সফলভাবে তৈরি হয়েছে!');
+    } catch (error) {
+      showToast('AI সাজেশন তৈরি করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  const calculateScore = () => {
+    let score = 0;
+    const checks = {
+      name: false,
+      translations: false,
+      slug: false,
+      description: false,
+      seo: false,
+      relatedTags: false,
+    };
+
+    if (tagName.trim().length > 0) { score += 15; checks.name = true; }
+    if (slug.trim().length > 0) { score += 15; checks.slug = true; }
+    if (description.trim().length > 5) { score += 15; checks.description = true; }
+    if (translations.en.name.trim().length > 0 && translations.hi.name.trim().length > 0) { score += 15; checks.translations = true; }
+    if (aiSuggestions.seoTitle.length > 5) { score += 20; checks.seo = true; }
+    if (aiSuggestions.relatedTags.length > 0) { score += 20; checks.relatedTags = true; }
+
+    let level = 'Needs Work';
+    let levelColor = 'text-red-500';
+    let strokeColor = 'text-red-500';
+    if (score >= 90) { level = 'Excellent'; levelColor = 'text-emerald-600'; strokeColor = 'text-emerald-500'; }
+    else if (score >= 60) { level = 'Good'; levelColor = 'text-amber-600'; strokeColor = 'text-amber-500'; }
+
+    return { score, checks, level, levelColor, strokeColor };
+  };
+
+  const { score, checks, level, levelColor, strokeColor } = calculateScore();
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -53,12 +139,114 @@ export default function CreateTagPage() {
     }, 3000);
   };
 
-  const handlePublish = (e) => {
+  const { id } = useParams();
+  const isEditMode = !!id;
+
+  useEffect(() => {
+    if (isEditMode) {
+      fetchTag();
+    } else {
+      setTagName('');
+      setSlug('');
+      setTranslations({
+        bn: { name: '', slug: '', desc: '' },
+        en: { name: '', slug: '', desc: '' },
+        hi: { name: '', slug: '', desc: '' },
+      });
+    }
+  }, [id]);
+
+  const handleAITranslate = async () => {
+    if (!tagName.trim()) {
+      showToast('আগে বাংলা ট্যাগ নাম লিখুন!');
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const { data } = await api.post('/ai/translate-tag', { name: tagName.trim() });
+      if (data && data.data) {
+        const { en, hi } = data.data;
+        const autoSlug = (en || tagName).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\u0980-\u09FF-]/g, '');
+        if (!slug) setSlug(autoSlug);
+        setTranslations(prev => ({
+          ...prev,
+          en: { ...prev.en, name: en, slug: autoSlug },
+          hi: { ...prev.hi, name: hi }
+        }));
+        showToast('AI দ্বারা অনুবাদ সফলভাবে সম্পন্ন হয়েছে!');
+      }
+    } catch (error) {
+      showToast('AI অনুবাদ ব্যর্থ হয়েছে');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const fetchTag = async () => {
+    try {
+      const { data } = await api.get(`/tags/${id}`);
+      const tag = data.data;
+      if (tag) {
+        setTagName(tag.name?.bn || '');
+        setSlug(tag.slug || '');
+        setDescription(tag.description?.bn || '');
+        setUsageCount(tag.usageCount || 0);
+        setTranslations({
+          bn: { name: tag.name?.bn || '', slug: tag.slug || '', desc: tag.description?.bn || '' },
+          en: { name: tag.name?.en || '', slug: tag.slug || '', desc: tag.description?.en || '' },
+          hi: { name: tag.name?.hi || '', slug: tag.slug || '', desc: tag.description?.hi || '' },
+        });
+        if (tag.seo) {
+          setAiSuggestions(prev => ({
+            ...prev,
+            seoTitle: tag.seo.title || prev.seoTitle,
+            seoDescription: tag.seo.description || prev.seoDescription,
+            focusKeywords: tag.seo.keywords?.length ? tag.seo.keywords : prev.focusKeywords
+          }));
+        }
+      }
+    } catch (error) {
+      showToast('Error loading tag data');
+    }
+  };
+
+  const handlePublish = async (e) => {
     e.preventDefault();
-    showToast('নতুন ট্যাগটি সফলভাবে পাবলিক ও অপটিমাইজ করা হয়েছে!');
-    setTimeout(() => {
-      navigate('/tags');
-    }, 1500);
+    try {
+      const payload = {
+        name: {
+          bn: translations.bn.name || tagName,
+          en: translations.en.name || tagName,
+          hi: translations.hi.name || ''
+        },
+        slug: slug || tagName.toLowerCase().replace(/\s+/g, '-'),
+        description: {
+          bn: translations.bn.desc || description,
+          en: translations.en.desc || description,
+          hi: translations.hi.desc || ''
+        },
+        seo: {
+          title: aiSuggestions.seoTitle || '',
+          description: aiSuggestions.seoDescription || '',
+          keywords: aiSuggestions.focusKeywords || []
+        }
+      };
+
+      if (isEditMode) {
+        await api.put(`/tags/${id}`, payload);
+        showToast('ট্যাগটি সফলভাবে আপডেট করা হয়েছে!');
+      } else {
+        await api.post('/tags', payload);
+        showToast('নতুন ট্যাগটি সফলভাবে তৈরি করা হয়েছে!');
+      }
+
+      setTimeout(() => {
+        navigate('/tags');
+      }, 1500);
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Error saving tag');
+    }
   };
 
   return (
@@ -82,7 +270,7 @@ export default function CreateTagPage() {
           Tags
         </Link>
         <ChevronRight size={14} className="text-slate-400" />
-        <span className="text-slate-900 font-extrabold">Add New Tag</span>
+        <span className="text-slate-900 font-extrabold">{isEditMode ? 'Edit Tag' : 'Add New Tag'}</span>
       </div>
 
       {/* 1. Page Header Bar */}
@@ -90,7 +278,7 @@ export default function CreateTagPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight font-outfit">
-              Add New Tag
+              {isEditMode ? 'Edit Tag' : 'Add New Tag'}
             </h1>
             <span className="bg-purple-100 text-purple-700 text-xs font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
               <Sparkles size={12} />
@@ -98,35 +286,18 @@ export default function CreateTagPage() {
             </span>
           </div>
           <p className="text-xs font-semibold text-slate-500 mt-0.5 font-outfit">
-            Create a new tag with AI assistance and multi-language support.
+            {isEditMode ? 'Update this tag with AI assistance and multi-language support.' : 'Create a new tag with AI assistance and multi-language support.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
           <button
             type="button"
-            onClick={() => showToast('ট্যাগটি ড্রাফট সেভ করা হলো!')}
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
-          >
-            Save Draft
-          </button>
-
-          <button
-            type="button"
-            onClick={() => showToast('ট্যাগ প্রিভিউ সক্রিয় করা হলো!')}
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <Eye size={15} />
-            <span>Preview</span>
-          </button>
-
-          <button
-            type="button"
             onClick={handlePublish}
             className="bg-[#eb1c24] hover:bg-red-700 text-white text-xs font-black px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-red-500/20 transition-all cursor-pointer uppercase tracking-wider"
           >
             <Sparkles size={15} />
-            <span>Publish Tag</span>
+            <span>{isEditMode ? 'Update Tag' : 'Publish Tag'}</span>
           </button>
         </div>
       </div>
@@ -158,7 +329,16 @@ export default function CreateTagPage() {
                   type="text"
                   maxLength={50}
                   value={tagName}
-                  onChange={(e) => setTagName(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTagName(val);
+                    const autoSlug = (translations.en.name || val).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\u0980-\u09FF-]/g, '');
+                    setSlug(autoSlug);
+                    setTranslations(prev => ({
+                      ...prev,
+                      bn: { ...prev.bn, name: val }
+                    }));
+                  }}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] font-bangla font-bold text-slate-900"
                 />
               </div>
@@ -181,10 +361,12 @@ export default function CreateTagPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSlug('nirbachon');
+                      const newSlug = (translations.en.name || tagName).toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\u0980-\u09FF-]/g, '');
+                      setSlug(newSlug);
                       showToast('Slug সিঙ্ক করা হলো!');
                     }}
                     className="absolute right-2.5 text-slate-400 hover:text-purple-600 cursor-pointer"
+                    title="Generate Slug"
                   >
                     <RotateCw size={14} />
                   </button>
@@ -194,7 +376,18 @@ export default function CreateTagPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-slate-700 font-bold text-xs">Description <span className="text-slate-400 font-normal">(Optional)</span></label>
+                <div className="flex items-center gap-2">
+                  <label className="text-slate-700 font-bold text-xs">Description <span className="text-slate-400 font-normal">(Optional)</span></label>
+                  <button
+                    type="button"
+                    onClick={generateTagDescription}
+                    disabled={isGeneratingDesc}
+                    className={`bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-extrabold px-2 py-0.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${isGeneratingDesc ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Sparkles size={10} className={isGeneratingDesc ? 'animate-spin' : ''} />
+                    <span>{isGeneratingDesc ? 'Generating...' : 'AI Generate'}</span>
+                  </button>
+                </div>
                 <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
                   {description.length}/200 <CheckCircle2 size={12} className="text-emerald-500" />
                 </span>
@@ -218,11 +411,12 @@ export default function CreateTagPage() {
 
               <button
                 type="button"
-                onClick={() => showToast('AI দ্বারা সকল অনুবাদ সম্পন্ন হলো!')}
-                className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-extrabold px-3 py-1 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                onClick={handleAITranslate}
+                disabled={isTranslating}
+                className={`bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-extrabold px-3 py-1 rounded-xl transition-colors cursor-pointer flex items-center gap-1 ${isTranslating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Sparkles size={13} />
-                <span>AI Translate All</span>
+                <Sparkles size={13} className={isTranslating ? 'animate-spin' : ''} />
+                <span>{isTranslating ? 'Translating...' : 'AI Translate All'}</span>
               </button>
             </div>
 
@@ -388,256 +582,27 @@ export default function CreateTagPage() {
             </p>
           </div>
 
-          {/* Section 3: 3. Additional Settings */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
-              3. Additional Settings
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold">
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Tag Icon <span className="text-slate-400 font-normal">(Optional)</span></label>
-                <div className="flex items-center gap-1.5">
-                  {['🏷', '🏛', '🗳', '📊', '📰'].map((ic, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setSelectedIcon(ic)}
-                      className={`w-8 h-8 rounded-xl border flex items-center justify-center text-sm cursor-pointer ${selectedIcon === ic ? 'border-purple-600 bg-purple-50' : 'border-slate-200 bg-slate-50'}`}
-                    >
-                      {ic}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => showToast('আইকন আপলোড করা হলো!')}
-                  className="mt-2 text-[10px] font-bold text-slate-600 border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer"
-                >
-                  <Upload size={12} /> Upload Icon
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Tag Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={tagColor}
-                    onChange={(e) => setTagColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
-                  />
-                  <input
-                    type="text"
-                    value={tagColor}
-                    onChange={(e) => setTagColor(e.target.value)}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl font-mono text-xs font-bold text-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Priority</label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
-                >
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Low">Low</option>
-                </select>
-                <span className="text-[9.5px] text-slate-400 font-semibold block mt-0.5">Higher priority tags will be shown first.</span>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 mb-1 font-bold">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer font-bold text-emerald-700"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: 4. AI Generated Suggestions */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
-                <Sparkles size={16} className="text-purple-600" />
-                <span>4. AI Generated Suggestions</span>
-              </h3>
-
-              <button
-                type="button"
-                onClick={() => showToast('সকল সাজেশন রি-জেনারেট করা হলো!')}
-                className="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1"
-              >
-                <RotateCw size={12} /> Regenerate All
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs font-semibold">
-              <div className="p-3 rounded-xl bg-purple-50/30 border border-purple-200/60 space-y-1.5">
-                <h5 className="font-bold text-purple-900 text-xs flex items-center gap-1">
-                  <span>Related Tags</span>
-                  <span className="text-[9px] text-purple-600 font-black">AI</span>
-                </h5>
-                <div className="flex flex-wrap gap-1">
-                  {['ভোট', 'নির্বাচনী প্রচার', 'প্রার্থী', 'ভোটগ্রহণ', 'ফলাফল'].map((t, i) => (
-                    <span key={i} className="bg-white border border-purple-200 text-purple-800 text-[9px] font-bangla px-1.5 py-0.2 rounded">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-purple-50/30 border border-purple-200/60 space-y-1.5">
-                <h5 className="font-bold text-purple-900 text-xs flex items-center gap-1">
-                  <span>SEO Title</span>
-                  <span className="text-[9px] text-purple-600 font-black">AI</span>
-                </h5>
-                <p className="text-[10.5px] font-bangla text-slate-800 font-bold leading-tight">
-                  নির্বাচন | সর্বশেষ নির্বাচন সংবাদ ও আপডেট
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-purple-50/30 border border-purple-200/60 space-y-1.5">
-                <h5 className="font-bold text-purple-900 text-xs flex items-center gap-1">
-                  <span>Meta Description</span>
-                  <span className="text-[9px] text-purple-600 font-black">AI</span>
-                </h5>
-                <p className="text-[10px] font-bangla text-slate-700 leading-tight">
-                  নির্বাচন সম্পর্কিত সর্বশেষ খবর, বিশ্লেষণ, ফলাফল ও আপডেট পেতে আমাদের সাথে থাকুন।
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-purple-50/30 border border-purple-200/60 space-y-1.5">
-                <h5 className="font-bold text-purple-900 text-xs flex items-center gap-1">
-                  <span>Focus Keywords</span>
-                  <span className="text-[9px] text-purple-600 font-black">AI</span>
-                </h5>
-                <div className="flex flex-wrap gap-1">
-                  {['নির্বাচন', 'ভোট', 'প্রচার', 'প্রার্থী', 'ফলাফল'].map((t, i) => (
-                    <span key={i} className="bg-white border border-purple-200 text-purple-800 text-[9px] font-bangla px-1.5 py-0.2 rounded">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Right Column Side Panel (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* 1. AI Suggestions Preview Card */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div className="border-b border-slate-100 pb-2">
-              <h3 className="font-extrabold text-sm text-slate-900">AI Suggestions Preview</h3>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">AI has analyzed your tag and generated the following suggestions.</p>
-            </div>
-
-            <div className="space-y-3 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">Related Tags</span>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => showToast('সকল সম্পর্কিত ট্যাগ গ্রহণ করা হলো!')} className="text-[10px] text-purple-700 font-extrabold hover:underline">Accept All</button>
-                    <button type="button" className="text-slate-400 hover:text-purple-600"><RotateCw size={11} /></button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {['ভোট', 'নির্বাচনী প্রচার', 'প্রার্থী', 'ভোটগ্রহণ', 'ফলাফল'].map((t, i) => (
-                    <span key={i} className="bg-slate-100 text-slate-700 text-[9.5px] font-bangla px-2 py-0.5 rounded-md">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1.5 border-t border-slate-100 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">SEO Title</span>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => showToast('SEO টাইটেল গ্রহণ করা হলো!')} className="text-[10px] text-purple-700 font-extrabold hover:underline">Accept</button>
-                    <button type="button" className="text-slate-400 hover:text-purple-600"><RotateCw size={11} /></button>
-                  </div>
-                </div>
-                <p className="text-[11px] font-bangla text-slate-700 font-bold">
-                  নির্বাচন | সর্বশেষ নির্বাচন সংবাদ ও আপডেট
-                </p>
-              </div>
-
-              <div className="space-y-1.5 border-t border-slate-100 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">Meta Description</span>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => showToast('মেটা ডেসক্রিপশন গ্রহণ করা হলো!')} className="text-[10px] text-purple-700 font-extrabold hover:underline">Accept</button>
-                    <button type="button" className="text-slate-400 hover:text-purple-600"><RotateCw size={11} /></button>
-                  </div>
-                </div>
-                <p className="text-[10.5px] font-bangla text-slate-600">
-                  নির্বাচন সম্পর্কিত সর্বশেষ খবর, বিশ্লেষণ, ফলাফল ও আপডেট পেতে আমাদের সাথে থাকুন।
-                </p>
-              </div>
-
-              <div className="space-y-1.5 border-t border-slate-100 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">Focus Keywords</span>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => showToast('ফোকাস কিওয়ার্ডস গ্রহণ করা হলো!')} className="text-[10px] text-purple-700 font-extrabold hover:underline">Accept All</button>
-                    <button type="button" className="text-slate-400 hover:text-purple-600"><RotateCw size={11} /></button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {['নির্বাচন', 'ভোট', 'নির্বাচনী প্রচার', 'প্রার্থী', 'ফলাফল'].map((t, i) => (
-                    <span key={i} className="bg-slate-100 text-slate-700 text-[9.5px] font-bangla px-2 py-0.5 rounded-md">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* 2. Tag Preview Card */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h3 className="font-extrabold text-sm text-slate-900">Tag Preview</h3>
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setPreviewDevice('desktop')}
-                  className={`px-2.5 py-0.5 rounded transition-colors ${previewDevice === 'desktop' ? 'bg-purple-600 text-white font-black' : 'text-slate-500'}`}
-                >
-                  Desktop
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewDevice('mobile')}
-                  className={`px-2.5 py-0.5 rounded transition-colors ${previewDevice === 'mobile' ? 'bg-purple-600 text-white font-black' : 'text-slate-500'}`}
-                >
-                  Mobile
-                </button>
-              </div>
             </div>
 
             {/* Tag Visual Box */}
             <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200/60 space-y-2">
               <span className="bg-purple-700 text-white font-black text-[10px] px-2.5 py-0.5 rounded-full inline-block font-bangla">
-                {tagName || 'নির্বাচন'}
+                {tagName || 'ট্যাগ নাম'}
               </span>
-              <h4 className="font-bangla font-black text-slate-900 text-base">{tagName || 'নির্বাচন'}</h4>
-              <p className="text-xs font-bangla text-slate-600 leading-snug">{description}</p>
+              <h4 className="font-bangla font-black text-slate-900 text-base">{tagName || 'ট্যাগ নাম'}</h4>
+              <p className="text-xs font-bangla text-slate-600 leading-snug">{description || 'ট্যাগের ডেসক্রিপশন এখানে দেখা যাবে...'}</p>
               <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold pt-1">
-                <span>248 posts</span>
+                <span>{usageCount} posts</span>
                 <span className="text-purple-700 hover:underline flex items-center gap-1">View all →</span>
               </div>
             </div>
@@ -654,28 +619,28 @@ export default function CreateTagPage() {
               <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                   <path className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path className="text-emerald-500" strokeWidth="3.5" strokeDasharray="92, 100" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path className={strokeColor} strokeWidth="3.5" strokeDasharray={`${score}, 100`} strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
                 <div className="absolute text-center">
-                  <span className="text-base font-black text-slate-900 font-mono">92%</span>
-                  <span className="text-[8px] font-black text-emerald-600 block uppercase">Excellent</span>
+                  <span className="text-base font-black text-slate-900 font-mono">{score}%</span>
+                  <span className={`text-[8px] font-black ${levelColor} block uppercase`}>{level}</span>
                 </div>
               </div>
 
               {/* Checklist */}
               <div className="space-y-1 text-xs font-semibold text-slate-700 grid grid-cols-2 gap-x-2">
-                <div className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={13} /> <span>Name</span></div>
-                <div className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={13} /> <span>Translations</span></div>
-                <div className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={13} /> <span>Slug</span></div>
-                <div className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={13} /> <span>Description</span></div>
-                <div className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={13} /> <span>SEO</span></div>
-                <div className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={13} /> <span>Related Tags</span></div>
+                <div className={`flex items-center gap-1 ${checks.name ? 'text-emerald-600' : 'text-slate-400'}`}><CheckCircle2 size={13} /> <span>Name</span></div>
+                <div className={`flex items-center gap-1 ${checks.translations ? 'text-emerald-600' : 'text-slate-400'}`}><CheckCircle2 size={13} /> <span>Translations</span></div>
+                <div className={`flex items-center gap-1 ${checks.slug ? 'text-emerald-600' : 'text-slate-400'}`}><CheckCircle2 size={13} /> <span>Slug</span></div>
+                <div className={`flex items-center gap-1 ${checks.description ? 'text-emerald-600' : 'text-slate-400'}`}><CheckCircle2 size={13} /> <span>Description</span></div>
+                <div className={`flex items-center gap-1 ${checks.seo ? 'text-emerald-600' : 'text-slate-400'}`}><CheckCircle2 size={13} /> <span>SEO</span></div>
+                <div className={`flex items-center gap-1 ${checks.relatedTags ? 'text-emerald-600' : 'text-slate-400'}`}><CheckCircle2 size={13} /> <span>Related Tags</span></div>
               </div>
             </div>
 
-            <p className="text-[10.5px] text-emerald-700 font-extrabold flex items-center gap-1 pt-2 border-t border-slate-100">
-              <Sparkles size={12} className="text-emerald-600" />
-              <span>Great! Your tag is optimized and ready to publish.</span>
+            <p className={`text-[10.5px] font-extrabold flex items-center gap-1 pt-2 border-t border-slate-100 ${score === 100 ? 'text-emerald-700' : 'text-slate-600'}`}>
+              <Sparkles size={12} className={score === 100 ? 'text-emerald-600' : 'text-slate-400'} />
+              <span>{score === 100 ? 'Great! Your tag is optimized and ready to publish.' : 'Optimize all checks to reach 100% Quality Score.'}</span>
             </p>
           </div>
 

@@ -11,8 +11,6 @@ import VideosPage from './pages/VideosPage';
 import CreateVideoPage from './pages/CreateVideoPage';
 import CreateProgramPage from './pages/CreateProgramPage';
 import SchedulePage from './pages/SchedulePage';
-import MediaLibraryPage from './pages/MediaLibraryPage';
-import UploadMediaPage from './pages/UploadMediaPage';
 import AdManagerPage from './pages/AdManagerPage';
 import AdPlacementsPage from './pages/AdPlacementsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -55,8 +53,7 @@ export default function App() {
           <Route path="tags" element={<TagsPage />} />
           <Route path="tags/add" element={<CreateTagPage />} />
           <Route path="tags/create" element={<CreateTagPage />} />
-          <Route path="media" element={<MediaLibraryPage />} />
-          <Route path="media/upload" element={<UploadMediaPage />} />
+          <Route path="tags/edit/:id" element={<CreateTagPage />} />
           <Route path="pages" element={<GenericPage title="Pages" description="Manage static website pages." />} />
           <Route path="comments" element={<CommentsPage />} />
           <Route path="messages" element={<ContactMessagesPage />} />

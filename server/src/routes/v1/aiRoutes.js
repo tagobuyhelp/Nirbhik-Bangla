@@ -45,6 +45,20 @@ router.post('/translate-video', async (req, res, next) => {
   }
 });
 
+// POST /api/v1/ai/translate-tag
+router.post('/translate-tag', async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return sendResponse(res, 400, 'Name is required for tag translation');
+    }
+    const translations = await AIService.translateTag(name);
+    return sendResponse(res, 200, 'AI tag translation completed', translations);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/v1/ai/summary
 router.post('/summary', async (req, res, next) => {
   try {
@@ -93,16 +107,25 @@ router.post('/generate-social', async (req, res, next) => {
   }
 });
 
-// POST /api/v1/ai/suggest-tags
-router.post('/suggest-tags', async (req, res, next) => {
-  try {
-    const { text, lang = 'bn' } = req.body;
-    const tags = await AIService.suggestTags(text, lang);
-    return sendResponse(res, 200, 'AI tags suggested', tags);
-  } catch (error) {
-    next(error);
-  }
-});
+// GET & POST /api/v1/ai/suggest-tags
+router.route('/suggest-tags')
+  .get(async (req, res, next) => {
+    try {
+      const tags = await AIService.suggestTags('', req.query.lang || 'bn');
+      return sendResponse(res, 200, 'AI tags suggested', tags);
+    } catch (error) {
+      next(error);
+    }
+  })
+  .post(async (req, res, next) => {
+    try {
+      const { text, lang = 'bn' } = req.body;
+      const tags = await AIService.suggestTags(text, lang);
+      return sendResponse(res, 200, 'AI tags suggested', tags);
+    } catch (error) {
+      next(error);
+    }
+  });
 
 // POST /api/v1/ai/editor
 router.post('/editor', async (req, res, next) => {
@@ -121,6 +144,20 @@ router.post('/image-alt', async (req, res, next) => {
     const { title, excerpt, lang } = req.body;
     const metadata = await AIService.generateImageAlt(title, excerpt, lang || 'bn');
     return sendResponse(res, 200, 'AI image metadata generated', metadata);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/v1/ai/generate-tag-description
+router.post('/generate-tag-description', async (req, res, next) => {
+  try {
+    const { tagName, lang = 'bn' } = req.body;
+    if (!tagName) {
+      return sendResponse(res, 400, 'Tag name is required');
+    }
+    const description = await AIService.generateTagDescription(tagName, lang);
+    return sendResponse(res, 200, 'AI tag description generated', { description });
   } catch (error) {
     next(error);
   }

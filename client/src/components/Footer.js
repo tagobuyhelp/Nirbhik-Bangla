@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Mail, MapPin, Phone, Send, ChevronRight, ChevronDown, Play, Radio, Flame, Search,
@@ -9,6 +9,7 @@ import {
   Tag, Compass, Check, ExternalLink
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_BASE_URL } from '@/utils/config';
 
 const SocialIcons = {
   facebook: ({ className = 'w-3.5 h-3.5' }) => (
@@ -172,24 +173,23 @@ export default function Footer() {
     }
   };
 
-  // Workable Category List with Slugs
-  const categories = [
-    { label: locale === 'en' ? 'Politics' : locale === 'hi' ? 'राजनीति' : 'রাজনীতি', slug: 'politics' },
-    { label: locale === 'en' ? 'State' : locale === 'hi' ? 'राज्य' : 'রাজ্য', slug: 'rajya' },
-    { label: locale === 'en' ? 'National' : locale === 'hi' ? 'राष्ट्रीय' : 'দেশ', slug: 'desh' },
-    { label: locale === 'en' ? 'World' : locale === 'hi' ? 'विश्व' : 'বিশ্ব', slug: 'biswa' },
-    { label: locale === 'en' ? 'Business' : locale === 'hi' ? 'व्यापार' : 'ব্যবসা', slug: 'business' },
-    { label: locale === 'en' ? 'Sports' : locale === 'hi' ? 'खेल' : 'খেলাধুলা', slug: 'khela' },
-    { label: locale === 'en' ? 'Entertainment' : locale === 'hi' ? 'मनोरंजन' : 'বিনোদন', slug: 'binodon' },
-    { label: locale === 'en' ? 'Technology' : locale === 'hi' ? 'प्रौद्योगिकी' : 'প্রযুক্তি', slug: 'technology' },
-    { label: locale === 'en' ? 'Lifestyle' : locale === 'hi' ? 'जीवन शैली' : 'লাইফস্টাইল', slug: 'lifestyle' },
-    { label: locale === 'en' ? 'Health' : locale === 'hi' ? 'स्वास्थ्य' : 'স্বাস্থ্য', slug: 'health' },
-    { label: locale === 'en' ? 'Education' : locale === 'hi' ? 'शिक्षा' : 'শিক্ষা', slug: 'education' },
-    { label: locale === 'en' ? 'Crime' : locale === 'hi' ? 'अपराध' : 'অপরাধ', slug: 'crime' },
-    { label: locale === 'en' ? 'Weather' : locale === 'hi' ? 'मौसम' : 'আবহাওয়া', slug: 'weather' },
-    { label: locale === 'en' ? 'Video' : locale === 'hi' ? 'वीडियो' : 'ভিডিও', slug: 'video' },
-    { label: locale === 'en' ? 'Live TV' : locale === 'hi' ? 'लाइव टीवी' : 'লাইভ টিভি', slug: 'live-tv' },
-  ];
+  // Dynamic Category List with Slugs
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/public/categories`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const dynamicItems = data.data.map((cat) => ({
+            label: typeof cat.name === 'object' ? (cat.name[locale] || cat.name.bn) : cat.name,
+            slug: cat.slug,
+          }));
+          setCategories(dynamicItems);
+        }
+      })
+      .catch((err) => console.error('Error fetching footer categories:', err));
+  }, [locale]);
 
   // Workable Quick Links
   const quickLinks = [

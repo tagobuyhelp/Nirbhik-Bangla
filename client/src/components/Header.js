@@ -137,12 +137,17 @@ export default function Header() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          const homeItem = {
+            label: locale === 'en' ? 'Home' : locale === 'hi' ? 'मुख्य पृष्ठ' : 'প্রচ্ছদ',
+            href: '/',
+            slug: 'home'
+          };
           const dynamicItems = data.data.map((cat) => ({
             label: typeof cat.name === 'object' ? (cat.name[locale] || cat.name.bn) : cat.name,
-            href: cat.slug === 'home' ? '/' : `/category/${cat.slug}`,
+            href: `/category/${cat.slug}`,
             slug: cat.slug,
           }));
-          setCategories(dynamicItems);
+          setCategories([homeItem, ...dynamicItems]);
         } else {
           setCategories(getDesktopNavItems(locale));
         }

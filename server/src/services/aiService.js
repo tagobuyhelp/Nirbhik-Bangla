@@ -68,6 +68,24 @@ class AIService {
     }
   }
 
+  async translateTag(name) {
+    try {
+      const bnName = name || '';
+
+      const enName = await this.translate(bnName, 'bn', 'en');
+      const hiName = await this.translate(bnName, 'bn', 'hi');
+
+      return {
+        bn: bnName,
+        en: enName || bnName,
+        hi: hiName || bnName
+      };
+    } catch (err) {
+      console.error('Error in translateTag:', err);
+      return null;
+    }
+  }
+
   async summarize(text, lang) {
     const config = promptBuilder.buildSummary(text, lang);
     const data = await this._executeAndLog('AISummaryService', 'generate_summary', config, 'summary');
@@ -87,9 +105,24 @@ class AIService {
   }
 
   async suggestTags(text, lang = 'bn') {
-    const config = promptBuilder.buildTags(text, lang);
+    const inputText = text || 'সর্বশেষ সংবাদ, রাজনীতি, বিনোদন, আবহাওয়া, খেলাধুলা, চাকরি ও অর্থনীতি বিষয়সূচি';
+    const config = promptBuilder.buildTags(inputText, lang);
     const data = await this._executeAndLog('AITagService', 'suggest_tags', config, 'tags');
-    return data || { tags: [] };
+    
+    const tagList = (data && Array.isArray(data.tags) && data.tags.length > 0)
+      ? data.tags
+      : ['উপদেষ্টা পরিষদ', 'শেয়ারবাজার', 'জলবায়ু পরিবর্তন', 'টি২০ কাপ', 'রেমিট্যান্স'];
+
+    const suggestions = tagList.slice(0, 5).map((name, index) => ({
+      id: Date.now() + index,
+      name,
+      relevance: index < 2 ? 'High Relevance' : 'Medium',
+      relColor: index < 2 
+        ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
+        : 'text-amber-700 bg-amber-50 border-amber-200'
+    }));
+
+    return { suggestions, tags: tagList };
   }
 
   async generateSocialCaptions(title, excerpt, lang = 'bn') {
@@ -114,6 +147,21 @@ class AIService {
     const config = promptBuilder.buildImageAlt(title, excerpt, lang);
     const data = await this._executeAndLog('AIImageAltService', 'generate_image_alt', config, 'imagealt');
     return data || { altText: title, caption: title, credit: 'Nirbhik Bangla Photo' };
+  }
+
+  async generateTagDescription(tagName, lang = 'bn') {
+    const config = promptBuilder.buildTagDescription(tagName, lang);
+    const data = await this._executeAndLog('AITagDescService', 'generate_tag_description', config, 'tagdesc');
+    const bnDesc = data?.description || `${tagName} সম্পর্কিত সর্বশেষ খবর ও আপডেট।`;
+    
+    const enDesc = await this.translate(bnDesc, 'bn', 'en');
+    const hiDesc = await this.translate(bnDesc, 'bn', 'hi');
+
+    return {
+      bn: bnDesc,
+      en: enDesc || bnDesc,
+      hi: hiDesc || bnDesc
+    };
   }
 }
 

@@ -64,19 +64,24 @@ export default function CategoriesPage() {
         api.get('/articles')
       ]);
 
-      const formatted = (catRes.data.data || []).map((cat, idx) => ({
-        id: cat._id,
-        name: cat.translations?.bn?.name || cat.translations?.en?.name || (typeof cat.name === 'object' ? cat.name?.bn || cat.name?.en : cat.name) || 'Category',
-        slug: cat.slug,
-        posts: cat.articleCount || 0,
-        status: cat.isActive ? 'Published' : 'Draft',
-        order: cat.order || idx + 1,
-        icon: FolderTree,
-        color: cat.color || 'bg-indigo-600 text-white',
-      }));
+      const articles = artRes.data.data || [];
+
+      const formatted = (catRes.data.data || []).map((cat, idx) => {
+        const count = articles.filter(a => a.categorySlug === cat.slug).length;
+        return {
+          id: cat._id,
+          name: cat.translations?.bn?.name || cat.translations?.en?.name || (typeof cat.name === 'object' ? cat.name?.bn || cat.name?.en : cat.name) || 'Category',
+          slug: cat.slug,
+          posts: count,
+          status: cat.isActive ? 'Published' : 'Draft',
+          order: cat.order || idx + 1,
+          icon: FolderTree,
+          color: cat.color || 'bg-indigo-600 text-white',
+        };
+      });
       setCategories(formatted);
 
-      const uncatArticles = (artRes.data.data || []).filter(a => !a.category);
+      const uncatArticles = articles.filter(a => !a.categorySlug);
       setUncategorizedCount(uncatArticles.length);
     } catch (error) {
       console.error('Error fetching categories:', error);

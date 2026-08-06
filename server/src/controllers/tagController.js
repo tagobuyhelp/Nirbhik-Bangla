@@ -25,6 +25,41 @@ exports.createTag = async (req, res, next) => {
   }
 };
 
+// @desc    Get single tag
+// @route   GET /api/v1/tags/:id
+// @access  Public
+exports.getTag = async (req, res, next) => {
+  try {
+    const tag = await Tag.findById(req.params.id);
+    if (!tag) {
+      return sendResponse(res, 404, 'Tag not found');
+    }
+    return sendResponse(res, 200, 'Tag fetched successfully', tag);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update tag
+// @route   PUT /api/v1/tags/:id
+// @access  Private/Admin
+exports.updateTag = async (req, res, next) => {
+  try {
+    const tag = await Tag.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!tag) {
+      return sendResponse(res, 404, 'Tag not found');
+    }
+
+    return sendResponse(res, 200, 'Tag updated successfully', tag);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Delete tag
 // @route   DELETE /api/v1/tags/:id
 // @access  Private/Admin

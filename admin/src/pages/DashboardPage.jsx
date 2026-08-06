@@ -148,7 +148,6 @@ export default function DashboardPage() {
   const quickActions = [
     { label: 'Add New Post', sub: 'Write Bengali news with AI', path: '/posts/add', icon: PlusCircle, bg: 'bg-[#eb1c24] text-white', shortcut: 'Ctrl + N' },
     { label: 'Go Live TV', sub: 'Start live broadcast', path: '/live-tv', icon: Radio, bg: 'bg-emerald-600 text-white', shortcut: 'Alt + L' },
-    { label: 'Upload Media', sub: 'Images, videos & docs', path: '/media/upload', icon: UploadCloud, bg: 'bg-blue-600 text-white', shortcut: 'Alt + U' },
     { label: 'Add Category', sub: 'Organize news topics', path: '/categories/add', icon: FolderTree, bg: 'bg-amber-600 text-white', shortcut: 'Alt + C' },
     { label: 'Manage Ads', sub: 'Campaigns & zones', path: '/ads-manager', icon: BarChart3, bg: 'bg-purple-600 text-white', shortcut: 'Alt + A' },
     { label: 'Site Settings', sub: 'Global portal config', path: '/settings', icon: Sliders, bg: 'bg-slate-700 text-white', shortcut: 'Alt + S' },

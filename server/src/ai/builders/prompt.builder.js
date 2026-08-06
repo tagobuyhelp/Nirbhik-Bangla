@@ -101,6 +101,12 @@ class PromptBuilder {
   buildImageAlt(title, excerpt = '', lang = 'bn') {
     return this.compile('generate_image_alt', { title, excerpt, lang }, true);
   }
+
+  buildTagDescription(tagName, lang = 'bn') {
+    const langNames = { bn: 'Bengali', en: 'English', hi: 'Hindi' };
+    const fullLang = langNames[lang] || lang;
+    return this.compile('generate_tag_description', { tagName, lang: fullLang }, true);
+  }
 }
 
 module.exports = new PromptBuilder();
