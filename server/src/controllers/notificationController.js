@@ -81,6 +81,13 @@ exports.sendPushToAllSubscribers = async (payloadData) => {
       }
     });
 
+    await Promise.all(sendPromises);
+    console.log('Web Push Notifications sent successfully!');
+  } catch (err) {
+    console.error('Send Push Notification Error:', err);
+  }
+};
+
 // POST /api/v1/notifications/send-test
 exports.sendTestNotification = async (req, res) => {
   try {
