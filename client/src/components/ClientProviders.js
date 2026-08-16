@@ -7,12 +7,19 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const getSocketUrl = () => {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) return process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL.replace('/api/v1', '');
+  if (typeof window !== 'undefined') return window.location.origin;
+  return 'http://localhost:5000';
+};
 
 export default function ClientProviders({ children }) {
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
+    const socket = io(getSocketUrl(), {
+      path: '/socket.io/',
       transports: ['websocket', 'polling'],
+      secure: true,
     });
 
     return () => {
