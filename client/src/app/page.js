@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import LanguageHomePage from './[lang]/HomeClientView';
 
 export default function RootPage() {
-  redirect('/bn');
+  return <LanguageHomePage params={Promise.resolve({ lang: 'bn' })} />;
 }

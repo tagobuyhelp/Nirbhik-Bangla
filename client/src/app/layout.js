@@ -58,14 +58,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="bn" suppressHydrationWarning className={`${tiroBangla.variable} ${inter.variable}`}>
       <head>
-        {adsenseClientId && (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4059248504896664"
+          crossOrigin="anonymous"
+        ></script>
       </head>
       <body className="min-h-screen bg-white text-slate-900 antialiased flex flex-col">
         <ClientProviders>
