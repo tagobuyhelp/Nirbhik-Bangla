@@ -63,6 +63,25 @@ export default function RootLayout({ children }) {
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4059248504896664"
           crossOrigin="anonymous"
         ></script>
+        <script
+          async
+          type="application/javascript"
+          src="https://news.google.com/swg/js/v1/swg-basic.js"
+        ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
+                basicSubscriptions.init({
+                  type: "NewsArticle",
+                  isPartOfType: ["Product"],
+                  isPartOfProductId: "CAoww8bHDA:openaccess",
+                  clientOptions: { theme: "light", lang: "bn" },
+                });
+              });
+            `,
+          }}
+        />
       </head>
       <body className="min-h-screen bg-white text-slate-900 antialiased flex flex-col">
         <ClientProviders>
