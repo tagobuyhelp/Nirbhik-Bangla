@@ -1,6 +1,7 @@
 const Article = require('../models/Article');
 const sendResponse = require('../utils/responseHandler');
 const socialService = require('../services/socialService');
+const notificationController = require('./notificationController');
 
 // @desc    Get all articles (admin view)
 // @route   GET /api/v1/articles
@@ -91,8 +92,16 @@ exports.createArticle = async (req, res, next) => {
     const bnTrans = article.translations.get('bn') || article.translations.get(article.defaultLanguage);
     const shouldAutoShare = req.body.autoShareSocial !== false; // Default true unless explicitly false
 
-    if (bnTrans && bnTrans.status === 'published' && !article.isShared && shouldAutoShare) {
-      socialService.autoPostArticle(article).catch(err => console.error('Auto-post error:', err));
+    if (bnTrans && bnTrans.status === 'published') {
+      if (!article.isShared && shouldAutoShare) {
+        socialService.autoPostArticle(article).catch(err => console.error('Auto-post error:', err));
+      }
+      notificationController.sendPushToAllSubscribers({
+        title: bnTrans.title || 'নির্ভীক বাংলা - ব্রেকিং নিউজ',
+        body: (bnTrans.excerpt || bnTrans.title || '').substring(0, 100),
+        image: article.featuredImageUrl || null,
+        url: `https://nirbhikbangla.com/bn/news/${article.slug}`
+      }).catch(err => console.error('Push notification error:', err));
     }
 
     return sendResponse(res, 201, 'Article created successfully', article);
