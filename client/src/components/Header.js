@@ -231,7 +231,7 @@ export default function Header() {
               <span className="h-3 w-px bg-slate-700" />
               {/* Social icons */}
               <div className="flex items-center gap-2.5">
-                <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook"
+                <a href="https://www.facebook.com/profile.php?id=100063717646998" target="_blank" rel="noreferrer" aria-label="Facebook"
                   className="text-slate-400 hover:text-[#1877f2] transition-colors font-black text-xs">f</a>
                 <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube"
                   className="text-slate-400 hover:text-[#ff0000] transition-colors text-[10px]">▶</a>

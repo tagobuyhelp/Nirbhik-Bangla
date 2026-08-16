@@ -207,7 +207,7 @@ export default function Footer() {
 
   // Social Links with real destination URLs
   const socialLinks = [
-    { name: 'Facebook', icon: SocialIcons.facebook, color: 'text-[#1877f2]', url: 'https://facebook.com/nirbhikbangla' },
+    { name: 'Facebook', icon: SocialIcons.facebook, color: 'text-[#1877f2]', url: 'https://www.facebook.com/profile.php?id=100063717646998' },
     { name: 'YouTube', icon: SocialIcons.youtube, color: 'text-red-600', url: 'https://youtube.com/@nirbhikbangla' },
     { name: 'Instagram', icon: SocialIcons.instagram, color: 'text-[#d62976]', url: 'https://instagram.com/nirbhikbangla' },
     { name: 'X (Twitter)', icon: SocialIcons.twitter, color: 'text-slate-900', url: 'https://x.com/nirbhikbangla' },
