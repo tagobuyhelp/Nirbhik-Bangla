@@ -47,7 +47,7 @@ export default async function sitemap() {
 
   // 2. Fetch dynamic articles from backend API
   try {
-    const res = await fetch(`${apiUrl}/public/news?limit=200`, {
+    const res = await fetch(`${apiUrl}/public/news?limit=2000`, {
       next: { revalidate: 3600 },
     });
 

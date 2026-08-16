@@ -15,6 +15,7 @@ export default function robots() {
     ],
     sitemap: [
       `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/news-sitemap.xml`,
       `${baseUrl}/sitemap-bn.xml`,
       `${baseUrl}/sitemap-en.xml`,
       `${baseUrl}/sitemap-hi.xml`,
