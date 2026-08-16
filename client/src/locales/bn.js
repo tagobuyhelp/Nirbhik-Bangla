@@ -89,6 +89,22 @@ const bn = {
     news_count_suffix: 'খবর',
   },
 
+  // Sections
+  sections: {
+    explore_more_politics: 'আরও রাজনীতি সংবাদ পড়ুন',
+    explore_more_sports: 'আরও খেলার সংবাদ পড়ুন',
+    explore_more_entertainment: 'আরও বিনোদন সংবাদ পড়ুন',
+    all_sports_news: 'সব খেলার খবর',
+    all_entertainment_news: 'বিনোদনের খবর',
+    all_regional_news: 'সমস্ত আঞ্চলিক খবর',
+    entertainment_title: 'বিনোদন',
+    entertainment_sub: 'বলিউড, টলিউড ও ওটিটি দুনিয়া',
+    regional_title: 'আঞ্চলিক সংবাদ',
+    regional_sub: 'পশ্চিম বর্ধমান, আসানসোল ও দুর্গাপুরের সর্বশেষ তথ্য',
+    business_title: 'অর্থনীতি ও বাণিজ্য',
+    view_all_arrow: 'সব দেখুন →',
+  },
+
   // Article Page
   article: {
     published: 'প্রকাশিত',

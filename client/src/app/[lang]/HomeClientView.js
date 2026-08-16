@@ -30,29 +30,25 @@ import {
 } from 'lucide-react';
 
 const desktopCategorySlugs = [
-  { slug: 'paschim-bardhaman', count: '1523', icon: Landmark, color: '#d70b18' },
-  { slug: 'asansol', count: '923', icon: Factory, color: '#f59e0b' },
-  { slug: 'durgapur', count: '754', icon: Landmark, color: '#2878d8' },
-  { slug: 'rajya', count: '2456', icon: Map, color: '#45a647' },
-  { slug: 'desh', count: '5234', icon: Landmark, color: '#7c3aed' },
-  { slug: 'biswa', count: '2341', icon: Globe2, color: '#1d7ed8' },
-  { slug: 'khela', count: '1842', icon: Trophy, color: '#e3262e' },
-  { slug: 'binodon', count: '823', icon: Clapperboard, color: '#f05b98' },
+  { slug: 'paschim-bardhaman', count: '1.5k+', icon: Landmark, color: '#d70b18' },
+  { slug: 'asansol', count: '920+', icon: Factory, color: '#f59e0b' },
+  { slug: 'durgapur', count: '750+', icon: Building2, color: '#2878d8' },
+  { slug: 'rajya', count: '1.1k+', icon: Map, color: '#45a647' },
+  { slug: 'desh', count: '105+', icon: Landmark, color: '#7c3aed' },
+  { slug: 'biswa', count: '50+', icon: Globe2, color: '#1d7ed8' },
+  { slug: 'khela', count: '45+', icon: Trophy, color: '#e3262e' },
+  { slug: 'binodon', count: '30+', icon: Clapperboard, color: '#f05b98' },
 ];
 
 const mobileCategorySlugs = [
   { slug: 'paschim-bardhaman', icon: Landmark, color: '#d70b18' },
   { slug: 'asansol', icon: Factory, color: '#f59e0b' },
   { slug: 'durgapur', icon: Building2, color: '#2878d8' },
-  { slug: 'rajniti', icon: Landmark, color: '#dc2626' },
   { slug: 'rajya', icon: Map, color: '#16a34a' },
   { slug: 'desh', icon: Map, color: '#2563eb' },
   { slug: 'biswa', icon: Globe2, color: '#0284c7' },
   { slug: 'khela', icon: Trophy, color: '#e11d48' },
   { slug: 'binodon', icon: Clapperboard, color: '#db2777' },
-  { slug: 'arthaniti', icon: TrendingUp, color: '#059669' },
-  { slug: 'lifestyle', icon: Sparkles, color: '#7c3aed' },
-  { slug: 'tech', icon: Cpu, color: '#0891b2' },
 ];
 
 const videoNewsList = [
@@ -61,11 +57,45 @@ const videoNewsList = [
   { slug: 'cm-speech-update', title: 'প্রধানমন্ত্রীর বড় ঘোষণা, কী বললেন দেখুন', duration: '03:12', img: 'https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=600&q=80' },
 ];
 
-const formatArticleDate = (dateStr, loc) => {
+const formatArticleDate = (dateStr, loc = 'bn') => {
   if (!dateStr) return loc === 'en' ? 'Just now' : loc === 'hi' ? 'अभी' : 'এইমাত্র';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return String(dateStr);
+
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    if (diffMs < 0) return loc === 'en' ? 'Just now' : loc === 'hi' ? 'अभी' : 'এইমাত্র';
+
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    const toBn = (num) => String(num).replace(/\d/g, (w) => ['০','১','২','৩','৪','৫','৬','৭','৮','৯'][w]);
+    const toHi = (num) => String(num).replace(/\d/g, (w) => ['०','१','२','३','४','५','६','७','८','९'][w]);
+
+    if (diffMins < 5) return loc === 'en' ? 'Just now' : loc === 'hi' ? 'अभी' : 'এইমাত্র';
+    if (diffMins < 60) {
+      if (loc === 'en') return `${diffMins} mins ago`;
+      if (loc === 'hi') return `${toHi(diffMins)} मिनट पहले`;
+      return `${toBn(diffMins)} মিনিট আগে`;
+    }
+    if (diffHours < 24) {
+      if (loc === 'en') return `${diffHours} hours ago`;
+      if (loc === 'hi') return `${toHi(diffHours)} घंटे पहले`;
+      return `${toBn(diffHours)} ঘণ্টা আগে`;
+    }
+    if (diffDays === 1) {
+      if (loc === 'en') return 'Yesterday';
+      if (loc === 'hi') return 'कल';
+      return 'গতকাল';
+    }
+    if (diffDays < 7) {
+      if (loc === 'en') return `${diffDays} days ago`;
+      if (loc === 'hi') return `${toHi(diffDays)} दिन पहले`;
+      return `${toBn(diffDays)} দিন আগে`;
+    }
+
     return d.toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'hi' ? 'hi-IN' : 'bn-BD', {
       day: 'numeric',
       month: 'short',
@@ -96,8 +126,8 @@ export default function LanguageHomePage({ params }) {
   const [bookmarked, setBookmarked] = useState({});
 
   useEffect(() => {
-    // 1. General news
-    fetch(`${API_BASE_URL}/public/news?lang=${lang}`)
+    // 1. General news (Main Hero & Latest News Ticker)
+    fetch(`${API_BASE_URL}/public/news?lang=${lang}&limit=30`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -107,7 +137,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 2. Special Reports
-    fetch(`${API_BASE_URL}/public/news?isFeatured=true&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?isFeatured=true&lang=${lang}&limit=8`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -117,17 +147,17 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 3. Politics News
-    fetch(`${API_BASE_URL}/public/news?category=rajniti&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=politics&lang=${lang}&limit=16`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.data)) {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setPoliticsNews(data.data);
         }
       })
       .catch(() => {});
 
     // 4. Sports News
-    fetch(`${API_BASE_URL}/public/news?category=khela&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=khela&lang=${lang}&limit=6`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -137,7 +167,7 @@ export default function LanguageHomePage({ params }) {
       .catch(() => {});
 
     // 5. Entertainment News
-    fetch(`${API_BASE_URL}/public/news?category=binodon&lang=${lang}`)
+    fetch(`${API_BASE_URL}/public/news?category=binodon&lang=${lang}&limit=6`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -146,8 +176,8 @@ export default function LanguageHomePage({ params }) {
       })
       .catch(() => {});
 
-    // 6. Regional News
-    fetch(`${API_BASE_URL}/public/news?category=paschim-bardhaman&lang=${lang}`)
+    // 6. Regional Paschim Bardhaman News
+    fetch(`${API_BASE_URL}/public/news?category=paschim-bardhaman&lang=${lang}&limit=6`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -156,18 +186,8 @@ export default function LanguageHomePage({ params }) {
       })
       .catch(() => {});
 
-    // 7. Tech News
-    fetch(`${API_BASE_URL}/public/news?category=projukti&lang=${lang}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.data)) {
-          setTechNews(data.data);
-        }
-      })
-      .catch(() => {});
-
-    // 8. Economy News
-    fetch(`${API_BASE_URL}/public/news?category=arthaniti&lang=${lang}`)
+    // 7. Business / Economy News
+    fetch(`${API_BASE_URL}/public/news?category=business&lang=${lang}&limit=6`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -188,7 +208,7 @@ export default function LanguageHomePage({ params }) {
 
   }, [lang]);
 
-  const slideList = articles;
+  const slideList = articles.slice(0, 5);
 
   useEffect(() => {
     if (slideList.length === 0) return;
@@ -223,7 +243,7 @@ export default function LanguageHomePage({ params }) {
               <section className="grid grid-cols-12 gap-3">
                 {/* Hero Main Feature Card */}
                 {currentHero && (
-                  <article className="relative h-[350px] max-h-[350px] overflow-hidden rounded-xl bg-slate-900 shadow-sm flex flex-col justify-end col-span-8 group">
+                  <article className="relative h-[380px] max-h-[380px] overflow-hidden rounded-xl bg-slate-900 shadow-sm flex flex-col justify-end col-span-8 group">
                     <Link href={`/${lang}/news/${currentHero.slug}`} className="absolute inset-0 z-10" />
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out group-hover:scale-105"
@@ -235,7 +255,7 @@ export default function LanguageHomePage({ params }) {
                       <span className="mb-2 inline-block rounded bg-[#d70b18] px-2.5 py-0.5 text-[11px] font-black text-white uppercase tracking-wider shadow-sm">
                         {t('home.main_news') || 'প্রধান খবর'}
                       </span>
-                      <h1 className="text-2xl md:text-3xl font-black leading-snug text-white group-hover:text-red-200 transition-colors drop-shadow-xs">
+                      <h1 className="text-xl md:text-2xl lg:text-3xl font-black leading-tight text-white group-hover:text-red-200 transition-colors drop-shadow-xs line-clamp-2" title={currentHero.title}>
                         {currentHero.title}
                       </h1>
                       {currentHero.excerpt && (
@@ -274,7 +294,7 @@ export default function LanguageHomePage({ params }) {
                 )}
 
                 {/* Latest News Container */}
-                <div className="col-span-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs flex flex-col h-[350px] overflow-hidden">
+                <div className="col-span-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs flex flex-col h-[380px] overflow-hidden">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
                     <div className="flex items-center gap-1.5">
                       <span className="relative flex h-2 w-2">
@@ -294,7 +314,7 @@ export default function LanguageHomePage({ params }) {
                       {articles.map((item, idx) => (
                         <Link key={item.id || idx} href={`/${lang}/news/${item.slug}`} className="flex gap-2.5 items-start group/item border-b border-slate-100 pb-2 last:border-0 last:pb-0">
                           <div className="h-[52px] w-[70px] min-w-[70px] max-w-[70px] overflow-hidden rounded-lg bg-slate-100 shrink-0">
-                            <img src={item.featuredImageUrl} alt="" className="h-full w-full object-cover group-hover/item:scale-105 transition-transform" />
+                            <img src={item.featuredImageUrl || '/placeholder-news.jpg'} alt="" className="h-full w-full object-cover group-hover/item:scale-105 transition-transform" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <span className="text-[10px] font-black text-[#d70b18] uppercase">{item.categoryName}</span>
@@ -323,38 +343,46 @@ export default function LanguageHomePage({ params }) {
               </div>
             </section>
 
-            {/* Special Reports (বিশেষ প্রতিবেদন) — Hide if empty */}
-            {specialReports.length > 0 && (
-              <section className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-3.5 w-1 bg-[#d70b18] rounded-full" />
-                    <h2 className="text-sm font-black text-slate-900">{t('home.special_reports') || 'বিশেষ প্রতিবেদন'}</h2>
-                  </div>
-                  <Link href={`/${lang}/category/special-report`} className="flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-[#d70b18]">
-                    {t('home.view_all') || 'সবগুলো দেখুন'} <ArrowRight size={13} className="text-[#d70b18]" />
-                  </Link>
-                </div>
-                <div className="grid grid-cols-4 gap-3">
-                  {specialReports.slice(0, 4).map((item, idx) => (
-                    <Link key={item.id || idx} href={`/${lang}/news/${item.slug}`} className="group flex flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-2xs hover:shadow-md transition-all">
-                      <div className="h-[110px] w-full overflow-hidden bg-slate-100 relative shrink-0">
-                        <img src={item.featuredImageUrl} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
-                        <span className="absolute bottom-1.5 left-1.5 rounded bg-[#d70b18] px-1.5 py-0.5 text-[9px] font-black text-white uppercase">
-                          {item.categoryName || 'বিশেষ'}
-                        </span>
-                      </div>
-                      <div className="p-2.5 flex-1 flex flex-col justify-between">
-                        <h3 className="line-clamp-2 text-xs font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
-                          {item.title}
-                        </h3>
-                        <span className="mt-2 text-[9.5px] font-semibold text-slate-400">{formatArticleDate(item.publishedAt, lang)}</span>
-                      </div>
+            {/* Special Reports (বিশেষ প্রতিবেদন) — Real DB Posts */}
+            {(() => {
+              const displaySpecialReports = (specialReports && specialReports.length >= 4)
+                ? specialReports
+                : [...(specialReports || []), ...articles.filter((a) => !specialReports?.some((s) => (s.id || s._id) === (a.id || a._id)))].slice(0, 4);
+
+              if (displaySpecialReports.length === 0) return null;
+
+              return (
+                <section className="rounded-xl border border-slate-200 bg-[#ffffff] p-3.5 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-3.5 w-1 bg-[#d70b18] rounded-full" />
+                      <h2 className="text-sm font-black text-slate-900">{t('home.special_reports') || 'বিশেষ প্রতিবেদন'}</h2>
+                    </div>
+                    <Link href={`/${lang}/category/special-report`} className="flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-[#d70b18]">
+                      {t('home.view_all') || 'সবগুলো দেখুন'} <ArrowRight size={13} className="text-[#d70b18]" />
                     </Link>
-                  ))}
-                </div>
-              </section>
-            )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {displaySpecialReports.slice(0, 4).map((item, idx) => (
+                      <Link key={item.id || idx} href={`/${lang}/news/${item.slug}`} className="group flex flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-2xs hover:shadow-md transition-all">
+                        <div className="h-[110px] w-full overflow-hidden bg-slate-100 relative shrink-0">
+                          <img src={item.featuredImageUrl || '/placeholder-news.jpg'} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                          <span className="absolute bottom-1.5 left-1.5 rounded bg-[#d70b18] px-1.5 py-0.5 text-[9px] font-black text-white uppercase">
+                            {item.categoryName || 'বিশেষ'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 flex-1 flex flex-col justify-between">
+                          <h3 className="line-clamp-2 text-xs font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
+                            {item.title}
+                          </h3>
+                          <span className="mt-2 text-[9.5px] font-semibold text-slate-400">{formatArticleDate(item.publishedAt, lang)}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              );
+            })()}
 
           </main>
 
@@ -399,8 +427,8 @@ export default function LanguageHomePage({ params }) {
               </div>
             </div>
 
-            {/* Popular News Widget — Hide if empty */}
-            {articles.length > 0 && (
+            {/* Popular News Widget — Distinct articles (slice 10..16) */}
+            {articles.length > 10 && (
               <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
                   <h2 className="text-sm font-black text-slate-900">{t('home.popular_news') || 'জনপ্রিয় খবর'}</h2>
@@ -409,7 +437,7 @@ export default function LanguageHomePage({ params }) {
                   </Link>
                 </div>
                 <div className="space-y-2.5">
-                  {articles.slice(0, 6).map((item, idx) => (
+                  {articles.slice(10, 16).map((item, idx) => (
                     <Link key={item.id || idx} href={`/${lang}/news/${item.slug}`} className="flex items-center gap-2.5 group border-b border-slate-100 pb-2 last:border-0 last:pb-0">
                       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[#d70b18] text-[11px] font-black text-white">
                         0{idx + 1}
@@ -434,37 +462,38 @@ export default function LanguageHomePage({ params }) {
         {/* DYNAMIC CATEGORY SECTIONS — FULLY LOCALIZED & CONDITIONAL */}
         {/* ========================================================================= */}
 
-        {/* ── 1. POLITICS SECTION (রাজনীতি) — Hide if empty ── */}
+        {/* ── 1. POLITICS SECTION (রাজ্য ও রাজনীতি) — Rich 9-Card Layout ── */}
         {politicsNews.length > 0 && (
-          <section className="rounded-2xl border-l-4 border-l-[#d70b18] border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+          <section className="rounded-2xl border-l-4 border-l-[#d70b18] border border-slate-200/90 bg-white p-5 shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-lg bg-red-100 text-[#d70b18]">
                   <Flame size={18} />
                 </span>
                 <div>
-                  <h2 className="text-base font-black text-slate-900 leading-none">{t('sections.politics_title') || 'রাজনীতি'}</h2>
-                  <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{t('sections.politics_sub') || 'দেশ ও রাজ্যের রাজনৈতিক আপডেট'}</p>
+                  <h2 className="text-base font-black text-slate-900 leading-none">{t('sections.politics_title') || 'রাজ্য ও রাজনীতি'}</h2>
+                  <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{t('sections.politics_sub') || 'পশ্চিমবঙ্গ ও দেশের রাজনীতি এবং প্রশাসনিক আপডেট'}</p>
                 </div>
               </div>
-              <Link href={`/${lang}/category/rajniti`} className="flex items-center gap-1 text-xs font-extrabold text-[#d70b18] hover:underline">
+              <Link href={`/${lang}/category/rajya`} className="flex items-center gap-1 text-xs font-extrabold text-[#d70b18] hover:underline">
                 {t('sections.all_politics_news') || 'সব রাজনীতি খবর'} <ArrowRight size={14} />
               </Link>
             </div>
 
-            <div className="grid grid-cols-12 gap-5 items-stretch">
+            {/* Top Hero Layout: 1 Big Main Card + 4 Stacked Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
               {/* Main Featured Big Politics Card */}
-              <div className="col-span-7 flex flex-col rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-2xs group">
-                <div className="relative h-[210px] w-full overflow-hidden bg-slate-200">
-                  <img src={politicsNews[0]?.featuredImageUrl} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <span className="absolute top-3 left-3 bg-[#d70b18] text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm uppercase tracking-wider">
+              <div className="lg:col-span-7 flex flex-col rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-2xs group">
+                <div className="relative aspect-[16/9] lg:aspect-[2/1] w-full overflow-hidden bg-slate-200 shrink-0">
+                  <img src={politicsNews[0]?.featuredImageUrl || '/placeholder-news.jpg'} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <span className="absolute top-2.5 left-2.5 bg-[#d70b18] text-white text-[9.5px] font-black px-2 py-1 rounded-md shadow-sm uppercase tracking-wider">
                     {t('sections.top_politics') || 'শীর্ষ রাজনীতি'}
                   </span>
                 </div>
-                <div className="p-4 flex-1 flex flex-col justify-between">
+                <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between bg-white">
                   <div>
                     <Link href={`/${lang}/news/${politicsNews[0]?.slug}`}>
-                      <h3 className="text-lg font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
                         {politicsNews[0]?.title}
                       </h3>
                     </Link>
@@ -474,31 +503,68 @@ export default function LanguageHomePage({ params }) {
                       </p>
                     )}
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-slate-400 border-t border-slate-200/60 pt-2">
-                    <span>{politicsNews[0]?.author || staffReporterText}</span>
-                    <span>{formatArticleDate(politicsNews[0]?.publishedAt, lang)}</span>
+                  <div className="mt-3 flex items-center justify-end text-[10.5px] sm:text-[11px] font-bold text-slate-400 border-t border-slate-200/60 pt-2.5">
+                    <span className="flex items-center gap-1"><CalendarDays size={12} /> {formatArticleDate(politicsNews[0]?.publishedAt, lang)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Right Stacked Politics Cards */}
-              <div className="col-span-5 flex flex-col justify-between gap-3">
-                {politicsNews.slice(1, 3).map((item, i) => (
-                  <div key={item.id || i} className="flex-1 flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs hover:shadow-xs transition-all group">
-                    <div className="h-[75px] w-[100px] min-w-[100px] rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              {/* Right Stacked Politics Cards (4 Cards) */}
+              <div className="lg:col-span-5 flex flex-col justify-between gap-2.5 h-full">
+                {politicsNews.slice(1, 5).map((item, i) => (
+                  <div key={item.id || i} className="flex-1 flex flex-row items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-2 sm:p-2.5 shadow-2xs hover:shadow-xs transition-all group">
+                    <div className="aspect-video w-[75px] min-w-[75px] sm:w-[100px] sm:min-w-[100px] lg:w-[110px] lg:min-w-[110px] xl:w-[120px] xl:min-w-[120px] rounded-md overflow-hidden bg-slate-100 shrink-0">
                       <img src={item.featuredImageUrl} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
                     </div>
-                    <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+                    <div className="min-w-0 flex-1 flex flex-col justify-center h-full">
                       <Link href={`/${lang}/news/${item.slug}`}>
-                        <h4 className="line-clamp-2 text-xs font-black text-slate-900 group-hover:text-[#d70b18] transition-colors leading-snug">
+                        <h4 className="line-clamp-2 text-xs sm:text-sm lg:text-[13px] xl:text-sm font-black text-slate-900 group-hover:text-[#d70b18] transition-colors leading-snug">
                           {item.title}
                         </h4>
                       </Link>
-                      <span className="text-[10px] font-semibold text-slate-400 mt-1">{item.author || staffReporterText}</span>
+                      <div className="flex items-center justify-end text-[9px] sm:text-[9.5px] font-semibold text-slate-400 mt-1 sm:mt-1.5 border-t border-slate-50 pt-1">
+                        <span className="shrink-0">{formatArticleDate(item.publishedAt, lang)}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Bottom Grid: 6 Additional Politics Cards (3 Columns x 2 Rows) */}
+            {politicsNews.length > 5 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 border-t border-slate-100 pt-4">
+                {politicsNews.slice(5, 11).map((item, idx) => (
+                  <div key={item.id || idx} className="flex flex-col rounded-xl border border-slate-200/80 bg-slate-50/50 p-2.5 sm:p-3 shadow-2xs hover:shadow-xs hover:border-[#d70b18]/40 transition-all group">
+                    <div className="aspect-[16/10] w-full rounded-lg overflow-hidden bg-slate-100 mb-2.5 shrink-0">
+                      <img src={item.featuredImageUrl || '/placeholder-news.jpg'} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <span className="text-[9px] sm:text-[9.5px] font-black text-[#d70b18] uppercase tracking-wider block mb-1">
+                          {item.categoryName || 'রাজনীতি'}
+                        </span>
+                        <Link href={`/${lang}/news/${item.slug}`}>
+                          <h4 className="line-clamp-2 text-[11.5px] sm:text-xs font-bold text-slate-900 group-hover:text-[#d70b18] transition-colors leading-snug">
+                            {item.title}
+                          </h4>
+                        </Link>
+                      </div>
+                      <div className="mt-2.5 flex items-center justify-end text-[9.5px] sm:text-[10px] font-semibold text-slate-400 border-t border-slate-200/50 pt-1.5">
+                        <span className="shrink-0">{formatArticleDate(item.publishedAt, lang)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* View All Politics Button */}
+            <div className="text-center border-t border-slate-100 pt-3">
+              <Link href={`/${lang}/category/politics`} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-black text-white hover:bg-[#d70b18] transition-all shadow-md">
+                <span>{(!t('sections.explore_more_politics') || t('sections.explore_more_politics').includes('.')) ? (lang === 'en' ? 'Explore More Politics' : lang === 'hi' ? 'और राजनीति समाचार पढ़ें' : 'আরও রাজনীতি সংবাদ পড়ুন') : t('sections.explore_more_politics')}</span>
+                <ArrowRight size={14} />
+              </Link>
             </div>
           </section>
         )}
@@ -570,7 +636,7 @@ export default function LanguageHomePage({ params }) {
             <div className="grid grid-cols-3 gap-4">
               {entNews.slice(0, 3).map((item, idx) => (
                 <div key={item.id || idx} className="flex flex-col rounded-xl overflow-hidden border border-pink-100 bg-white shadow-2xs hover:shadow-md hover:border-pink-300 transition-all group">
-                  <div className="relative h-[155px] w-full overflow-hidden bg-slate-100">
+                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
                     <img src={item.featuredImageUrl} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <span className="absolute top-2.5 left-2.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[9.5px] font-black px-2 py-0.5 rounded-full shadow-xs">
                       {item.categoryName || 'বিনোদন'}
@@ -615,7 +681,7 @@ export default function LanguageHomePage({ params }) {
             <div className="grid grid-cols-3 gap-4">
               {regionalNews.slice(0, 3).map((item, idx) => (
                 <div key={item.id || idx} className="flex flex-col rounded-xl border border-amber-200/60 bg-white overflow-hidden shadow-2xs hover:shadow-md transition-all group">
-                  <div className="relative h-[135px] w-full overflow-hidden bg-slate-100">
+                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
                     <img src={item.featuredImageUrl} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <span className="absolute bottom-2 left-2 bg-amber-500 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
                       <MapPin size={10} /> {item.categoryName || 'পশ্চিম বর্ধমান'}
@@ -846,13 +912,13 @@ export default function LanguageHomePage({ params }) {
       <div className="md:hidden space-y-4 px-3 pt-2 bg-[#f8fafc]">
         {/* Hero Feature Post */}
         {slideList.length > 0 && currentHero && (
-          <section className="relative h-[240px] overflow-hidden rounded-xl bg-slate-900 shadow-sm flex flex-col justify-end group">
+          <section className="relative h-[260px] overflow-hidden rounded-xl bg-slate-900 shadow-sm flex flex-col justify-end group">
             <Link href={`/${lang}/news/${currentHero.slug}`} className="absolute inset-0 z-10" />
             <div className="absolute inset-0 bg-cover bg-center transition-all duration-700" style={{ backgroundImage: `url(${currentHero.featuredImageUrl})` }} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
             <div className="relative z-20 p-3.5 pointer-events-none">
               <span className="mb-1 inline-block rounded bg-[#d70b18] px-2 py-0.5 text-[9.5px] font-black text-white uppercase">{t('home.main_news') || 'প্রধান খবর'}</span>
-              <h1 className="text-[14px] font-black leading-snug text-white line-clamp-2">{currentHero.title}</h1>
+              <h1 className="text-[15px] font-black leading-snug text-white line-clamp-2" title={currentHero.title}>{currentHero.title}</h1>
               <div className="mt-2 flex items-center justify-between text-[10px] text-white/80 font-semibold">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1"><Clock size={11} /> {formatArticleDate(currentHero.publishedAt, lang)}</span>

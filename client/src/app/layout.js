@@ -1,11 +1,12 @@
-import { Hind_Siliguri, Inter } from 'next/font/google';
+import { Tiro_Bangla, Inter } from 'next/font/google';
 import './globals.css';
 import ClientProviders from '@/components/ClientProviders';
 
-const hindSiliguri = Hind_Siliguri({
+const tiroBangla = Tiro_Bangla({
   variable: '--font-bangla',
   subsets: ['bengali', 'latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
 });
 
 const inter = Inter({
@@ -24,10 +25,19 @@ export const metadata = {
   authors: [{ name: 'Nirbhik Bangla Team' }],
   creator: 'Nirbhik Bangla',
   publisher: 'Nirbhik Bangla',
+  manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/images/logos/Nirbhik-Bangla-Icon.png',
-    shortcut: '/images/logos/Nirbhik-Bangla-Icon.png',
-    apple: '/images/logos/Nirbhik-Bangla-Icon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/images/logos/Nirbhik-Bangla-Icon.png', sizes: '48x48', type: 'image/png' },
+      { url: '/images/logos/Nirbhik-Bangla-Icon.png', sizes: '96x96', type: 'image/png' },
+      { url: '/images/logos/Nirbhik-Bangla-Icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/images/logos/Nirbhik-Bangla-Icon.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/images/logos/Nirbhik-Bangla-Icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
@@ -39,15 +49,30 @@ export const viewport = {
 };
 
 import PushNotificationPrompt from '@/components/PushNotificationPrompt';
+import { GoogleAnalytics } from '@next/third-parties/google';
+import Script from 'next/script';
 
 export default function RootLayout({ children }) {
+  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+
   return (
-    <html lang="bn" suppressHydrationWarning className={`${hindSiliguri.variable} ${inter.variable}`}>
+    <html lang="bn" suppressHydrationWarning className={`${tiroBangla.variable} ${inter.variable}`}>
+      <head>
+        {adsenseClientId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body className="min-h-screen bg-white text-slate-900 antialiased flex flex-col">
         <ClientProviders>
           {children}
           <PushNotificationPrompt />
         </ClientProviders>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || 'G-XXXXXXXXXX'} />
       </body>
     </html>
   );

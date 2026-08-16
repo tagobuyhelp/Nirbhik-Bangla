@@ -59,6 +59,5 @@ const LiveSessionSchema = new mongoose.Schema({
 
 LiveSessionSchema.index({ status: 1 });
 LiveSessionSchema.index({ 'title.bn': 'text', 'title.en': 'text' });
-LiveSessionSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('LiveSession', LiveSessionSchema);

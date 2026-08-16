@@ -1,8 +1,8 @@
 export default async function sitemap() {
-  const baseUrl = 'https://nirbhikbangla.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nirbhikbangla.com';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
   const locales = ['bn', 'en', 'hi'];
 
-  // Verified active existing page routes
   const pages = [
     '',
     '/live',
@@ -15,18 +15,16 @@ export default async function sitemap() {
     '/cookies',
     '/editorial-policy',
     '/dmca',
-    '/sitemap',
   ];
 
   const categories = [
-    'politics', 'rajya', 'desh', 'biswa', 'business',
-    'khela', 'binodon', 'technology', 'lifestyle',
-    'health', 'education', 'crime', 'weather'
+    'paschim-bardhaman', 'asansol', 'durgapur', 'rajya', 'desh', 'biswa',
+    'khela', 'binodon', 'technology', 'lifestyle', 'health', 'education', 'crime', 'weather'
   ];
 
   const routes = [];
 
-  // Generate localized active pages
+  // 1. Static localized pages & categories
   locales.forEach((lang) => {
     pages.forEach((page) => {
       routes.push({
@@ -46,6 +44,32 @@ export default async function sitemap() {
       });
     });
   });
+
+  // 2. Fetch dynamic articles from backend API
+  try {
+    const res = await fetch(`${apiUrl}/public/news?limit=200`, {
+      next: { revalidate: 3600 },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const articles = data.data || [];
+
+      articles.forEach((art) => {
+        if (!art.slug) return;
+        locales.forEach((lang) => {
+          routes.push({
+            url: `${baseUrl}/${lang}/news/${art.slug}`,
+            lastModified: art.publishedAt ? new Date(art.publishedAt).toISOString() : new Date().toISOString(),
+            changeFrequency: 'hourly',
+            priority: art.isBreaking ? 1.0 : 0.8,
+          });
+        });
+      });
+    }
+  } catch (err) {
+    console.error('[Sitemap Dynamic Fetch Error]:', err.message);
+  }
 
   return routes;
 }

@@ -22,9 +22,7 @@ const categorySlugs = [
   'video',
 ];
 
-export function generateStaticParams() {
-  return categorySlugs.map((slug) => ({ slug }));
-}
+export const dynamicParams = true;
 
 export default function CategoryPage() {
   return <CategoryClientView />;

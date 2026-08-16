@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/utils/config';
 import {
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   SlidersHorizontal,
   Bookmark,
@@ -154,211 +155,56 @@ const categoryDescriptions = {
 };
 
 const fallbackCategoryArticlesByLang = {
-  bn: [
-    {
-      id: 'hero-1',
-      slug: 'lok-sabha-vote-result',
-      title: 'লোকসভা ভোটের ফল ঘোষণা আজ, কড়া নিরাপত্তার প্রস্তুতি',
-      excerpt: 'সারা দেশে ৪০০০ কেন্দ্রে ভোটগণনা হবে। কমিশনের পক্ষ থেকে জানানো হয়েছে, ফল প্রকাশ না হওয়া পর্যন্ত কড়া নিরাপত্তা বজায় রাখা হবে।',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85',
-      author: 'নিজস্ব সংবাদদাতা',
-      publishedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      categoryName: 'দেশ',
-      isHero: true,
-    },
-    {
-      id: 'sec-1',
-      slug: 'cm-new-project-announcement',
-      title: 'প্রধানমন্ত্রীর নতুন প্রকল্পে মিলবে ১০ লক্ষ টাকা পর্যন্ত সাহায্য',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
-      author: 'নিজস্ব সংবাদদাতা',
-      publishedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-      categoryName: 'দেশ',
-    },
-    {
-      id: 'sec-2',
-      slug: 'election-commission-meeting-prep',
-      title: 'নির্বাচন কমিশনের আধিকারিকদের বৈঠক, ভোট প্রস্তুতি খতিয়ে দেখা হল',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=600&q=80',
-      author: 'নিজস্ব সংবাদদাতা',
-      publishedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-      categoryName: 'দেশ',
-    },
-    {
-      id: 'sec-3',
-      slug: 'coalition-govt-delhi-meeting',
-      title: 'জোট গঠন নিয়ে দিল্লিতে বৈঠকে বিরোধী দলগুলির শীর্ষ নেতারা',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=600&q=80',
-      author: 'নিজস্ব সংবাদদাতা',
-      publishedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-      categoryName: 'দেশ',
-    },
-    {
-      id: 'bot-1',
-      slug: 'south-bengal-rain-forecast',
-      title: 'দক্ষিণবঙ্গে দুর্যোগ, আজও চলবে বৃষ্টির সম্ভাবনা',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=600&q=80',
-      author: 'নিজস্ব সংবাদদাতা',
-      publishedAt: new Date(Date.now() - 3600000 * 10).toISOString(),
-      categoryName: 'দেশ',
-    },
-    {
-      id: 'bot-2',
-      slug: 'high-court-job-interview-stay',
-      title: 'হাইকোর্টের নির্দেশে চাকরির ইন্টারভিউ স্থগিত',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-      author: 'নিজস্ব সংবাদদাতা',
-      publishedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-      categoryName: 'দেশ',
-    },
-  ],
-  en: [
-    {
-      id: 'hero-1',
-      slug: 'lok-sabha-vote-result',
-      title: 'Lok Sabha election results today, strict security measures in place',
-      excerpt: 'Vote counting will take place across 4,000 centers nationwide. Commission confirms tight security until final results.',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85',
-      author: 'Staff Reporter',
-      publishedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      categoryName: 'National',
-      isHero: true,
-    },
-    {
-      id: 'sec-1',
-      slug: 'cm-new-project-announcement',
-      title: 'New government scheme offers assistance up to ₹10 Lakhs',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
-      author: 'Staff Reporter',
-      publishedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-      categoryName: 'National',
-    },
-    {
-      id: 'sec-2',
-      slug: 'election-commission-meeting-prep',
-      title: 'Election Commission officials hold key meeting to review poll readiness',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=600&q=80',
-      author: 'Staff Reporter',
-      publishedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-      categoryName: 'National',
-    },
-    {
-      id: 'sec-3',
-      slug: 'coalition-govt-delhi-meeting',
-      title: 'Opposition leaders gather in Delhi for high-stakes coalition talks',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=600&q=80',
-      author: 'Staff Reporter',
-      publishedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-      categoryName: 'National',
-    },
-    {
-      id: 'bot-1',
-      slug: 'south-bengal-rain-forecast',
-      title: 'Heavy rain forecast continues for South Bengal today',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=600&q=80',
-      author: 'Staff Reporter',
-      publishedAt: new Date(Date.now() - 3600000 * 10).toISOString(),
-      categoryName: 'National',
-    },
-    {
-      id: 'bot-2',
-      slug: 'high-court-job-interview-stay',
-      title: 'High Court issues stay order on recruitment job interviews',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-      author: 'Staff Reporter',
-      publishedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-      categoryName: 'National',
-    },
-  ],
-  hi: [
-    {
-      id: 'hero-1',
-      slug: 'lok-sabha-vote-result',
-      title: 'लोकसभा चुनाव के नतीजे आज, कड़े सुरक्षा के बीच मतगणना जारी',
-      excerpt: 'देशभर के ४०००० केंद्रों पर मतगणना होगी। चुनाव आयोग की ओर से कड़ी सुरक्षा का आश्वासन दिया गया है।',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85',
-      author: 'निज प्रतिनिधि',
-      publishedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      categoryName: 'देश',
-      isHero: true,
-    },
-    {
-      id: 'sec-1',
-      slug: 'cm-new-project-announcement',
-      title: 'नई सरकारी योजना से मिलेगा १० लाख रुपये तक का सहयोग',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
-      author: 'निज प्रतिनिधि',
-      publishedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-      categoryName: 'देश',
-    },
-    {
-      id: 'sec-2',
-      slug: 'election-commission-meeting-prep',
-      title: 'चुनाव आयोग की महत्वपूर्ण बैठक, तैयारियों का लिया गया जायजा',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=600&q=80',
-      author: 'निज प्रतिनिधि',
-      publishedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-      categoryName: 'देश',
-    },
-    {
-      id: 'sec-3',
-      slug: 'coalition-govt-delhi-meeting',
-      title: 'गठबंधन सरकार की रणनीति को लेकर दिल्ली में विपक्षी दिग्गजों की बैठक',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=600&q=80',
-      author: 'निज प्रतिनिधि',
-      publishedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-      categoryName: 'देश',
-    },
-    {
-      id: 'bot-1',
-      slug: 'south-bengal-rain-forecast',
-      title: 'दक्षिण बंगाल में मौसम का मिजाज बदला, भारी बारिश की चेतावनी',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=600&q=80',
-      author: 'निज प्रतिनिधि',
-      publishedAt: new Date(Date.now() - 3600000 * 10).toISOString(),
-      categoryName: 'देश',
-    },
-    {
-      id: 'bot-2',
-      slug: 'high-court-job-interview-stay',
-      title: 'हाईकोर्ट का बड़ा फैसला: नौकरी के इंटरव्यू पर लगी रोक',
-      featuredImageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-      author: 'निज प्रतिनिधि',
-      publishedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-      categoryName: 'देश',
-    },
-  ],
+  bn: [],
+  en: [],
+  hi: [],
 };
 
 const sidebarTopRankedByLang = {
-  bn: [
-    { rank: 1, slug: 'cm-new-project-announcement', title: 'প্রধানমন্ত্রীর নতুন প্রকল্পে মিলবে ১০ লক্ষ টাকা পর্যন্ত সাহায্য', featuredImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 2, slug: 'election-commission-meeting-prep', title: 'নির্বাচন কমিশনের বৈঠক, ভোট প্রস্তুতি খতিয়ে দেখা হল', featuredImageUrl: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 3, slug: 'south-bengal-rain-forecast', title: 'দক্ষিণবঙ্গে দুর্যোগ, আজও চলবে বৃষ্টির সম্ভাবনা', featuredImageUrl: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 4, slug: 'high-court-job-interview-stay', title: 'হাইকোর্টের নির্দেশে চাকরির ইন্টারভিউ স্থগিত', featuredImageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 5, slug: 'coalition-govt-delhi-meeting', title: 'জোট গঠন নিয়ে দিল্লিতে বৈঠকে বিরোধী দলগুলির', featuredImageUrl: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-  ],
-  en: [
-    { rank: 1, slug: 'cm-new-project-announcement', title: 'New government scheme offers assistance up to ₹10 Lakhs', featuredImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 2, slug: 'election-commission-meeting-prep', title: 'Election Commission holds key meeting to review poll readiness', featuredImageUrl: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 3, slug: 'south-bengal-rain-forecast', title: 'Heavy rain forecast continues for South Bengal today', featuredImageUrl: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 4, slug: 'high-court-job-interview-stay', title: 'High Court issues stay order on recruitment interviews', featuredImageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 5, slug: 'coalition-govt-delhi-meeting', title: 'Opposition leaders gather in Delhi for high-stakes talks', featuredImageUrl: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-  ],
-  hi: [
-    { rank: 1, slug: 'cm-new-project-announcement', title: 'नई सरकारी योजना से मिलेगा १० लाख रुपये तक का सहयोग', featuredImageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 2, slug: 'election-commission-meeting-prep', title: 'चुनाव आयोग की महत्वपूर्ण बैठक, तैयारियों का लिया जायजा', featuredImageUrl: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 3, slug: 'south-bengal-rain-forecast', title: 'दक्षिण बंगाल में मौसम का मिजाज बदला, भारी बारिश की चेतावनी', featuredImageUrl: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 4, slug: 'high-court-job-interview-stay', title: 'हाईकोर्ट का बड़ा फैसला: नौकरी के इंटरव्यू पर लगी रोक', featuredImageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-    { rank: 5, slug: 'coalition-govt-delhi-meeting', title: 'गठबंधन सरकार को लेकर दिल्ली में विपक्षी दिग्गजों की बैठक', featuredImageUrl: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=200&q=80', publishedAt: new Date().toISOString() },
-  ],
+  bn: [],
+  en: [],
+  hi: [],
 };
 
-const formatArticleDate = (dateStr, loc) => {
+const formatArticleDate = (dateStr, loc = 'bn') => {
   if (!dateStr) return loc === 'en' ? 'Just now' : loc === 'hi' ? 'अभी' : 'এইমাত্র';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return String(dateStr);
+
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    if (diffMs < 0) return loc === 'en' ? 'Just now' : loc === 'hi' ? 'अभी' : 'এইমাত্র';
+
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    const toBn = (num) => String(num).replace(/\d/g, (w) => ['০','১','২','৩','৪','৫','৬','৭','৮','৯'][w]);
+    const toHi = (num) => String(num).replace(/\d/g, (w) => ['०','१','२','३','४','५','६','७','८','९'][w]);
+
+    if (diffMins < 5) return loc === 'en' ? 'Just now' : loc === 'hi' ? 'अभी' : 'এইমাত্র';
+    if (diffMins < 60) {
+      if (loc === 'en') return `${diffMins} mins ago`;
+      if (loc === 'hi') return `${toHi(diffMins)} मिनट पहले`;
+      return `${toBn(diffMins)} মিনিট আগে`;
+    }
+    if (diffHours < 24) {
+      if (loc === 'en') return `${diffHours} hours ago`;
+      if (loc === 'hi') return `${toHi(diffHours)} घंटे पहले`;
+      return `${toBn(diffHours)} ঘণ্টা আগে`;
+    }
+    if (diffDays === 1) {
+      if (loc === 'en') return 'Yesterday';
+      if (loc === 'hi') return 'कल';
+      return 'গতকাল';
+    }
+    if (diffDays < 7) {
+      if (loc === 'en') return `${diffDays} days ago`;
+      if (loc === 'hi') return `${toHi(diffDays)} दिन पहले`;
+      return `${toBn(diffDays)} দিন আগে`;
+    }
+
     return d.toLocaleDateString(loc === 'en' ? 'en-US' : loc === 'hi' ? 'hi-IN' : 'bn-BD', {
       day: 'numeric',
       month: 'short',
@@ -386,13 +232,22 @@ export default function CategoryClientView() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalArticles, setTotalArticles] = useState(0);
+
   const currentFallbackArticles = fallbackCategoryArticlesByLang[locale] || fallbackCategoryArticlesByLang.bn;
   const currentFallbackTopRanked = sidebarTopRankedByLang[locale] || sidebarTopRankedByLang.bn;
 
-  // Fetch Category News Dynamically from Backend API
+  // Reset page when category slug or locale changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [slug, locale]);
+
+  // Fetch Category News Dynamically from Backend API with Pagination
   useEffect(() => {
     setLoading(true);
-    let url = `${API_BASE_URL}/public/news?lang=${locale}`;
+    let url = `${API_BASE_URL}/public/news?lang=${locale}&page=${currentPage}&limit=12`;
     if (slug !== 'all' && slug !== 'latest') {
       if (slug === 'breaking') {
         url += '&isBreaking=true';
@@ -408,13 +263,20 @@ export default function CategoryClientView() {
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setArticles(data.data);
+          if (data.meta) {
+            setTotalPages(data.meta.totalPages || 1);
+            setTotalArticles(data.meta.total || data.data.length);
+          }
         } else {
           setArticles(currentFallbackArticles);
+          setTotalPages(1);
+          setTotalArticles(currentFallbackArticles.length);
         }
       })
       .catch((err) => {
         console.log('Category news fetch error:', err);
         setArticles(currentFallbackArticles);
+        setTotalPages(1);
       })
       .finally(() => setLoading(false));
 
@@ -452,7 +314,7 @@ export default function CategoryClientView() {
       .catch(() => {
         setSidebarTopRanked(currentFallbackTopRanked);
       });
-  }, [slug, locale]);
+  }, [slug, locale, currentPage]);
 
   // Load saved follow state
   useEffect(() => {
@@ -498,11 +360,12 @@ export default function CategoryClientView() {
     ? articles
     : articles.filter((art) => (art.title + ' ' + (art.excerpt || '')).includes(activeSubTopic));
 
-  const displayArticles = filteredArticles.length > 0 ? filteredArticles : currentFallbackArticles;
+  const safeFallbackArticles = Array.isArray(currentFallbackArticles) ? currentFallbackArticles : [];
+  const displayArticles = filteredArticles.length > 0 ? filteredArticles : safeFallbackArticles;
 
   // Partition articles into Hero, Secondary, Bottom list
-  const heroArticle = displayArticles[0] || currentFallbackArticles[0];
-  const secondaryArticles = displayArticles.slice(1, 4).length > 0 ? displayArticles.slice(1, 4) : currentFallbackArticles.slice(1, 4);
+  const heroArticle = displayArticles?.[0] || safeFallbackArticles?.[0] || {};
+  const secondaryArticles = (displayArticles.length > 1 ? displayArticles.slice(1, 4) : safeFallbackArticles.slice(1, 4)) || [];
 
   // Dynamic "সর্বশেষ খবর" articles
   const dynamicLatestArticles = (latestNewsList.length > 0 ? latestNewsList : currentFallbackArticles).slice(0, 6);
@@ -516,6 +379,71 @@ export default function CategoryClientView() {
   const topStoryBadge = t('category_page.top_story') || (locale === 'en' ? 'Top Story' : locale === 'hi' ? 'शीर्ष खबर' : 'শীর্ষ খবর');
   const loadMoreText = t('category_page.load_more') || (locale === 'en' ? 'Load More News' : locale === 'hi' ? 'और खबरें देखें' : 'আরও খবর দেখুন');
   const staffReporterText = t('category_page.staff_reporter') || (locale === 'en' ? 'Staff Reporter' : locale === 'hi' ? 'निज प्रतिनिधि' : 'নিজস্ব সংবাদদাতা');
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-2 border-t border-slate-200/80 pt-6">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => {
+            if (currentPage > 1) {
+              setCurrentPage((prev) => prev - 1);
+              if (typeof window !== 'undefined') window.scrollTo({ top: 250, behavior: 'smooth' });
+            }
+          }}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-black text-slate-700 hover:border-[#d70b18] hover:text-[#d70b18] disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-all shadow-2xs"
+        >
+          <ChevronLeft size={16} />
+          <span>{locale === 'en' ? 'Previous' : locale === 'hi' ? 'पिछला' : 'আগের পেজ'}</span>
+        </button>
+
+        <div className="flex items-center gap-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => {
+            if (pg === 1 || pg === totalPages || Math.abs(pg - currentPage) <= 1) {
+              return (
+                <button
+                  key={pg}
+                  onClick={() => {
+                    setCurrentPage(pg);
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 250, behavior: 'smooth' });
+                  }}
+                  className={`h-9 w-9 rounded-xl text-xs font-black transition-all shadow-2xs ${
+                    currentPage === pg
+                      ? 'bg-[#d70b18] text-white shadow-md'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:border-[#d70b18] hover:text-[#d70b18]'
+                  }`}
+                >
+                  {pg}
+                </button>
+              );
+            } else if (pg === currentPage - 2 || pg === currentPage + 2) {
+              return (
+                <span key={pg} className="px-1 text-slate-400 text-xs font-bold">
+                  ...
+                </span>
+              );
+            }
+            return null;
+          })}
+        </div>
+
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => {
+            if (currentPage < totalPages) {
+              setCurrentPage((prev) => prev + 1);
+              if (typeof window !== 'undefined') window.scrollTo({ top: 250, behavior: 'smooth' });
+            }
+          }}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-black text-slate-700 hover:border-[#d70b18] hover:text-[#d70b18] disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-all shadow-2xs"
+        >
+          <span>{locale === 'en' ? 'Next' : locale === 'hi' ? 'अगला' : 'পরের পেজ'}</span>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    );
+  };
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -542,7 +470,7 @@ export default function CategoryClientView() {
           {/* Background image overlay */}
           <div
             className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
-            style={{ backgroundImage: `url(${heroArticle.featuredImageUrl || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85'})` }}
+            style={{ backgroundImage: `url(${heroArticle?.featuredImageUrl || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85'})` }}
           />
           
           <div className="relative z-10 flex items-start justify-between gap-3">
@@ -686,14 +614,8 @@ export default function CategoryClientView() {
           })}
         </div>
 
-        {/* ── 4. Mobile "আরও খবর দেখুন" Load More Button ── */}
-        <button
-          onClick={() => setDisplayCount((prev) => prev + 6)}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 text-[#d70b18] font-black text-sm rounded-2xl hover:bg-red-50/50 transition-colors shadow-2xs mt-5"
-        >
-          <RotateCw size={16} className="text-[#d70b18]" />
-          <span>{loadMoreText}</span>
-        </button>
+        {/* ── 4. Mobile Pagination Controls ── */}
+        {renderPagination()}
 
       </div>
 
@@ -774,99 +696,145 @@ export default function CategoryClientView() {
             {/* Left Column (col-span-12 lg:col-span-8) */}
             <main className="col-span-12 lg:col-span-8 min-w-0 space-y-8">
 
-              {/* ── Hero Grid Section (Featured + 3 Stacked) ── */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-
-                {/* Large Featured Main Card (md:col-span-7) */}
-                <div className="md:col-span-7 flex flex-col rounded-xl overflow-hidden border border-slate-200/90 bg-white shadow-xs group">
-                  <div className="relative h-[220px] sm:h-[260px] md:h-[290px] w-full overflow-hidden bg-slate-100">
-                    <img
-                      src={heroArticle.featuredImageUrl || heroArticle.img}
-                      alt={heroArticle.title}
-                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <span className="absolute top-3 left-3 bg-[#d70b18] text-white text-[11px] font-black px-2.5 py-0.5 rounded shadow-sm uppercase tracking-wider">
-                      {topStoryBadge}
-                    </span>
-                  </div>
-
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <Link href={`/${locale}/news/${heroArticle.slug}`}>
-                        <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
-                          {heroArticle.title}
-                        </h2>
-                      </Link>
-                      {heroArticle.excerpt && (
-                        <p className="mt-2 text-xs sm:text-sm font-bold text-slate-600 leading-relaxed line-clamp-3">
-                          {heroArticle.excerpt}
-                        </p>
-                      )}
+              {/* ── 4a. Hero Grid Section (Shown on Page 1 only) ── */}
+              {currentPage === 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  {/* Large Featured Main Card (md:col-span-7) */}
+                  <div className="md:col-span-7 flex flex-col rounded-xl overflow-hidden border border-slate-200/90 bg-white shadow-xs group">
+                    <div className="relative h-[220px] sm:h-[260px] md:h-[290px] w-full overflow-hidden bg-slate-100">
+                      <img
+                        src={heroArticle?.featuredImageUrl || heroArticle?.img}
+                        alt={heroArticle?.title}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <span className="absolute top-3 left-3 bg-[#d70b18] text-white text-[11px] font-black px-2.5 py-0.5 rounded shadow-sm uppercase tracking-wider">
+                        {topStoryBadge}
+                      </span>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <div className="grid h-7 w-7 place-items-center rounded-full bg-[#d70b18]/10 text-[#d70b18] font-black text-xs">
-                          N
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-extrabold text-slate-900 flex items-center gap-1">
-                            {heroArticle.author || staffReporterText}
-                            <CheckCircle size={12} className="text-[#d70b18] fill-[#d70b18] text-white" />
-                          </span>
-                          <span className="text-[10px] font-semibold text-slate-400">
-                            {formatArticleDate(heroArticle.publishedAt, locale)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => toggleBookmark(heroArticle.id)}
-                        className={`transition-colors p-1 ${bookmarkedIds.has(heroArticle.id) ? 'text-[#d70b18]' : 'text-slate-400 hover:text-[#d70b18]'}`}
-                        aria-label="Bookmark"
-                      >
-                        <Bookmark size={16} fill={bookmarkedIds.has(heroArticle.id) ? '#d70b18' : 'none'} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Stacked 3 Secondary Cards (md:col-span-5) */}
-                <div className="md:col-span-5 flex flex-col gap-3">
-                  {secondaryArticles.map((item, idx) => (
-                    <div key={idx} className="flex gap-3 rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:shadow-xs transition-all group shrink-0">
-                      <div className="h-[76px] w-[100px] sm:w-[110px] min-w-[100px] overflow-hidden rounded-lg bg-slate-100 relative shrink-0">
-                        <img
-                          src={item.featuredImageUrl || item.img}
-                          alt={item.title}
-                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-
-                      <div className="flex flex-col justify-between min-w-0 flex-1 py-0.5">
-                        <Link href={`/${locale}/news/${item.slug}`}>
-                          <h3 className="line-clamp-2 text-xs font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
-                            {item.title}
-                          </h3>
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <Link href={`/${locale}/news/${heroArticle?.slug}`}>
+                          <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
+                            {heroArticle?.title}
+                          </h2>
                         </Link>
+                        {heroArticle?.excerpt && (
+                          <p className="mt-2 text-xs sm:text-sm font-bold text-slate-600 leading-relaxed line-clamp-3">
+                            {heroArticle?.excerpt}
+                          </p>
+                        )}
+                      </div>
 
-                        <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 mt-1">
-                          <span>{formatArticleDate(item.publishedAt, locale)}</span>
-                          <button
-                            onClick={() => toggleBookmark(item.id)}
-                            className={`transition-colors ${bookmarkedIds.has(item.id) ? 'text-[#d70b18]' : 'text-slate-400 hover:text-[#d70b18]'}`}
-                            aria-label="Bookmark"
-                          >
-                            <Bookmark size={13} fill={bookmarkedIds.has(item.id) ? '#d70b18' : 'none'} />
-                          </button>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="grid h-7 w-7 place-items-center rounded-full bg-[#d70b18]/10 text-[#d70b18] font-black text-xs">
+                            N
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-slate-900 flex items-center gap-1">
+                              {heroArticle?.author || staffReporterText}
+                              <CheckCircle size={12} className="text-[#d70b18] fill-[#d70b18] text-white" />
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400">
+                              {formatArticleDate(heroArticle?.publishedAt, locale)}
+                            </span>
+                          </div>
                         </div>
+
+                        <button
+                          onClick={() => toggleBookmark(heroArticle?.id)}
+                          className={`transition-colors p-1 ${bookmarkedIds.has(heroArticle?.id) ? 'text-[#d70b18]' : 'text-slate-400 hover:text-[#d70b18]'}`}
+                          aria-label="Bookmark"
+                        >
+                          <Bookmark size={16} fill={bookmarkedIds.has(heroArticle?.id) ? '#d70b18' : 'none'} />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* ── 5. Bottom Section ("সর্বশেষ খবর" - Fully Dynamic Latest News API Grid) ── */}
+                  {/* Right Stacked 3 Secondary Cards (md:col-span-5) */}
+                  <div className="md:col-span-5 flex flex-col gap-3">
+                    {secondaryArticles.map((item, idx) => (
+                      <div key={idx} className="flex gap-3 rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-2xs hover:shadow-xs transition-all group shrink-0">
+                        <div className="h-[76px] w-[100px] sm:w-[110px] min-w-[100px] overflow-hidden rounded-lg bg-slate-100 relative shrink-0">
+                          <img
+                            src={item.featuredImageUrl || item.img}
+                            alt={item.title}
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+
+                        <div className="flex flex-col justify-between min-w-0 flex-1 py-0.5">
+                          <Link href={`/${locale}/news/${item.slug}`}>
+                            <h3 className="line-clamp-2 text-xs font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
+                              {item.title}
+                            </h3>
+                          </Link>
+
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 mt-1">
+                            <span>{formatArticleDate(item.publishedAt, locale)}</span>
+                            <button
+                              onClick={() => toggleBookmark(item.id)}
+                              className={`transition-colors ${bookmarkedIds.has(item.id) ? 'text-[#d70b18]' : 'text-slate-400 hover:text-[#d70b18]'}`}
+                              aria-label="Bookmark"
+                            >
+                              <Bookmark size={13} fill={bookmarkedIds.has(item.id) ? '#d70b18' : 'none'} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 4b. Category Grid Articles (Remaining articles on page 1, or all 12 on page > 1) ── */}
+              {(() => {
+                const gridArticles = currentPage === 1 ? displayArticles.slice(4) : displayArticles;
+                if (gridArticles.length === 0) return null;
+                return (
+                  <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {gridArticles.map((item, idx) => (
+                        <div key={item.id || idx} className="flex flex-col rounded-xl overflow-hidden border border-slate-200/90 bg-white shadow-2xs hover:shadow-md transition-all group">
+                          <div className="h-[140px] w-full overflow-hidden bg-slate-100">
+                            <img
+                              src={item.featuredImageUrl || item.img}
+                              alt={item.title}
+                              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+
+                          <div className="p-3 flex-1 flex flex-col justify-between">
+                            <Link href={`/${locale}/news/${item.slug}`}>
+                              <h3 className="line-clamp-2 text-xs font-black text-slate-900 leading-snug group-hover:text-[#d70b18] transition-colors">
+                                {item.title}
+                              </h3>
+                            </Link>
+
+                            <div className="mt-3 flex items-center justify-between text-[10px] font-semibold text-slate-400 border-t border-slate-100 pt-2">
+                              <span>{formatArticleDate(item.publishedAt, locale)}</span>
+                              <button
+                                onClick={() => toggleBookmark(item.id)}
+                                className={`transition-colors ${bookmarkedIds.has(item.id) ? 'text-[#d70b18]' : 'text-slate-400 hover:text-[#d70b18]'}`}
+                                aria-label="Bookmark"
+                              >
+                                <Bookmark size={13} fill={bookmarkedIds.has(item.id) ? '#d70b18' : 'none'} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Desktop Pagination (Placed directly under Category Articles!) ── */}
+              {renderPagination()}
+
+              {/* ── 5. Bottom Section ("সর্বশেষ খবর" - Dynamic Latest News API Grid) ── */}
               <div>
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-4">
                   <h2 className="text-base font-black text-slate-900 flex items-center gap-2">

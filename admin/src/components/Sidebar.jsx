@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   LayoutGrid,
   FileText,
@@ -30,6 +31,7 @@ import {
 
 export default function Sidebar({ isCollapsed, toggleSidebar }) {
   const location = useLocation();
+  const { user } = useAuth();
 
   // Track expanded menu state for items with children
   const [openMenus, setOpenMenus] = useState({
@@ -315,21 +317,21 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
       {/* Bottom User Profile Card */}
       <div className={`p-3 border-t border-slate-800/80 bg-[#0a0e17] ${isCollapsed ? 'flex justify-center' : ''}`}>
         <div
-          title={isCollapsed ? "Super Admin (Administrator)" : undefined}
+          title={isCollapsed ? `${user?.name || "Admin"} (${user?.role || "User"})` : undefined}
           className={`bg-white/5 border border-white/5 p-2.5 rounded-2xl flex items-center ${
             isCollapsed ? 'justify-center w-11 h-11 p-0' : 'justify-between'
           } cursor-pointer hover:bg-white/10 transition-colors`}
         >
           <div className="flex items-center gap-3">
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
-              alt="Super Admin"
+              src={user?.avatar || "https://ui-avatars.com/api/?name=" + (user?.name || "User") + "&background=eb1c24&color=fff"}
+              alt={user?.name || "Admin"}
               className="w-8 h-8 rounded-full object-cover border border-amber-500/50 shadow-xs shrink-0"
             />
             {!isCollapsed && (
               <div>
-                <h5 className="text-xs font-black text-white leading-tight">Super Admin</h5>
-                <p className="text-[10px] text-slate-400">Administrator</p>
+                <h5 className="text-xs font-black text-white leading-tight">{user?.name || "Admin"}</h5>
+                <p className="text-[10px] text-slate-400">{user?.role || "User"}</p>
               </div>
             )}
           </div>

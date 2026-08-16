@@ -76,18 +76,21 @@ class PromptBuilder {
     return this.compile('factcheck_content', { text }, true);
   }
 
+  buildRewriteContent(text) {
+    return this.compile('rewrite_content', { text }, true);
+  }
+
+  buildExpandContent(text) {
+    return this.compile('expand_content', { text }, true);
+  }
+
+  buildShortenContent(text) {
+    return this.compile('shorten_content', { text }, true);
+  }
+
   buildEditorAction(text, actionType) {
     let instruction = '';
     switch (actionType) {
-      case 'rewrite':
-        instruction = 'Rewrite the provided text to be more professional, engaging, and grammatically correct while maintaining the original meaning.';
-        break;
-      case 'expand':
-        instruction = 'Expand the provided text by adding more relevant details, context, and elaboration. Keep it factual and natural.';
-        break;
-      case 'shorten':
-        instruction = 'Shorten and summarize the provided text to be concise and direct, removing fluff but keeping key information.';
-        break;
       case 'headlines':
       case 'write':
         instruction = 'Format the text with bold catchy headings and well-structured paragraphs suitable for a news portal article.';

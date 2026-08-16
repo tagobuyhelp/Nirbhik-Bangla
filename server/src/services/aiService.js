@@ -138,8 +138,18 @@ class AIService {
   }
 
   async editorAction(text, actionType) {
-    const config = promptBuilder.buildEditorAction(text, actionType);
-    const data = await this._executeAndLog('AIEditorService', 'editor_action', config, 'editor');
+    let config;
+    if (actionType === 'rewrite') {
+      config = promptBuilder.buildRewriteContent(text);
+    } else if (actionType === 'expand') {
+      config = promptBuilder.buildExpandContent(text);
+    } else if (actionType === 'shorten') {
+      config = promptBuilder.buildShortenContent(text);
+    } else {
+      config = promptBuilder.buildEditorAction(text, actionType);
+    }
+    
+    const data = await this._executeAndLog('AIEditorService', config.systemInstruction ? 'editor_special' : 'editor_action', config, 'editor');
     return data?.editedText || text;
   }
 

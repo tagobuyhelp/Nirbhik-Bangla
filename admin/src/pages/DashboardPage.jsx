@@ -117,20 +117,24 @@ export default function DashboardPage() {
   const [recentPosts, setRecentPosts] = useState([]);
   const [activeStreams, setActiveStreams] = useState([]);
   const [categoryStats, setCategoryStats] = useState([]);
+  const [gaData, setGaData] = useState(null);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    let currentMetrics = null;
+
+    const fetchDashboard = async () => {
       try {
         const { data } = await api.get('/analytics/dashboard');
         const metrics = data.data;
+        currentMetrics = metrics;
 
-        setKpis([
-          { ...defaultKpis[0], value: metrics.totalArticles },
-          { ...defaultKpis[1], value: metrics.totalViews },
-          { ...defaultKpis[2], value: metrics.totalReporters },
-          { ...defaultKpis[3], value: metrics.adStats?.totalImpressions || 0 },
-          { ...defaultKpis[4], value: metrics.totalStreams },
-          { ...defaultKpis[5], value: metrics.adStats?.totalClicks || 0 },
+        setKpis(prev => [
+          { ...prev[0], value: metrics.totalArticles || 0 },
+          { ...prev[1], value: metrics.totalViews || 0 }, // Initial fast DB view
+          { ...prev[2], value: metrics.totalReporters || 0 },
+          { ...prev[3], value: metrics.adStats?.totalImpressions || 0 },
+          { ...prev[4], value: metrics.totalStreams || 0 },
+          { ...prev[5], value: metrics.adStats?.totalClicks || 0 },
         ]);
 
         setRecentPosts(metrics.recentPosts || []);
@@ -139,10 +143,32 @@ export default function DashboardPage() {
       } catch (error) {
         console.error('Failed to fetch dashboard metrics:', error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Remove loading screen immediately!
       }
     };
-    fetchAnalytics();
+
+    const fetchGA4Background = async () => {
+      try {
+        const { data } = await api.get('/analytics/overview');
+        const gaMetrics = data.data;
+        if (gaMetrics) {
+          setGaData(gaMetrics);
+          // Quietly update the Total Views KPI to GA4 number
+          setKpis(prev => {
+            const updated = [...prev];
+            updated[1] = { 
+              ...updated[1], 
+              value: gaMetrics.metrics?.pageViews || (currentMetrics?.totalViews || 0) 
+            };
+            return updated;
+          });
+        }
+      } catch (error) {
+        console.error('Silent GA4 fetch failed:', error);
+      }
+    };
+
+    fetchDashboard().then(() => fetchGA4Background());
   }, []);
 
   const quickActions = [
@@ -240,73 +266,29 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-extrabold text-sm text-slate-900">Website Traffic Overview</h3>
-              <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-1 bg-[#eb1c24] rounded-full inline-block" />
-                  <span>Page Views</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-1 bg-slate-400 rounded-full inline-block" />
-                  <span>Visitors</span>
-                </div>
-              </div>
+              <p className="text-[11px] text-slate-400 font-medium">Real-time stats from Google Analytics</p>
             </div>
-
-            <select className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-lg outline-none cursor-pointer">
-              <option>Last 30 Days</option>
-              <option>Last 7 Days</option>
-              <option>Last 90 Days</option>
-            </select>
+            
+            <Link 
+              to="/analytics" 
+              className="bg-[#eb1c24] text-white hover:bg-red-700 px-3 py-1.5 rounded-lg text-[11px] font-black transition-colors"
+            >
+              Full Report
+            </Link>
           </div>
 
-          <div className="w-full h-56 pt-2">
-            <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
-              <line x1="30" y1="20" x2="490" y2="20" stroke="#f1f5f9" strokeWidth="1" />
-              <text x="5" y="24" fill="#94a3b8" fontSize="10" fontWeight="600">50K</text>
-
-              <line x1="30" y1="60" x2="490" y2="60" stroke="#f1f5f9" strokeWidth="1" />
-              <text x="5" y="64" fill="#94a3b8" fontSize="10" fontWeight="600">40K</text>
-
-              <line x1="30" y1="100" x2="490" y2="100" stroke="#f1f5f9" strokeWidth="1" />
-              <text x="5" y="104" fill="#94a3b8" fontSize="10" fontWeight="600">30K</text>
-
-              <line x1="30" y1="140" x2="490" y2="140" stroke="#f1f5f9" strokeWidth="1" />
-              <text x="5" y="144" fill="#94a3b8" fontSize="10" fontWeight="600">20K</text>
-
-              <line x1="30" y1="180" x2="490" y2="180" stroke="#e2e8f0" strokeWidth="1" />
-              <text x="5" y="184" fill="#94a3b8" fontSize="10" fontWeight="600">10K</text>
-
-              <polyline
-                fill="none"
-                stroke="#eb1c24"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points="30,120 70,105 110,130 150,90 190,115 230,55 270,95 310,60 350,85 390,45 430,70 470,40"
-              />
-              {[[30,120], [70,105], [110,130], [150,90], [190,115], [230,55], [270,95], [310,60], [350,85], [390,45], [430,70], [470,40]].map((pt, i) => (
-                <circle key={i} cx={pt[0]} cy={pt[1]} r="3.5" fill="#eb1c24" stroke="white" strokeWidth="2" />
-              ))}
-
-              <polyline
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="4 2"
-                points="30,145 70,130 110,150 150,120 190,135 230,95 270,125 310,100 350,130 390,85 430,110 470,75"
-              />
-              {[[30,145], [70,130], [110,150], [150,120], [190,135], [230,95], [270,125], [310,100], [350,130], [390,85], [430,110], [470,75]].map((pt, i) => (
-                <circle key={i} cx={pt[0]} cy={pt[1]} r="3" fill="#64748b" stroke="white" strokeWidth="1.5" />
-              ))}
-
-              {['21 May', '25 May', '29 May', '2 Jun', '6 Jun', '10 Jun', '14 Jun', '18 Jun', '20 Jun'].map((d, i) => (
-                <text key={i} x={30 + i * 55} y="198" fill="#94a3b8" fontSize="9" fontWeight="600" textAnchor="middle">
-                  {d}
-                </text>
-              ))}
-            </svg>
+          <div className="w-full h-56 pt-2 flex items-center justify-center gap-6">
+            <div className="flex flex-col items-center justify-center p-6 bg-blue-50 rounded-2xl border border-blue-100 flex-1 h-full">
+              <Eye size={24} className="text-blue-500 mb-2" />
+              <h4 className="text-3xl font-black text-slate-900">{gaData?.metrics?.pageViews || '0'}</h4>
+              <p className="text-xs font-bold text-slate-500 mt-1">Page Views</p>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex-1 h-full">
+              <Users size={24} className="text-emerald-500 mb-2" />
+              <h4 className="text-3xl font-black text-slate-900">{gaData?.metrics?.totalUsers || '0'}</h4>
+              <p className="text-xs font-bold text-slate-500 mt-1">Total Visitors</p>
+            </div>
           </div>
         </div>
 
@@ -317,13 +299,23 @@ export default function DashboardPage() {
           <div className="relative w-40 h-40 mx-auto my-2 flex items-center justify-center">
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
               {categoryStats.length > 0 ? (
-                <>
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#eb1c24" strokeWidth="18" strokeDasharray="67 238" strokeDashoffset="0" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#f97316" strokeWidth="18" strokeDasharray="52 238" strokeDashoffset="-67" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#eab308" strokeWidth="18" strokeDasharray="38 238" strokeDashoffset="-119" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#22c55e" strokeWidth="18" strokeDasharray="33 238" strokeDashoffset="-157" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#06b6d4" strokeWidth="18" strokeDasharray="24 238" strokeDashoffset="-190" />
-                </>
+                // Simple dynamic pie chart circles based on actual stats length to remove hardcoded dummy paths
+                categoryStats.map((cat, idx) => {
+                  const colors = ['#eb1c24', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6'];
+                  return (
+                    <circle 
+                      key={idx} 
+                      cx="50" 
+                      cy="50" 
+                      r="38" 
+                      fill="none" 
+                      stroke={colors[idx % colors.length]} 
+                      strokeWidth="18" 
+                      strokeDasharray={`${Math.max(10, 238 / categoryStats.length - 2)} 238`} 
+                      strokeDashoffset={-((238 / categoryStats.length) * idx)} 
+                    />
+                  )
+                })
               ) : (
                 <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="18" />
               )}
@@ -470,15 +462,15 @@ export default function DashboardPage() {
 
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-extrabold text-slate-900 truncate group-hover:text-[#eb1c24] transition-colors font-bangla">
-                    {stream.title}
+                    {stream.title?.bn || stream.title?.en || 'Live Stream'}
                   </h4>
                   <p className="text-[10px] font-semibold text-slate-500 mt-0.5 flex items-center gap-1">
-                    <span>{stream.platform}</span>
+                    <span>{stream.sourceType}</span>
                   </p>
                 </div>
 
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${stream.platform.toLowerCase() === 'youtube' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
-                  {stream.platform}
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${stream.sourceType?.toLowerCase() === 'youtube' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
+                  {stream.sourceType}
                 </span>
               </div>
             )) : (

@@ -16,10 +16,6 @@ const articleIds = [
 
 export const dynamicParams = true;
 
-export function generateStaticParams() {
-  return articleIds.map((id) => ({ id }));
-}
-
 export default function ArticleDetailPage() {
   return <ArticleDetailClientView />;
 }

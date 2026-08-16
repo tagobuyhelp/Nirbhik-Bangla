@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
-@layer base {
-  body {
-    font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', 'Hind Siliguri', 'Anek Bangla', -apple-system, BlinkMacSystemFont, sans-serif;
-    @apply bg-[#f8fafc] text-slate-800 min-h-screen antialiased;
-  }
+body {
+  font-family: 'Tiro Bangla', 'Outfit', 'Plus Jakarta Sans', 'Inter', 'Noto Serif Bengali', serif, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  background-color: #f8fafc;
+  color: #1e293b;
+  min-height: 100vh;
 }
 
 .font-bangla {
-  font-family: 'Hind Siliguri', 'Anek Bangla', 'Outfit', sans-serif !important;
+  font-family: 'Tiro Bangla', 'Hind Siliguri', 'Anek Bangla', 'Noto Serif Bengali', serif, sans-serif !important;
+  font-size: 1.04em;
+  line-height: 1.75;
 }
 
 .font-outfit {
@@ -44,43 +48,74 @@
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-/* Custom Editor Content Styling */
+/* Custom Editor Content Styling — High Readability & Large Clear Text */
 .editor-content [contenteditable="true"]:focus {
   outline: none;
+}
+
+.editor-content {
+  font-size: 16.5px !important;
+  line-height: 1.85 !important;
 }
 
 .editor-content p,
 .editor-content p span,
 .editor-content div span,
-.editor-content span {
-  font-size: 14px !important;
-  line-height: 1.75 !important;
-  margin-bottom: 0.75rem;
+.editor-content span,
+.editor-content div {
+  font-size: 16.5px !important;
+  line-height: 1.85 !important;
+  margin-bottom: 0.85rem;
+  color: #1e293b;
 }
 
 .editor-content h1,
 .editor-content h1 span {
-  font-size: 22px !important;
+  font-size: 24px !important;
   font-weight: 900 !important;
   color: #0f172a;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.65rem;
+  line-height: 1.4 !important;
 }
 
 .editor-content h2,
 .editor-content h2 span {
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 800 !important;
   color: #0f172a;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  margin-top: 1.1rem;
+  margin-bottom: 0.55rem;
+  line-height: 1.45 !important;
 }
 
 .editor-content h3,
 .editor-content h3 span {
-  font-size: 16px !important;
+  font-size: 18px !important;
   font-weight: 700 !important;
   color: #0f172a;
-  margin-top: 0.75rem;
+  margin-top: 0.9rem;
   margin-bottom: 0.5rem;
+  line-height: 1.5 !important;
+}
+
+.editor-content blockquote {
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+  border-left: 4px solid #eb1c24;
+  background-color: #f8fafc;
+  padding: 0.85rem 1.15rem;
+  margin: 1rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Global Admin Input & Table Text Readability Boost */
+input, textarea, select {
+  font-size: 14.5px;
+}
+
+table td, table th {
+  font-size: 13.5px;
 }

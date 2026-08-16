@@ -8,10 +8,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { API_BASE_URL } from '@/utils/config';
 
 const defaultItems = [
-  { text: 'কলকাতা মেট্রোর নতুন রুটের সূচনা', href: '#' },
-  { text: 'পশ্চিমবঙ্গে ভারী বৃষ্টির সতর্কতা', href: '#' },
-  { text: 'মুখ্যমন্ত্রীর নতুন প্রকল্প ঘোষণা', href: '#' },
-  { text: 'বিশ্বকাপে ভারতের বড় জয়', href: '#' },
+  { text: 'আন্তর্জাতিক যুব দিবস ২০২৬ উপলক্ষ্যে বিএসএফের ১৫ কিলোমিটার সাইকেল র‍যেলি', href: '#' },
+  { text: 'আসানসোলে বিজেপির গুরুত্বপূর্ণ বৈঠক ও সংগঠন প্রসারের উদ্যোগ', href: '#' },
+  { text: 'পশ্চিম বর্ধমানে পরিকাঠামো উন্নয়ন ও যানজট নিরসনের নতুন পরিকল্পনা', href: '#' },
 ];
 
 export default function BreakingNewsTicker() {
@@ -20,7 +19,7 @@ export default function BreakingNewsTicker() {
   const [tickerItems, setTickerItems] = useState(defaultItems);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/public/breaking?lang=${locale}`)
+    fetch(`${API_BASE_URL}/public/news?lang=${locale}&limit=8`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -40,14 +39,14 @@ export default function BreakingNewsTicker() {
   }
 
   const itemsToRender = tickerItems.length > 0 ? tickerItems : defaultItems;
-  const repeatedItems = [...itemsToRender, ...itemsToRender, ...itemsToRender, ...itemsToRender];
+  const repeatedItems = [...itemsToRender, ...itemsToRender];
 
   return (
     <div className="bg-white border-b border-slate-200 py-1.5 px-3 md:px-4">
       <div className="mx-auto flex max-w-[1360px] items-center gap-2.5 rounded-lg border border-slate-200/80 bg-white p-1 shadow-2xs">
         {/* Red Breaking News Badge */}
-        <div className="flex h-7 shrink-0 items-center gap-1 bg-[#d70b18] px-3 text-xs font-black text-white rounded-md">
-          <span>{t('home.breaking_news')}</span>
+        <div className="flex h-7 shrink-0 items-center gap-1.5 bg-[#d70b18] px-3 text-xs font-black text-white rounded-md whitespace-nowrap">
+          <span>{t('home.breaking_news') || (locale === 'en' ? 'Breaking News' : locale === 'hi' ? 'ब्रेकिंग न्यूज़' : 'ব্রেকিং নিউজ')}</span>
           <Zap size={13} fill="white" className="text-white shrink-0 animate-pulse" />
         </div>
 

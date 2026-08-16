@@ -1,40 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Globe,
-  Sliders,
-  Bell,
-  Shield,
-  Layers,
-  Database,
-  AlertTriangle,
-  Key,
-  CheckCircle2,
-  Save,
-  RotateCw,
-  Download,
-  Trash2,
-  Lock,
-  UserX,
-  ExternalLink,
-  BarChart2,
-  Video,
-  DollarSign,
-  Activity,
-  Share2,
-  Sparkles,
-  ArrowRight,
-} from 'lucide-react';
+import { API_BASE_URL } from '../utils/api';
+import api from '../utils/api';
+import { Globe, Sliders, Bell, Shield, Layers, Database, AlertTriangle, Key, CheckCircle2, Save, RotateCw, Download, Trash2, Lock, UserX, ExternalLink, BarChart2, Video, DollarSign, Activity, Share2, Sparkles, ArrowRight, Loader2, Camera, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function SettingsPage() {
   const [toastMessage, setToastMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { user, updateUser } = useAuth();
+
+  // 0. Profile State
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [profileBio, setProfileBio] = useState(user?.bio || '');
+  const [profileAvatar, setProfileAvatar] = useState(user?.avatar || '');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // 1. Website Information State
-  const [siteName, setSiteName] = useState('Nirbhik Bangla');
-  const [siteTagline, setSiteTagline] = useState('নির্ভীক সংবাদ, নির্ভীক কন্ঠ');
-  const [email, setEmail] = useState('info@nirbhikbangla.com');
+  const [siteName, setSiteName] = useState('');
+  const [siteTagline, setSiteTagline] = useState('');
+  const [email, setEmail] = useState('');
   const [primaryLang, setPrimaryLang] = useState('Bangla');
-  const [timezone, setTimezone] = useState('(GMT+06:00) Dhaka, Bangladesh');
+  const [timezone, setTimezone] = useState('(GMT+05:30) Kolkata, India');
   const [dateFormat, setDateFormat] = useState('May 21, 2024 (MMMM DD, YYYY)');
 
   // 2. Site Settings Toggles
@@ -72,9 +59,111 @@ export default function SettingsPage() {
     }, 3000);
   };
 
-  const handleSaveAll = (e) => {
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.get('/settings');
+        if (data.success && data.data) {
+          const s = data.data;
+          
+          if (s.siteName) setSiteName(s.siteName);
+          if (s.siteTagline) setSiteTagline(s.siteTagline);
+          if (s.email) setEmail(s.email);
+          if (s.primaryLang) setPrimaryLang(s.primaryLang);
+          if (s.timezone) setTimezone(s.timezone);
+          if (s.dateFormat) setDateFormat(s.dateFormat);
+          
+          if (s.siteSettings) setSiteSettings(s.siteSettings);
+          if (s.notifications) setNotifications(s.notifications);
+          
+          if (s.twoFactor !== undefined) setTwoFactor(s.twoFactor);
+          if (s.sessionTimeout) setSessionTimeout(s.sessionTimeout);
+          
+          if (s.dashLang) setDashLang(s.dashLang);
+          if (s.dashTheme) setDashTheme(s.dashTheme);
+          if (s.rowsPerPage) setRowsPerPage(s.rowsPerPage);
+          if (s.defaultLanding) setDefaultLanding(s.defaultLanding);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        showToast('সেটিংস লোড করতে সমস্যা হয়েছে।');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSaveAll = async (e) => {
     e.preventDefault();
-    showToast('গ্লোবাল ওয়েবসাইট সেটিংস সফলভাবে আপডেট ও সেভ করা হয়েছে!');
+    try {
+      const updates = {
+        siteName,
+        siteTagline,
+        email,
+        primaryLang,
+        timezone,
+        dateFormat,
+        siteSettings,
+        notifications,
+        twoFactor,
+        sessionTimeout,
+        dashLang,
+        dashTheme,
+        rowsPerPage,
+        defaultLanding
+      };
+      const { data } = await api.put('/settings', updates);
+      if (data.success) {
+        showToast('গ্লোবাল ওয়েবসাইট সেটিংস সফলভাবে আপডেট ও সেভ করা হয়েছে!');
+      }
+    } catch (error) {
+      console.error('Save settings error:', error);
+      showToast('সেটিংস সেভ করতে সমস্যা হয়েছে।');
+    }
+  };
+
+  const handleProfileSave = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await api.put('/auth/profile', {
+        name: profileName,
+        bio: profileBio,
+        avatar: profileAvatar
+      });
+      if (data.success) {
+        updateUser({ ...user, ...data.data });
+        showToast('প্রোফাইল সফলভাবে আপডেট হয়েছে!');
+      }
+    } catch (err) {
+      console.error('Save profile error:', err);
+      showToast('প্রোফাইল আপডেট করতে সমস্যা হয়েছে।');
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploadingAvatar(true);
+
+    try {
+      const { data } = await api.put('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (data.success) {
+        setProfileAvatar(data.data.avatar);
+        updateUser({ ...user, avatar: data.data.avatar });
+        showToast('ছবি সফলভাবে আপলোড হয়েছে!');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      showToast('ছবি আপলোডে সমস্যা হয়েছে।');
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const toggleSiteSetting = (key) => {
@@ -84,6 +173,18 @@ export default function SettingsPage() {
   const toggleNotification = (key) => {
     setNotifications({ ...notifications, [key]: !notifications[key] });
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-12 h-12 text-[#eb1c24] animate-spin" />
+        <h2 className="text-xl font-bold text-slate-700 font-outfit">Loading Settings...</h2>
+        <p className="text-sm text-slate-500 text-center max-w-md font-medium">
+          Please wait while we fetch your website configurations.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 font-sans text-slate-800 relative pb-12">
@@ -116,6 +217,74 @@ export default function SettingsPage() {
           <Save size={15} />
           <span>Save Changes</span>
         </button>
+      </div>
+
+      {/* Section 0: Profile Settings */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 relative">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+          <User size={18} className="text-[#eb1c24]" />
+          <div>
+            <h3 className="font-extrabold text-sm text-slate-900">Profile Settings</h3>
+            <p className="text-[11px] text-slate-400 font-medium">Update your admin profile picture and bio.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="relative group shrink-0">
+            <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-200 relative bg-slate-100">
+              <img 
+                src={profileAvatar || `https://ui-avatars.com/api/?name=${profileName || 'Admin'}&background=eb1c24&color=fff`}
+                alt="Avatar" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera size={24} className="text-white" />
+              </div>
+              <input 
+                type="file" 
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+                accept="image/*"
+              />
+            </div>
+            {uploadingAvatar && (
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white px-2 py-0.5 rounded-full shadow-md border border-slate-200 text-[10px] font-bold text-[#eb1c24] flex items-center gap-1">
+                <Loader2 size={10} className="animate-spin" /> Uploading
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1 space-y-4 w-full">
+            <div>
+              <label className="block text-slate-700 mb-1 font-bold text-xs">Display Name</label>
+              <input
+                type="text"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] text-sm font-bold text-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 mb-1 font-bold text-xs">Bio / Designation</label>
+              <input
+                type="text"
+                value={profileBio}
+                onChange={(e) => setProfileBio(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] text-sm font-medium text-slate-900"
+                placeholder="e.g. Super Admin | Head of Editorial"
+              />
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={handleProfileSave}
+            className="md:mt-6 bg-slate-900 hover:bg-black text-white text-xs font-black px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer w-full md:w-auto"
+          >
+            Save Profile
+          </button>
+        </div>
       </div>
 
       {/* Section 1: 1. Website Information */}
@@ -185,6 +354,7 @@ export default function SettingsPage() {
                   onChange={(e) => setTimezone(e.target.value)}
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl outline-none focus:border-[#eb1c24] cursor-pointer"
                 >
+                  <option value="(GMT+05:30) Kolkata, India">(GMT+05:30) Kolkata, India</option>
                   <option value="(GMT+06:00) Dhaka, Bangladesh">(GMT+06:00) Dhaka, Bangladesh</option>
                   <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
                 </select>

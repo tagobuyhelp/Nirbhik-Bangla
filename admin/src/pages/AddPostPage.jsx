@@ -169,6 +169,7 @@ export default function AddPostPage() {
     showHomepage: true,
     featured: false,
     breaking: false,
+    autoShareSocial: true,
   });
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
@@ -187,6 +188,7 @@ export default function AddPostPage() {
     telegram: '',
   });
   const [editingCaptions, setEditingCaptions] = useState(false);
+  const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
 
   // 5. Featured Image State
   const [featuredImage, setFeaturedImage] = useState('');
@@ -259,6 +261,7 @@ export default function AddPostPage() {
 
   // 6.5 AI Suggestions State
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [loadingAiAction, setLoadingAiAction] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState({
     excerpt: '',
     seoTitle: '',
@@ -657,6 +660,7 @@ export default function AddPostPage() {
     if (!text || text.trim().length < 20) return showToast('Please write some content first to edit!');
     
     setIsAiLoading(true);
+    setLoadingAiAction(actionType);
     showToast(`AI is processing (${actionType})...`);
     try {
       const res = await api.post('/ai/editor', { text, actionType });
@@ -672,6 +676,7 @@ export default function AddPostPage() {
       showToast(`Failed to ${actionType} text`);
     } finally {
       setIsAiLoading(false);
+      setLoadingAiAction(null);
     }
   };
 
@@ -680,6 +685,7 @@ export default function AddPostPage() {
     if (!text || text.trim().length < 50) return showToast('Not enough content to fact-check!');
     
     setIsAiLoading(true);
+    setLoadingAiAction('factcheck');
     showToast('AI is checking facts...');
     try {
       const res = await api.post('/ai/fact-check', { text });
@@ -693,6 +699,7 @@ export default function AddPostPage() {
       showToast('Failed to run fact check');
     } finally {
       setIsAiLoading(false);
+      setLoadingAiAction(null);
     }
   };
 
@@ -724,8 +731,8 @@ export default function AddPostPage() {
           api.post('/ai/seo', { text }).then(res => {
             const data = res.data?.data;
             if (data) {
-              if (data.title) updates.seoTitle = data.title;
-              if (data.description) updates.metaDescription = data.description;
+              if (data.seoTitle) updates.seoTitle = data.seoTitle;
+              if (data.seoDescription) updates.metaDescription = data.seoDescription;
               if (Array.isArray(data.keywords)) updates.focusKeywords = data.keywords;
             }
           }).catch(e => console.warn('AI SEO failed:', e.message))
@@ -753,6 +760,28 @@ export default function AddPostPage() {
       showToast('AI পরামর্শ তৈরি করতে ব্যর্থ হয়েছে');
     } finally {
       setIsAiLoading(false);
+      setLoadingAiAction(null);
+    }
+  };
+
+  const handleGenerateSocialCaptions = async () => {
+    if (!title.trim()) {
+      showToast('ক্যাপশন তৈরি করার আগে পোস্টের টাইটেল দিন');
+      return;
+    }
+    setIsGeneratingCaptions(true);
+    try {
+      const res = await api.post('/ai/social-captions', { title, excerpt, lang: activeLang || 'bn' });
+      if (res.data?.data) {
+        setSocialCaptions(res.data.data);
+        showToast('সোশাল মিডিয়া ক্যাপশন সফলভাবে জেনারেট হয়েছে!');
+        setEditingCaptions(true); // Open the edit view so they can see them
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('ক্যাপশন জেনারেট করতে ব্যর্থ হয়েছে');
+    } finally {
+      setIsGeneratingCaptions(false);
     }
   };
 
@@ -846,6 +875,7 @@ export default function AddPostPage() {
         isFeatured: publishOptions.featured,
         allowComments: publishOptions.allowComments,
         showOnHomepage: publishOptions.showHomepage,
+        autoShareSocial: publishOptions.autoShareSocial,
         stats: {
           wordCount: wordCount,
           charCount: charCount,
@@ -1022,24 +1052,25 @@ export default function AddPostPage() {
             <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-none text-[11px] font-bold text-slate-700">
               <span className="text-slate-900 mr-2 font-extrabold text-xs">AI Tools</span>
               <button onClick={() => handleAiEditorAction('write')} disabled={isAiLoading} className="border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
-                <PenTool size={13} /> Write
+                <PenTool size={13} className={loadingAiAction === 'write' ? 'animate-spin' : ''} /> Write
               </button>
               <button onClick={() => handleAiEditorAction('headlines')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
-                <Heading size={13} /> Headlines
+                <Heading size={13} className={loadingAiAction === 'headlines' ? 'animate-spin' : ''} /> Headlines
               </button>
               <button onClick={() => handleAiEditorAction('rewrite')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
-                <RotateCw size={13} className={isAiLoading ? 'animate-spin text-blue-500' : 'text-blue-500'} /> Rewrite
+                <RotateCw size={13} className={loadingAiAction === 'rewrite' ? 'animate-spin text-blue-500' : 'text-blue-500'} /> Rewrite
               </button>
               <button onClick={() => handleAiEditorAction('expand')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
-                <Maximize2 size={13} className="text-red-500" /> Expand
+                <Maximize2 size={13} className={loadingAiAction === 'expand' ? 'animate-spin text-red-500' : 'text-red-500'} /> Expand
               </button>
               <button onClick={() => handleAiEditorAction('shorten')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
-                <Minimize2 size={13} className="text-emerald-600" /> Shorten
+                <Minimize2 size={13} className={loadingAiAction === 'shorten' ? 'animate-spin text-emerald-600' : 'text-emerald-600'} /> Shorten
               </button>
               <button onClick={async () => {
                 const text = editorRef.current?.innerText;
                 if (!text || text.trim().length < 20) return showToast('Please write some content first!');
                 setIsAiLoading(true);
+                setLoadingAiAction('translate');
                 showToast('AI translating to English...');
                 try {
                   const res = await api.post('/ai/translate', { text, fromLang: 'bn', toLang: 'en' });
@@ -1049,9 +1080,9 @@ export default function AddPostPage() {
                     showToast('Content translated to English!');
                   }
                 } catch (err) { showToast('Translation failed'); }
-                finally { setIsAiLoading(false); }
+                finally { setIsAiLoading(false); setLoadingAiAction(null); }
               }} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
-                <Languages size={13} className="text-blue-600" /> Translate
+                <Languages size={13} className={loadingAiAction === 'translate' ? 'animate-spin text-blue-600' : 'text-blue-600'} /> Translate
               </button>
               <button onClick={() => handleAiRegenerateSidebar('seo')} disabled={isAiLoading} className="border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-slate-700">
                 <SearchCheck size={13} className="text-teal-600" /> SEO
@@ -1289,8 +1320,8 @@ export default function AddPostPage() {
                     <Sparkles size={12} /> AI Generated Details
                   </p>
                   <button onClick={handleAiRegenerateImageDetails} disabled={isAiLoading} className="text-[10px] font-bold text-[#eb1c24] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50">
-                    <Sparkles size={10} className={isAiLoading ? 'animate-spin' : ''} />
-                    <span>{isAiLoading ? 'Generating...' : 'Regenerate'}</span>
+                    <Sparkles size={10} className={loadingAiAction === 'image_details' ? 'animate-spin' : ''} />
+                    <span>{loadingAiAction === 'image_details' ? 'Generating...' : 'Regenerate'}</span>
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -1340,6 +1371,10 @@ export default function AddPostPage() {
                   <label className="flex items-center justify-between cursor-pointer">
                     <span>Breaking News</span>
                     <input type="checkbox" checked={publishOptions.breaking} onChange={(e) => setPublishOptions({ ...publishOptions, breaking: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span>Auto Share Social</span>
+                    <input type="checkbox" checked={publishOptions.autoShareSocial} onChange={(e) => setPublishOptions({ ...publishOptions, autoShareSocial: e.target.checked })} className="rounded border-slate-300 text-[#eb1c24]" />
                   </label>
                 </div>
               </div>
@@ -1777,29 +1812,58 @@ export default function AddPostPage() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5"><Share2 size={10} className="text-slate-900"/> Twitter (X)</label>
                   <textarea value={socialCaptions.twitter} onChange={(e) => setSocialCaptions({ ...socialCaptions, twitter: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bangla text-[11px] outline-none focus:border-[#eb1c24] resize-none" placeholder="Twitter Caption..." />
                 </div>
-                <button onClick={() => { setEditingCaptions(false); showToast('সোশাল মিডিয়া ক্যাপশন সেভ হয়েছে!'); }} className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg cursor-pointer">
-                  Save Captions
-                </button>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5"><Share2 size={10} className="text-green-600"/> WhatsApp</label>
+                  <textarea value={socialCaptions.whatsapp} onChange={(e) => setSocialCaptions({ ...socialCaptions, whatsapp: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bangla text-[11px] outline-none focus:border-[#eb1c24] resize-none" placeholder="WhatsApp Caption..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5"><Share2 size={10} className="text-blue-500"/> Telegram</label>
+                  <textarea value={socialCaptions.telegram} onChange={(e) => setSocialCaptions({ ...socialCaptions, telegram: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bangla text-[11px] outline-none focus:border-[#eb1c24] resize-none" placeholder="Telegram Caption..." />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => { setEditingCaptions(false); showToast('সোশাল মিডিয়া ক্যাপশন সেভ হয়েছে!'); }} className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg cursor-pointer">
+                    Save Captions
+                  </button>
+                  <button onClick={handleGenerateSocialCaptions} disabled={isGeneratingCaptions} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1">
+                    <Wand2 size={12} /> {isGeneratingCaptions ? 'Generating...' : 'Regenerate'}
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-2 text-[11px] font-bangla">
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 flex items-start gap-2">
-                  <Share2 size={14} className="text-blue-600 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-xs text-slate-900 mb-0.5">Facebook</p>
-                    <p className="line-clamp-2 text-slate-600">{socialCaptions.facebook}</p>
-                  </div>
+                {(socialCaptions.facebook || socialCaptions.twitter || socialCaptions.whatsapp || socialCaptions.telegram) ? (
+                  <>
+                    {socialCaptions.facebook && (
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 flex items-start gap-2">
+                        <Share2 size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs text-slate-900 mb-0.5">Facebook</p>
+                          <p className="line-clamp-2 text-slate-600 whitespace-pre-wrap">{socialCaptions.facebook}</p>
+                        </div>
+                      </div>
+                    )}
+                    {socialCaptions.twitter && (
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 flex items-start gap-2">
+                        <Share2 size={14} className="text-slate-900 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs text-slate-900 mb-0.5">Twitter (X)</p>
+                          <p className="line-clamp-2 text-slate-600 whitespace-pre-wrap">{socialCaptions.twitter}</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500 text-center py-2">কোনো ক্যাপশন জেনারেট করা হয়নি</p>
+                )}
+                
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => setEditingCaptions(true)} className="flex-1 py-1.5 text-slate-700 hover:bg-slate-50 border border-slate-200 text-[11px] font-bold rounded-lg cursor-pointer">
+                    Edit Captions
+                  </button>
+                  <button onClick={handleGenerateSocialCaptions} disabled={isGeneratingCaptions} className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-bold rounded-lg cursor-pointer disabled:opacity-50 flex justify-center items-center gap-1">
+                    <Sparkles size={12} /> {isGeneratingCaptions ? 'Generating...' : 'Generate with AI'}
+                  </button>
                 </div>
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 flex items-start gap-2">
-                  <Share2 size={14} className="text-slate-900 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-xs text-slate-900 mb-0.5">Twitter (X)</p>
-                    <p className="line-clamp-2 text-slate-600">{socialCaptions.twitter}</p>
-                  </div>
-                </div>
-                <button onClick={() => setEditingCaptions(true)} className="w-full py-1.5 text-slate-700 hover:bg-slate-50 border border-slate-200 text-[11px] font-bold rounded-lg cursor-pointer mt-2">
-                  Edit Captions
-                </button>
               </div>
             )}
           </div>

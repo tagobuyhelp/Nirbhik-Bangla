@@ -65,8 +65,26 @@ router.get('/news', async (req, res, next) => {
     const { category, lang = 'bn', isFeatured, isBreaking, isTrending, isVideo, search, limit } = req.query;
     const query = {};
 
-    if (category && category !== 'all') {
-      query.categorySlug = category;
+    if (category && category !== 'all' && category !== 'latest') {
+      if (category === 'rajniti' || category === 'politics') {
+        query.categorySlug = { $in: ['politics', 'rajniti'] };
+      } else if (category === 'paschim-bardhaman') {
+        query.categorySlug = { $in: ['paschim-bardhaman', 'asansol', 'durgapur'] };
+      } else if (category === 'binodon' || category === 'entertainment') {
+        query.categorySlug = { $in: ['binodon', 'entertainment'] };
+      } else if (category === 'khela' || category === 'sports') {
+        query.categorySlug = { $in: ['khela', 'sports'] };
+      } else if (category === 'biswa' || category === 'world') {
+        query.categorySlug = { $in: ['biswa', 'world'] };
+      } else if (category === 'projukti' || category === 'technology') {
+        query.categorySlug = { $in: ['projukti', 'technology', 'tech'] };
+      } else if (category === 'lifestyle' || category === 'health') {
+        query.categorySlug = { $in: ['lifestyle', 'health'] };
+      } else if (category === 'video') {
+        query.$or = [{ isVideo: true }, { categorySlug: 'video' }];
+      } else {
+        query.categorySlug = category;
+      }
     }
     if (isFeatured === 'true') {
       query.isFeatured = true;
@@ -94,12 +112,17 @@ router.get('/news', async (req, res, next) => {
       ];
     }
 
-    let articleQuery = Article.find(query).sort({ createdAt: -1 });
-    if (limit && !isNaN(parseInt(limit))) {
-      articleQuery = articleQuery.limit(parseInt(limit));
-    }
+    const parsedPage = req.query.page && !isNaN(parseInt(req.query.page)) && parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
+    const parsedLimit = req.query.limit && !isNaN(parseInt(req.query.limit)) ? parseInt(req.query.limit) : 12;
+    const skip = (parsedPage - 1) * parsedLimit;
 
-    const articles = await articleQuery;
+    const [articles, totalCount] = await Promise.all([
+      Article.find(query)
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit),
+      Article.countDocuments(query)
+    ]);
 
     // Build a set of unique category slugs to look up localized names
     const slugSet = new Set(articles.map((a) => a.categorySlug).filter(Boolean));
@@ -117,6 +140,8 @@ router.get('/news', async (req, res, next) => {
       const imageCaption = langData.imageMetadata?.caption || art.imageMetadata?.caption || '';
       const imageCredit = langData.imageMetadata?.credit || art.imageMetadata?.credit || '';
       const imageAltText = langData.imageMetadata?.altText || art.imageMetadata?.altText || '';
+      const authorName = art.authorName || 'নির্ভীক বাংলা সংবাদ প্রতিনিধি';
+      const authorAvatar = art.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=d70b18&color=ffffff&bold=true`;
       return {
         id: art._id,
         categorySlug: art.categorySlug,
@@ -138,12 +163,20 @@ router.get('/news', async (req, res, next) => {
         imageCredit,
         imageAltText,
         seo: langData.seo || {},
-        author: art.authorName,
+        author: authorName,
+        authorAvatar,
         publishedAt: art.publishedAt || art.createdAt,
       };
     });
 
-    return sendResponse(res, 200, 'Published news fetched successfully', formatted);
+    const meta = {
+      page: parsedPage,
+      limit: parsedLimit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / parsedLimit) || 1,
+    };
+
+    return sendResponse(res, 200, 'Published news fetched successfully', formatted, meta);
   } catch (error) {
     next(error);
   }
@@ -159,12 +192,16 @@ router.get('/news/by-slug/:slug', async (req, res, next) => {
       return sendResponse(res, 404, 'Article not found');
     }
 
+    try {
+      slug = decodeURIComponent(slug);
+    } catch (e) {}
+
     // Clean trailing slashes
     slug = slug.trim().replace(/\/+$/, '');
     // Strip trailing language suffix like -en, -bn, -hi if present
     const baseSlug = slug.replace(/-(en|bn|hi)$/i, '');
 
-    const article = await Article.findOne({
+    let article = await Article.findOne({
       $or: [
         { 'translations.bn.slug': slug },
         { 'translations.en.slug': slug },
@@ -178,13 +215,27 @@ router.get('/news/by-slug/:slug', async (req, res, next) => {
       ],
     });
 
+    if (!article && mongoose.Types.ObjectId.isValid(slug)) {
+      article = await Article.findById(slug);
+    }
+
+    if (!article) {
+      // Final fallback: match slug prefix
+      const prefix = baseSlug.slice(0, 30);
+      if (prefix.length > 5) {
+        article = await Article.findOne({
+          $or: [
+            { 'translations.bn.slug': new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') },
+            { 'translations.en.slug': new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') },
+            { 'translations.hi.slug': new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') },
+          ]
+        });
+      }
+    }
+
     if (!article) {
       return sendResponse(res, 404, 'Article not found');
     }
-
-    // Increment view count
-    article.viewsCount = (article.viewsCount || 0) + 1;
-    await article.save();
 
     const langData = article.translations.get(lang) || article.translations.get('bn') || {};
 
@@ -223,7 +274,8 @@ router.get('/news/by-slug/:slug', async (req, res, next) => {
       imageCredit,
       imageAltText,
       seo: langData.seo || {},
-      author: article.authorName,
+      author: article.authorName || 'নির্ভীক বাংলা সংবাদ প্রতিনিধি',
+      authorAvatar: article.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(article.authorName || 'নির্ভীক বাংলা সংবাদ প্রতিনিধি')}&background=d70b18&color=ffffff&bold=true`,
       publishedAt: article.publishedAt || article.createdAt,
     };
 
@@ -446,5 +498,49 @@ router.delete('/comments/:id', async (req, res, next) => {
 router.get('/ads', getActiveAds);
 router.post('/ads/:id/click', trackAdClick);
 router.post('/ads/:id/impression', trackAdImpression);
+
+// In-memory cache for IP Debouncing: Maps 'ArticleID_IP' to timestamp
+const viewCache = new Map();
+const VIEW_DEBOUNCE_MS = 30 * 60 * 1000; // 30 minutes
+
+// POST /api/v1/public/news/:id/view
+// Tracks a genuine view of an article, protecting against spam refreshes
+router.post('/news/:id/view', async (req, res, next) => {
+  try {
+    const articleId = req.params.id;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const cacheKey = `${articleId}_${ip}`;
+    const now = Date.now();
+
+    // Check if IP recently viewed this article
+    if (viewCache.has(cacheKey)) {
+      const lastViewTime = viewCache.get(cacheKey);
+      if (now - lastViewTime < VIEW_DEBOUNCE_MS) {
+        return sendResponse(res, 200, 'View already tracked recently (debounced).');
+      }
+    }
+
+    const article = await Article.findById(articleId);
+    if (!article) {
+      return sendResponse(res, 404, 'Article not found');
+    }
+
+    // Increment and save
+    article.viewsCount = (article.viewsCount || 0) + 1;
+    await article.save();
+
+    // Update Cache
+    viewCache.set(cacheKey, now);
+
+    // Optional Cleanup: Remove expired keys if map gets too large
+    if (viewCache.size > 10000) {
+      viewCache.clear(); 
+    }
+
+    return sendResponse(res, 200, 'View tracked successfully.', { viewsCount: article.viewsCount });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;

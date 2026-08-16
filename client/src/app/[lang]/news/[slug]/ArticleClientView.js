@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ArticlePhotoGallery from '@/components/ArticlePhotoGallery';
 import { API_BASE_URL } from '@/utils/config';
 import {
   ArrowRight,
@@ -9,6 +10,7 @@ import {
   CalendarDays,
   CheckCircle,
   ChevronRight,
+  Clock,
   Eye,
   Globe2,
   Link2,
@@ -21,27 +23,19 @@ import {
 } from 'lucide-react';
 
 const fallbackArticle = {
-  slug: 'lok-sabha-vote-result',
-  categoryName: 'দেশ',
-  title: 'লোকসভা ভোটের ফল ঘোষণা আজ, কড়া নিরাপত্তার প্রস্তুতি',
-  excerpt: 'সারা দেশে ৪০০০ কেন্দ্রে ভোটগণনা হবে। কমিশনের পক্ষ থেকে জানানো হয়েছে, ফল প্রকাশ না হওয়া পর্যন্ত কড়া নিরাপত্তা বজায় রাখা হবে।',
-  author: 'নিজস্ব সংবাদদাতা',
-  authorBio: 'রাজনীতি, শাসনব্যবস্থা & প্রশাসনিক বিষয়ক বিশেষ প্রতিনিধি। ৮ বছরের সাংবাদিকতার অভিজ্ঞতা।',
-  authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-  publishedAt: '২৪ মে ২০২৪, ০৯:১৬ AM',
-  featuredImageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=85',
+  slug: '',
+  categoryName: 'সংবাদ',
+  title: 'নির্ভীক বাংলা সংবাদ',
+  excerpt: 'বিস্তারিত প্রতিবেদন পড়তে লিংক এ ক্লিক করুন।',
+  author: 'Abdul Haque',
+  authorBio: 'প্রধান সম্পাদক ও প্রকাশক, নির্ভীক বাংলা।',
+  authorAvatar: 'https://res.cloudinary.com/tw5058et/image/upload/v1786858841/nirbhik_bangla/avatars/gtchkpcote1qsauuc6ou.webp',
+  publishedAt: new Date().toISOString(),
+  featuredImageUrl: '/placeholder-news.jpg',
   imageCaption: '',
-  imageCredit: '',
-  viewsCount: '১৪.৫K',
-  content: `
-    <p>আজ দেশের রাজনৈতিক ভবিষ্যৎ নির্ধারণের দিন। লোকসভা নির্বাচনের ফল ঘোষণা হবে আজ, শনিবার। সকাল ৮টা থেকে শুরু হয়েছে ভোটগণনার প্রক্রিয়া। সারা দেশে মোট ৪০০০-এর বেশি কেন্দ্রে ভোটগণনা চলছে। নির্বাচন কমিশন সূত্রে খবর, ফল প্রকাশ না হওয়া পর্যন্ত সর্বত্র কড়া নিরাপত্তা বজায় রাখা হয়েছে।</p>
-    <p>নির্বাচন কমিশনের আধিকারিক জানিয়েছেন, "প্রতিটি কেন্দ্রে কেন্দ্রীয় বাহিনী মোতায়েন করা হয়েছে। সংবেদনশীল এলাকাগুলিতে ড্রোন নজরদারি এবং সিসিটিভি পর্যবেক্ষণ চলছে। সাইবার সিকিউরিটিও জোরদার করা হয়েছে।"</p>
-    <blockquote class="my-4 border-l-4 border-[#d70b18] bg-slate-50 p-4 text-slate-800 font-bold text-sm leading-relaxed rounded-r">
-      "আমরা একটি অবাধ, শান্তিপূর্ণ এবং স্বচ্ছ গণনা নিশ্চিত করতে বদ্ধপরিকর। দেশের প্রতিটি নাগরিকের ভোটের মূল্যায়ন সঠিকভাবে হবে।"
-    </blockquote>
-    <p>প্রধান নির্বাচন কমিশনার বলেছেন, ফলাফল প্রকাশের পর বিজয়ী মিছিল সংক্রান্ত নির্দেশিকাও সমস্ত রাজ্যের রাজ্যপাল এবং মুখ্যসচিবদের পাঠিয়ে দেওয়া হয়েছে। বিশৃঙ্খলা এড়াতে নির্বাচন কমিশনের পক্ষ থেকে কড়া ব্যবস্থা নেওয়ার সতর্কতা দেওয়া হয়েছে।</p>
-    <p>ফলাফেলের সর্বশেষ আপডেট পেতে আমাদের সঙ্গে থাকুন...</p>
-  `,
+  imageCredit: 'নির্ভীক বাংলা ফটো',
+  viewsCount: '১.২K',
+  content: `<p>সংবাদটি সম্পূর্ণভাবে লোড হচ্ছে...</p>`,
   tags: [],
 };
 
@@ -108,8 +102,23 @@ function formatArticleDate(dateStr, currentLang = 'bn') {
   }
 }
 
-export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-result' }) {
-  const [article, setArticle] = useState(fallbackArticle);
+function cleanAuthorName(name = '') {
+  if (!name) return 'Abdul Haque';
+  let str = String(name).trim();
+  const lines = str.split(/[\n\r]+/);
+  str = lines[0].trim();
+  const words = str.split(/\s+/);
+  if (words.length >= 4) {
+    const half = Math.floor(words.length / 2);
+    if (words.slice(0, half).join(' ') === words.slice(half).join(' ')) {
+      return words.slice(0, half).join(' ');
+    }
+  }
+  return str || 'Abdul Haque';
+}
+
+export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-result', initialArticle = null }) {
+  const [article, setArticle] = useState(initialArticle ? { ...fallbackArticle, ...initialArticle } : fallbackArticle);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [sidebarLatest, setSidebarLatest] = useState([]);
   const [fontSizeClass, setFontSizeClass] = useState('text-base');
@@ -120,40 +129,13 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
 
   const [sideEmail, setSideEmail] = useState('');
   const [sideSubscribed, setSideSubscribed] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState('');
 
-  const [commentName, setCommentName] = useState('');
-  const [commentText, setCommentText] = useState('');
-  const [commentsList, setCommentsList] = useState([
-    { name: 'অর্ণব সরকার', comment: 'খুবই গুরুত্বপূর্ণ খবর। নির্ভীক বাংলাকে ধন্যবাদ।', date: '১০ মিনিট আগে' },
-    { name: 'সুপ্রিয় মুখার্জি', comment: 'সত্য ও নির্ভীক নিরপেক্ষ সংবাদ প্রকাশের জন্য ধন্যবাদ।', date: '১ ঘণ্টা আগে' }
-  ]);
-  const [commentAdded, setCommentAdded] = useState(false);
-
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    if (commentName.trim() && commentText.trim()) {
-      const newObj = { name: commentName.trim(), comment: commentText.trim(), date: 'এইমাত্র' };
-      setCommentsList([newObj, ...commentsList]);
-      setCommentName('');
-      setCommentText('');
-      setCommentAdded(true);
-      setTimeout(() => setCommentAdded(false), 3000);
-
-      try {
-        await fetch(`${API_BASE_URL}/public/comments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            articleSlug: slug,
-            name: newObj.name,
-            comment: newObj.comment,
-          }),
-        });
-      } catch (err) {
-        console.error('Submit comment error:', err);
-      }
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentUrl(window.location.href);
     }
-  };
+  }, [slug]);
 
   const handleSideSubscribe = async (e) => {
     e.preventDefault();
@@ -175,20 +157,7 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
     }
   };
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/public/comments?articleSlug=${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setCommentsList(data.data.map((c) => ({
-            name: c.name,
-            comment: c.comment,
-            date: new Date(c.createdAt).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'hi' ? 'hi-IN' : 'bn-BD')
-          })));
-        }
-      })
-      .catch((err) => console.log('Fetch comments error:', err));
-  }, [slug, lang]);
+
 
   useEffect(() => {
     const cleanSlug = (slug || '').trim().replace(/\/+$/, '');
@@ -226,6 +195,18 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
       })
       .catch((err) => console.log('Sidebar news fetch error:', err));
   }, [slug, lang]);
+
+  // View Tracking (Fires only after 5 seconds to avoid counting bounce traffic)
+  useEffect(() => {
+    if (!article.id || article.id === '1') return; // wait until article is fully loaded with real id
+
+    const timer = setTimeout(() => {
+      fetch(`${API_BASE_URL}/public/news/${article.id}/view`, { method: 'POST' })
+        .catch(err => console.log('View tracking error:', err));
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [article.id]);
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
@@ -300,57 +281,78 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
               </div>
             )}
 
-            {/* Author & Share Bar — Parity Match */}
-            <div className="flex items-center justify-between border-y border-slate-100 py-2 gap-2">
+            {/* Author & Share Bar — Compact Single Line Mobile & Desktop */}
+            <div className="flex items-center justify-between border-y border-slate-200/80 py-2 my-2.5 gap-2 bg-slate-50/60 px-3 rounded-xl min-w-0">
+              {/* Left: Author Info */}
               <div className="flex items-center gap-2 min-w-0">
-                <img
-                  src={article.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                  alt={article.author}
-                  className="h-8 w-8 rounded-full object-cover border border-slate-200 shrink-0"
-                />
+                <div className="relative shrink-0">
+                  <img
+                    src={article.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(article.author || 'Nirbhik Bangla')}&background=d70b18&color=ffffff&bold=true`}
+                    alt={article.author}
+                    className="h-8 w-8 rounded-full object-cover border border-white ring-1 ring-red-500/20 shadow-2xs"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 bg-[#d70b18] text-white p-0.2 rounded-full ring-1 ring-white">
+                    <CheckCircle size={8} className="fill-[#d70b18] text-white" />
+                  </span>
+                </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1 text-[11.5px] font-black text-slate-900 truncate">
-                    <span className="truncate">{article.author}</span>
-                    <CheckCircle size={12} className="text-[#d70b18] fill-[#d70b18] text-white shrink-0" />
+                  <div className="flex items-center gap-1 font-black text-slate-900 text-xs truncate">
+                    <span className="truncate">{cleanAuthorName(article.author)}</span>
                   </div>
-                  <div className="text-[10px] font-semibold text-slate-400 leading-none mt-0.5 whitespace-nowrap">
-                    {formatArticleDate(article.publishedAt, lang)}
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 leading-none mt-0.5">
+                    <Clock size={10} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{formatArticleDate(article.publishedAt, lang)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="text-[11px] font-bold text-slate-500 mr-0.5 hidden sm:inline">{shareText}</span>
+              {/* Right: Social Share Buttons (Single Line Row) */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] font-bold text-slate-500 mr-0.5 hidden md:inline-flex items-center gap-1">
+                  <Share2 size={12} className="text-[#d70b18]" />
+                  <span>{shareText}</span>
+                </span>
+
+                {/* Facebook Button */}
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="h-7 w-7 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:opacity-90 transition-opacity shrink-0"
+                  className="h-7 w-7 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:scale-105 transition-all shadow-2xs shrink-0"
                   aria-label="Share on Facebook"
+                  title="Share on Facebook"
                 >
-                  <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 </a>
+
+                {/* Twitter / X Button */}
                 <a
-                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="h-7 w-7 rounded-full bg-[#1da1f2] text-white flex items-center justify-center hover:opacity-90 transition-opacity shrink-0"
-                  aria-label="Share on Twitter"
+                  className="h-7 w-7 rounded-full bg-slate-900 text-white flex items-center justify-center hover:scale-105 transition-all shadow-2xs shrink-0"
+                  aria-label="Share on Twitter / X"
+                  title="Share on Twitter / X"
                 >
-                  <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 </a>
+
+                {/* WhatsApp Button (Original PNG Icon) */}
                 <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(article.title + ' ' + (typeof window !== 'undefined' ? window.location.href : ''))}`}
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(article.title + ' ' + currentUrl)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="h-7 w-7 rounded-full bg-[#25d366] text-white flex items-center justify-center hover:opacity-90 transition-opacity shrink-0"
+                  className="h-7 w-7 rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-2xs shrink-0 overflow-hidden"
                   aria-label="Share on WhatsApp"
+                  title="Share on WhatsApp"
                 >
-                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <img src="/icons/whatsapp.png" alt="WhatsApp" className="h-full w-full object-cover" />
                 </a>
+
+                {/* Copy Link Button */}
                 <button
                   onClick={handleCopyLink}
-                  className="h-7 w-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-300 transition-colors shrink-0"
+                  className="h-7 w-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-300 hover:scale-105 transition-all shadow-2xs shrink-0"
                   aria-label="Copy link"
                   title={copyLinkTooltip}
                 >
@@ -382,6 +384,28 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
               className={`prose max-w-none text-slate-800 leading-relaxed font-medium bengali-article-content ${fontSizeClass}`}
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
+
+            {/* Interactive Photo Gallery / Lightbox */}
+            {(() => {
+              const extractContentImages = (htmlContent) => {
+                if (!htmlContent) return [];
+                const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+                const matches = [];
+                let match;
+                while ((match = imgRegex.exec(htmlContent)) !== null) {
+                  if (match[1] && !matches.includes(match[1])) {
+                    matches.push(match[1]);
+                  }
+                }
+                return matches;
+              };
+
+              const allGalleryImages = Array.isArray(article.galleryUrls) && article.galleryUrls.length > 0
+                ? article.galleryUrls
+                : extractContentImages(article.content);
+
+              return <ArticlePhotoGallery images={allGalleryImages} lang={lang} />;
+            })()}
 
             {/* Tags & Bookmark Row */}
             <div className="flex flex-wrap items-center justify-between border-t border-slate-200 pt-4 gap-3">
@@ -416,84 +440,32 @@ export default function ArticleClientView({ lang = 'bn', slug = 'lok-sabha-vote-
             {/* Author Bio Card */}
             <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 flex items-center gap-4">
               <img
-                src={article.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                src={article.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(article.author || 'Nirbhik Bangla')}&background=d70b18&color=ffffff&bold=true`}
                 alt={article.author}
                 className="h-14 w-14 rounded-full object-cover border-2 border-white shadow-xs shrink-0"
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 text-sm font-black text-slate-900">
-                  <span>{article.author}</span>
+                  <span>{cleanAuthorName(article.author)}</span>
                   <CheckCircle size={15} className="text-[#d70b18] fill-[#d70b18] text-white" />
                 </div>
                 <p className="mt-1 text-xs font-semibold text-slate-600 leading-relaxed">
                   {article.authorBio || 'রাজনীতি, শাসনব্যবস্থা & প্রশাসনিক বিষয়ক বিশেষ প্রতিনিধি। ৮ বছরের সাংবাদিকতার অভিজ্ঞতা।'}
                 </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <a href="#" className="h-6 w-6 rounded-full bg-[#1877f2] text-white flex items-center justify-center text-[10px] font-bold">f</a>
-                  <a href="#" className="h-6 w-6 rounded-full bg-[#1da1f2] text-white flex items-center justify-center text-[10px] font-bold">𝕏</a>
-                  <a href="#" className="h-6 w-6 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center"><Mail size={12} /></a>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <a href="#" className="h-6 w-6 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:scale-110 transition-all shadow-2xs" title="Facebook" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  </a>
+                  <a href="#" className="h-6 w-6 rounded-full bg-slate-900 text-white flex items-center justify-center hover:scale-110 transition-all shadow-2xs" title="Twitter / X" aria-label="Twitter / X">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                  <a href="#" className="h-6 w-6 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xs overflow-hidden" title="WhatsApp" aria-label="WhatsApp">
+                    <img src="/icons/whatsapp.png" alt="WhatsApp" className="h-full w-full object-cover" />
+                  </a>
+                  <a href="mailto:contact@nirbhikbangla.com" className="h-6 w-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-300 hover:scale-110 transition-all shadow-2xs" title="Email" aria-label="Email">
+                    <Mail size={11} />
+                  </a>
                 </div>
-              </div>
-            </div>
-
-            {/* Interactive Readers Comments Section */}
-            <div id="comments" className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm">
-                  <MessageCircle size={18} className="text-[#d70b18]" />
-                  <span>{lang === 'en' ? 'Reader Comments' : lang === 'hi' ? 'पाठक टिप्पणियाँ' : 'পাঠকদের মতামত ও মন্তব্য'} ({commentsList.length})</span>
-                </div>
-              </div>
-
-              {/* Comment Form */}
-              <form onSubmit={handleCommentSubmit} className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                {commentAdded && (
-                  <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
-                    <CheckCircle size={14} />
-                    <span>{lang === 'en' ? 'Your comment has been posted!' : lang === 'hi' ? 'आपकी टिप्पणी पोस्ट कर दी गई है!' : 'আপনার মন্তব্য প্রকাশ করা হয়েছে!'}</span>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-700">{lang === 'en' ? 'Your Name' : lang === 'hi' ? 'आपका नाम' : 'আপনার নাম'}</label>
-                  <input
-                    type="text"
-                    required
-                    value={commentName}
-                    onChange={(e) => setCommentName(e.target.value)}
-                    placeholder={lang === 'en' ? 'Enter your name...' : lang === 'hi' ? 'अपना नाम दर्ज करें...' : 'আপনার নাম লিখুন...'}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:border-[#d70b18] bg-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-700">{lang === 'en' ? 'Your Comment / Opinion' : lang === 'hi' ? 'आपकी टिप्पणी' : 'আপনার মতামত'}</label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder={lang === 'en' ? 'Write your opinion on this news...' : lang === 'hi' ? 'इस खबर पर अपनी राय लिखें...' : 'এই খবরের বিষয়ে আপনার বক্তব্য লিখুন...'}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-900 outline-none focus:border-[#d70b18] bg-white resize-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="bg-[#d70b18] hover:bg-red-700 text-white font-extrabold text-xs px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer"
-                >
-                  {lang === 'en' ? 'Post Comment' : lang === 'hi' ? 'टिप्पणी पोस्ट करें' : 'মন্তব্য প্রকাশ করুন'}
-                </button>
-              </form>
-
-              {/* Comments List */}
-              <div className="space-y-3 divide-y divide-slate-100 pt-1">
-                {commentsList.map((c, i) => (
-                  <div key={i} className="pt-2.5 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-extrabold text-slate-900">{c.name}</span>
-                      <span className="text-[10px] font-medium text-slate-400">{c.date}</span>
-                    </div>
-                    <p className="text-xs text-slate-700 font-medium leading-relaxed">{c.comment}</p>
-                  </div>
-                ))}
               </div>
             </div>
 

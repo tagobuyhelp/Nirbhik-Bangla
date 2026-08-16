@@ -22,13 +22,7 @@ const categorySlugs = [
   'video',
 ];
 
-const supportedLangs = ['bn', 'en', 'hi'];
-
-export function generateStaticParams() {
-  return supportedLangs.flatMap((lang) =>
-    categorySlugs.map((slug) => ({ lang, slug }))
-  );
-}
+export const dynamicParams = true;
 
 export default function LanguageCategoryPage() {
   return <CategoryClientView />;

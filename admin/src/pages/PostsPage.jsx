@@ -26,9 +26,12 @@ export default function PostsPage() {
   const [postsList, setPostsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Pagination states
+  // Pagination & Filter states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPostsCount, setTotalPostsCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [kpiCounts, setKpiCounts] = useState({ total: 0, published: 0, draft: 0, scheduled: 0, trash: 0 });
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -37,22 +40,31 @@ export default function PostsPage() {
     }, 3000);
   };
 
-  const fetchArticles = async () => {
+  const fetchArticles = async (page = currentPage, limit = itemsPerPage, tab = activeTab, search = searchQuery) => {
     setLoading(true);
     try {
-      const { data } = await api.get('/articles');
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', limit);
+      if (tab && tab !== 'all') params.append('status', tab);
+      if (search && search.trim()) params.append('search', search.trim());
+
+      const { data } = await api.get(`/articles?${params.toString()}`);
       const formatted = (data.data || []).map((art) => {
         const bnData = art.translations?.bn || {};
-        const statusVal = art.status || bnData.status || art.translations?.en?.status || 'published';
+        const hiData = art.translations?.hi || {};
+        const enData = art.translations?.en || {};
+        const statusVal = art.status || bnData.status || hiData.status || enData.status || 'published';
         const categoryVal = art.categoryName || art.category?.translations?.bn?.name || art.category?.name || 'সাধারণ';
-        const reporterVal = art.authorName || art.author?.name || 'নির্ভীক বাংলা সংবাদ প্রতিনিধি';
+        const reporterVal = art.authorName || art.author?.name || 'Abdul Haque';
         const reporterEmailVal = art.author?.email || 'news@nirbhikbangla.com';
-        const reporterAvatarVal = art.author?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporterVal)}`;
+        const reporterAvatarVal = art.authorAvatar || art.author?.avatar || 'https://res.cloudinary.com/tw5058et/image/upload/v1786858841/nirbhik_bangla/avatars/gtchkpcote1qsauuc6ou.webp';
+        const pubDate = art.publishedAt || art.createdAt || Date.now();
 
         return {
           id: art._id,
-          title: bnData.title || art.translations?.en?.title || art.translations?.hi?.title || art.title || 'Untitled Article',
-          slug: bnData.slug || art.slug || '',
+          title: bnData.title || hiData.title || enData.title || art.title || 'Untitled Article',
+          slug: bnData.slug || hiData.slug || enData.slug || art.slug || '',
           category: categoryVal,
           catBg: 'bg-purple-50 text-purple-700 border-purple-200',
           reporter: reporterVal,
@@ -61,11 +73,17 @@ export default function PostsPage() {
           image: art.featuredImageUrl || art.featuredImage?.url || art.featuredImage || 'https://via.placeholder.com/120',
           status: statusVal.toUpperCase(),
           views: art.viewsCount || art.views || 0,
-          date: new Date(art.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-          time: new Date(art.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(pubDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          time: new Date(pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
       });
+
       setPostsList(formatted);
+      const metaData = data.meta || data.pagination;
+      if (metaData) {
+        setTotalPostsCount(metaData.total || 0);
+        setTotalPages(metaData.pages || Math.ceil((metaData.total || 0) / itemsPerPage) || 1);
+      }
     } catch (error) {
       console.error('Error fetching articles:', error);
       showToast('পোস্ট লোড করতে ব্যর্থ হয়েছে');
@@ -75,15 +93,25 @@ export default function PostsPage() {
   };
 
   useEffect(() => {
-    fetchArticles();
-  }, []);
+    fetchArticles(currentPage, itemsPerPage, activeTab, searchQuery);
+  }, [currentPage, itemsPerPage, activeTab]);
 
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchArticles(1, itemsPerPage, activeTab, searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Action Handlers
   const handleDeletePost = async (id) => {
     if (!window.confirm('আপনি কি এই পোস্টটি মুছে ফেলতে চান?')) return;
     try {
       await api.delete(`/articles/${id}`);
       showToast('পোস্ট সফলভাবে মুছে ফেলা হয়েছে!');
-      fetchArticles();
+      fetchArticles(currentPage, itemsPerPage, activeTab, searchQuery);
     } catch (error) {
       showToast('পোস্ট মুছতে ব্যর্থ হয়েছে');
     }
@@ -96,15 +124,15 @@ export default function PostsPage() {
       await Promise.all(selectedPosts.map((id) => api.delete(`/articles/${id}`).catch(() => null)));
       showToast(`${selectedPosts.length} টি পোস্ট সফলভাবে মুছে ফেলা হয়েছে!`);
       setSelectedPosts([]);
-      fetchArticles();
+      fetchArticles(currentPage, itemsPerPage, activeTab, searchQuery);
     } catch (err) {
-      showToast('পোস্টগুলি মুছতে সমস্যা হয়েছে');
+      showToast('একাধিক পোস্ট মুছতে ব্যর্থ হয়েছে');
     }
   };
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedPosts(paginatedPosts.map((p) => p.id));
+      setSelectedPosts(postsList.map((p) => p.id));
     } else {
       setSelectedPosts([]);
     }
@@ -142,31 +170,47 @@ export default function PostsPage() {
     showToast('CSV ফাইল সফলভাবে ডাউনলোড করা হয়েছে!');
   };
 
-  // Filter & Search Logic
-  const filteredPosts = postsList.filter((p) => {
-    const matchesSearch =
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.reporter.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchQuery.toLowerCase());
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPosts = postsList; // Server already paginates!
+  const filteredPosts = postsList;
 
-    if (activeTab === 'all') return matchesSearch;
-    if (activeTab === 'published') return matchesSearch && p.status === 'PUBLISHED';
-    if (activeTab === 'draft') return matchesSearch && p.status === 'DRAFT';
-    if (activeTab === 'scheduled') return matchesSearch && p.status === 'SCHEDULED';
-    return matchesSearch;
-  });
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 2);
+      let end = Math.min(totalPages - 1, currentPage + 2);
 
-  // Dynamic KPI counts
-  const totalCount = postsList.length;
-  const publishedCount = postsList.filter((p) => p.status === 'PUBLISHED').length;
+      if (currentPage <= 4) {
+        end = 5;
+      } else if (currentPage >= totalPages - 3) {
+        start = totalPages - 4;
+      }
+
+      if (start > 2) {
+        pages.push('...');
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  const totalCount = totalPostsCount;
+  const publishedCount = totalPostsCount;
   const draftCount = postsList.filter((p) => p.status === 'DRAFT').length;
   const scheduledCount = postsList.filter((p) => p.status === 'SCHEDULED').length;
   const trashCount = postsList.filter((p) => p.status === 'TRASH' || p.status === 'ARCHIVED').length;
-
-  // Pagination Math
-  const totalPages = Math.ceil(filteredPosts.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedPosts = filteredPosts.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="space-y-6 font-outfit text-slate-800 relative pb-10">
@@ -394,26 +438,26 @@ export default function PostsPage() {
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <div className="flex items-center gap-3 min-w-[260px]">
+                      <div className="flex items-center gap-3 min-w-[280px]">
                         <img src={post.image} alt="" className="w-12 h-10 rounded-lg object-cover border border-slate-200 shrink-0 shadow-2xs" />
-                        <h4 className="font-bangla font-extrabold text-slate-900 text-xs leading-snug line-clamp-2 group-hover:text-[#eb1c24] transition-colors">
+                        <h4 className="font-bangla font-extrabold text-slate-900 text-[14px] leading-snug line-clamp-2 group-hover:text-[#eb1c24] transition-colors">
                           {post.title}
                         </h4>
                       </div>
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bangla font-extrabold border ${post.catBg}`}>
+                      <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bangla font-extrabold border ${post.catBg}`}>
                         {post.category}
                       </span>
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <div className="flex items-center gap-2">
-                        <img src={post.reporterAvatar} alt="" className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0" />
-                        <div>
-                          <h5 className="font-bangla font-bold text-slate-900 text-xs leading-tight">{post.reporter}</h5>
-                          <span className="text-[10px] text-slate-400 font-normal block">{post.reporterEmail}</span>
+                      <div className="flex items-center gap-2.5 min-w-[150px]">
+                        <img src={post.reporterAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-2xs" />
+                        <div className="min-w-0">
+                          <h5 className="font-bangla font-bold text-slate-900 text-xs leading-tight truncate">{post.reporter}</h5>
+                          <span className="text-[10px] text-slate-400 font-medium block truncate max-w-[150px]">{post.reporterEmail}</span>
                         </div>
                       </div>
                     </td>
@@ -478,7 +522,7 @@ export default function PostsPage() {
         {/* Dynamic Table Pagination Footer */}
         <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500 bg-slate-50/50">
           <span>
-            Showing {filteredPosts.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, filteredPosts.length)} of {filteredPosts.length} posts
+            Showing {totalPostsCount > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + itemsPerPage, totalPostsCount)} of {totalPostsCount.toLocaleString()} posts
           </span>
 
           <div className="flex items-center gap-1.5">
@@ -490,18 +534,24 @@ export default function PostsPage() {
               <ChevronLeft size={16} />
             </button>
             
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
-                className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition-colors cursor-pointer ${
-                  currentPage === pageNum
-                    ? 'bg-[#eb1c24] text-white shadow-2xs'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {pageNum}
-              </button>
+            {getPageNumbers().map((pageNum, idx) => (
+              pageNum === '...' ? (
+                <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-slate-400 font-bold">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                    currentPage === pageNum
+                      ? 'bg-[#eb1c24] text-white shadow-2xs'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
             ))}
 
             <button
@@ -522,8 +572,9 @@ export default function PostsPage() {
             className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none cursor-pointer font-bold"
           >
             <option value={10}>10 / page</option>
-            <option value={20}>20 / page</option>
+            <option value={25}>25 / page</option>
             <option value={50}>50 / page</option>
+            <option value={100}>100 / page</option>
           </select>
         </div>
       </div>

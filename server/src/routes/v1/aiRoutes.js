@@ -163,4 +163,18 @@ router.post('/generate-tag-description', async (req, res, next) => {
   }
 });
 
+// POST /api/v1/ai/social-captions
+router.post('/social-captions', async (req, res, next) => {
+  try {
+    const { title, excerpt, lang = 'bn' } = req.body;
+    if (!title) {
+      return sendResponse(res, 400, 'Title is required for social captions');
+    }
+    const captions = await AIService.generateSocialCaptions(title, excerpt, lang);
+    return sendResponse(res, 200, 'AI social captions generated', captions);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

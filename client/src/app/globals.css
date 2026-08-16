@@ -6,13 +6,13 @@
 }
 
 * {
-  font-family: var(--font-bangla), 'Hind Siliguri', 'Noto Sans Bengali', sans-serif !important;
+  font-family: var(--font-bangla), 'Tiro Bangla', 'Noto Serif Bengali', serif, sans-serif !important;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-bangla), 'Hind Siliguri', 'Noto Sans Bengali', sans-serif !important;
+  font-family: var(--font-bangla), 'Tiro Bangla', 'Noto Serif Bengali', serif, sans-serif !important;
   margin: 0;
   padding: 0;
 }
@@ -24,6 +24,41 @@ body {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Universal News Title Layout Safety & Breakage Protection */
+h1, h2, h3, h4, h5, h6, p, a {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Explicit Line Clamp Classes for Multi-Browser Compatibility */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Smooth Marquee Animation for Breaking News Ticker */
@@ -76,7 +111,7 @@ body {
 .bengali-article-content ol,
 .bengali-article-content li,
 .bengali-article-content span {
-  font-family: var(--font-bangla), 'Hind Siliguri', 'Noto Sans Bengali', sans-serif !important;
+  font-family: var(--font-bangla), 'Tiro Bangla', 'Noto Serif Bengali', serif, sans-serif !important;
   line-height: 1.85;
   letter-spacing: 0.015em;
 }
@@ -87,7 +122,7 @@ body {
 }
 
 .bengali-article-content blockquote {
-  font-family: var(--font-bangla), 'Hind Siliguri', 'Noto Sans Bengali', sans-serif !important;
+  font-family: var(--font-bangla), 'Tiro Bangla', 'Noto Serif Bengali', serif, sans-serif !important;
   border-left: 4px solid #d70b18;
   background-color: #f8fafc;
   padding: 1rem 1.25rem;
@@ -95,5 +130,31 @@ body {
   border-radius: 0 0.5rem 0.5rem 0;
   font-weight: 700;
   color: #0f172a;
+}
+
+/* Responsive Image & Gallery Fitting for News Article Content */
+.bengali-article-content img,
+.bengali-article-content figure img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin: 1.5rem auto;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.bengali-article-content figure {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.bengali-article-content figcaption {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+  font-weight: 500;
+  text-align: center;
 }
 

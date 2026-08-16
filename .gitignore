@@ -25,3 +25,7 @@ yarn-error.log*
 .DS_Store
 .vscode/
 .idea/
+
+# Service account credentials
+server/config/*.json
+*.json.key

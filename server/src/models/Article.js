@@ -51,6 +51,7 @@ const ArticleSchema = new mongoose.Schema({
   tags: [{ type: String }],
   
   authorName: { type: String, default: 'নির্ভীক বাংলা সংবাদ প্রতিনিধি' },
+  authorAvatar: { type: String, default: '' },
   
   isBreaking: { type: Boolean, default: false, index: true },
   isTrending: { type: Boolean, default: false, index: true },
@@ -83,6 +84,8 @@ const ArticleSchema = new mongoose.Schema({
     default: 'completed',
     index: true,
   },
+
+  isShared: { type: Boolean, default: false },
 
   publishedAt: { type: Date, default: Date.now, index: true },
 }, { timestamps: true });
