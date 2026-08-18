@@ -84,9 +84,11 @@ exports.getAnalyticsOverview = async (req, res, next) => {
     const propertyId = process.env.GA4_PROPERTY_ID;
 
     if (!propertyId || !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      return res.status(400).json({
-        success: false,
-        message: 'Google Analytics credentials or Property ID not configured.',
+      // Return 200 to avoid console 400 errors when GA4 is not configured
+      return res.status(200).json({
+        success: true,
+        message: 'Google Analytics credentials or Property ID not configured. Using fallback metrics.',
+        data: null
       });
     }
 

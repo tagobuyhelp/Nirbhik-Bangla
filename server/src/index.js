@@ -14,6 +14,7 @@ const v1Router = require('./routes/v1');
 connectDB();
 
 const app = express();
+app.set('trust proxy', true); // Trust reverse proxy (Nginx) for correct req.protocol (HTTPS)
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
