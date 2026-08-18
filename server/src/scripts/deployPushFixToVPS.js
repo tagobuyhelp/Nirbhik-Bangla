@@ -29,6 +29,7 @@ async function deployPush() {
     await runSSHCommand(conn, 'cd /var/www/nirbhik-bangla && git pull origin main');
 
     // 2. Add VAPID keys to server/.env on VPS
+    const geminiKey = process.env.GEMINI_API_KEY || '';
     const serverEnv = `PORT=5050
 NODE_ENV=production
 MONGODB_URI=mongodb://tagobuy:tarikAziz%40703330@127.0.0.1:27017/nirbhik-bangla?authSource=admin
@@ -41,6 +42,9 @@ CLOUDINARY_API_SECRET=abcdefg
 VAPID_PUBLIC_KEY=BFUAijMPyigTPURf6oyJa9aQ3ublhlHdveqWgGC81YPbTEuY5V8A8HGKliWleYwZ_RgCQDJw27CRe2lXKsxHXyg
 VAPID_PRIVATE_KEY=pGcjF060eEIbfo6bIX9dQzanfScPaH3IsqTpwryCpmw
 VAPID_SUBJECT=mailto:contact@nirbhikbangla.com
+AI_PROVIDER=gemini
+GEMINI_API_KEY=${geminiKey}
+AI_MODEL_PRIMARY=gemini-2.5-flash
 `;
     await runSSHCommand(conn, `echo "${serverEnv}" > /var/www/nirbhik-bangla/server/.env`);
 
