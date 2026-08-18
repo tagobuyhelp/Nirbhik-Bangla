@@ -6,6 +6,7 @@ const LiveStream = require('../../models/LiveStream');
 const Video = require('../../models/Video');
 const Playlist = require('../../models/Playlist');
 const sendResponse = require('../../utils/responseHandler');
+const mongoose = require('mongoose');
 
 // GET /api/v1/public/playlists
 router.get('/playlists', async (req, res, next) => {

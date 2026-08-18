@@ -83,11 +83,12 @@ exports.getAnalyticsOverview = async (req, res, next) => {
   try {
     const propertyId = process.env.GA4_PROPERTY_ID;
 
-    if (!propertyId || !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      // Return 200 to avoid console 400 errors when GA4 is not configured
+    const fs = require('fs');
+    if (!propertyId || !process.env.GOOGLE_APPLICATION_CREDENTIALS || !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+      // Return 200 to avoid console 400/500 errors when GA4 is not configured properly
       return res.status(200).json({
         success: true,
-        message: 'Google Analytics credentials or Property ID not configured. Using fallback metrics.',
+        message: 'Google Analytics credentials or Property ID not configured or missing. Using fallback metrics.',
         data: null
       });
     }
