@@ -1,11 +1,10 @@
 class OpenRouterProvider {
   constructor() {
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
-    this.defaultModel = process.env.OPENROUTER_MODEL_PRIMARY || 'google/gemini-2.0-flash-exp:free';
+    this.defaultModel = process.env.OPENROUTER_MODEL_PRIMARY || 'google/gemini-2.5-flash';
     this.fallbackModels = [
-      'google/gemini-2.0-flash-lite-001',
-      'deepseek/deepseek-r1:free',
-      'qwen/qwen-2.5-72b-instruct:free'
+      'deepseek/deepseek-r1',
+      'qwen/qwen-2.5-72b-instruct'
     ];
   }
 

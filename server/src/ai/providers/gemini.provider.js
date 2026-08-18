@@ -3,7 +3,7 @@ const { GoogleGenAI } = require('@google/genai');
 class GeminiProvider {
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    this.defaultModel = process.env.AI_MODEL_PRIMARY || 'gemini-2.0-flash';
+    this.defaultModel = process.env.AI_MODEL_PRIMARY || 'gemini-3.6-flash';
   }
 
   /**
@@ -12,9 +12,9 @@ class GeminiProvider {
   async execute(promptConfig, options = {}) {
     const modelsToTry = [
       promptConfig.model || this.defaultModel,
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite'
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-2.5-flash'
     ];
     const models = [...new Set(modelsToTry)];
     const timeoutMs = options.timeout || parseInt(process.env.AI_TIMEOUT_MS, 10) || 15000;
